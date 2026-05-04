@@ -14,10 +14,11 @@ import {
   LayoutDashboard,
   Layers,
   PenTool,
-  Zap
+  Zap,
+  X
 } from 'lucide-react';
 
-const Sidebar = ({ role }) => {
+const Sidebar = ({ role, isOpen, onClose }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
@@ -26,6 +27,11 @@ const Sidebar = ({ role }) => {
     users: false,
     designers: false
   });
+
+  const handleNavigate = (path) => {
+    navigate(path);
+    if (onClose) onClose();
+  };
 
   const toggleMenu = (menu) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
@@ -45,52 +51,46 @@ const Sidebar = ({ role }) => {
   );
 
   const NavItem = ({ to, label, icon: Icon, isSubItem = false }) => (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        `flex items-center gap-4 px-8 py-3.5 transition-all duration-300 relative group ${
-          isActive
-            ? 'font-black'
-            : 'hover:bg-[var(--nav-hover)]'
-        } ${isSubItem ? 'px-10 py-2.5' : ''}`
-      }
-      style={({ isActive }) => ({
-        color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-        background: isActive ? 'var(--nav-active)' : undefined,
-      })}
+    <button
+      onClick={() => handleNavigate(to)}
+      className={`w-full flex items-center gap-4 px-8 py-3.5 transition-all duration-300 relative group ${
+        location.pathname === to
+          ? 'font-black'
+          : 'hover:bg-[var(--nav-hover)]'
+      } ${isSubItem ? 'px-10 py-2.5' : ''}`}
+      style={{
+        color: location.pathname === to ? 'var(--primary)' : 'var(--text-muted)',
+        background: location.pathname === to ? 'var(--nav-active)' : undefined,
+      }}
     >
-      {({ isActive }) => (
-        <>
-          {/* Active left border */}
-          <div
-            className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
-            style={{
-              background: 'var(--accent)',
-              transform: isActive ? 'scaleY(1)' : 'scaleY(0)',
-              opacity: isActive ? 1 : 0,
-              transformOrigin: 'center',
-            }}
-          />
+      {/* Active left border */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
+        style={{
+          background: 'var(--accent)',
+          transform: location.pathname === to ? 'scaleY(1)' : 'scaleY(0)',
+          opacity: location.pathname === to ? 1 : 0,
+          transformOrigin: 'center',
+        }}
+      />
 
-          <div className="w-6 flex justify-center relative z-10">
-            {Icon && (
-              <Icon
-                size={20}
-                strokeWidth={2.5}
-                className="transition-colors duration-300 group-hover:text-[var(--accent)]"
-                style={{ color: isActive ? 'var(--accent)' : 'var(--text-dim)' }}
-              />
-            )}
-          </div>
-          <span
-            className="text-[12px] font-black tracking-[0.2em] uppercase relative z-10 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
-            style={{ fontSize: isSubItem ? '11px' : undefined }}
-          >
-            {label}
-          </span>
-        </>
-      )}
-    </NavLink>
+      <div className="w-6 flex justify-center relative z-10">
+        {Icon && (
+          <Icon
+            size={20}
+            strokeWidth={2.5}
+            className="transition-colors duration-300 group-hover:text-[var(--accent)]"
+            style={{ color: location.pathname === to ? 'var(--accent)' : 'var(--text-dim)' }}
+          />
+        )}
+      </div>
+      <span
+        className="text-[12px] font-black tracking-[0.2em] uppercase relative z-10 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
+        style={{ fontSize: isSubItem ? '11px' : undefined }}
+      >
+        {label}
+      </span>
+    </button>
   );
 
   const SubMenu = ({ isOpen, children }) => (
@@ -105,21 +105,38 @@ const Sidebar = ({ role }) => {
   );
 
   return (
-    <aside
-      className="w-64 h-screen fixed left-0 top-0 z-40 hidden md:flex flex-col shadow-2xl transition-colors duration-300"
-      style={{
-        background: 'var(--grad-sidebar)',
-        borderRight: '1px solid var(--border-color)',
-      }}
-    >
-      {/* LOGO */}
-      <div className="p-8 flex justify-center" style={{ borderBottom: '1px solid var(--border-color)' }}>
-        <div className="flex items-center gap-2">
-          <span className="text-[22px] font-black uppercase tracking-[0.2em] text-[var(--text-main)]">
-            CRUD<span className="text-[var(--accent)]">EX</span>
-          </span>
+    <>
+      {/* Backdrop for mobile */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={`w-64 h-screen fixed left-0 top-0 z-50 md:flex flex-col shadow-2xl transition-all duration-500 ease-in-out transform ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        style={{
+          background: 'var(--grad-sidebar)',
+          borderRight: '1px solid var(--border-color)',
+        }}
+      >
+        {/* Mobile Close Button */}
+        <button 
+          onClick={onClose}
+          className="md:hidden absolute top-6 right-6 p-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--accent)]"
+        >
+          <X size={20} strokeWidth={3} />
+        </button>
+
+        {/* LOGO */}
+        <div className="p-8 flex justify-center" style={{ borderBottom: '1px solid var(--border-color)' }}>
+          <div className="flex items-center gap-2">
+            <span className="text-[22px] font-black uppercase tracking-[0.2em] text-[var(--text-main)]">
+              CRUD<span className="text-[var(--accent)]">EX</span>
+            </span>
+          </div>
         </div>
-      </div>
 
       {/* USER PROFILE */}
       <div className="p-6" style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--nav-hover)' }}>
@@ -331,7 +348,8 @@ const Sidebar = ({ role }) => {
           <span>Sign Out</span>
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

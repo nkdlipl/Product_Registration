@@ -48,7 +48,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => {
 
         {/* Body */}
         <div
-          className="p-8 overflow-y-auto custom-scrollbar"
+          className="p-4 md:p-8 overflow-y-auto custom-scrollbar"
           style={{ color: 'var(--text-main)', background: 'transparent' }}
         >
           {children}

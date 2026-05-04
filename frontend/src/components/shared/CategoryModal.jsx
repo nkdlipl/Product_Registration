@@ -175,7 +175,7 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
         </div>
 
         {/* Content Area */}
-        <div className="p-6 max-h-[450px] overflow-y-auto custom-scrollbar space-y-4 bg-[var(--bg-card)]">
+        <div className="p-4 md:p-6 max-h-[450px] overflow-y-auto custom-scrollbar space-y-4 bg-[var(--bg-card)]">
           {isAdding && (
             <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col gap-3 animate-in slide-in-from-top-4 duration-300">
               <label className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest ml-1">

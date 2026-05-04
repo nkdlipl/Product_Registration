@@ -15,8 +15,8 @@ const Breadcrumbs = ({ items = [] }) => {
   });
 
   return (
-    <nav className="flex mb-4" aria-label="Breadcrumb">
-      <ol className="inline-flex items-center space-x-1 md:space-x-2">
+    <nav className="flex mb-4 overflow-hidden" aria-label="Breadcrumb">
+      <ol className="flex flex-wrap items-center gap-y-2">
         {breadcrumbItems.map((item, index) => (
           <li key={index}>
             <div className="flex items-center">

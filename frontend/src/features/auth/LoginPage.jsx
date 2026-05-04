@@ -70,7 +70,7 @@ const LoginPage = () => {
         </div>
 
 
-        <div className="workspace-card p-10 animate-in fade-in zoom-in-95 duration-500">
+        <div className="workspace-card p-6 md:p-10 animate-in fade-in zoom-in-95 duration-500">
           <ErrorBanner error={apiError} onRetry={handleSubmit(onSubmit)} />
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
@@ -85,7 +85,7 @@ const LoginPage = () => {
                   })}
                   type="email"
                   className={`w-full bg-[var(--input-bg)] border ${errors.email ? 'border-red-500/50' : 'border-[var(--border-color)]'} rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dim)] text-sm font-medium`}
-                  placeholder="identity@leons.sys"
+                  placeholder="Enter Username or Email"
                 />
               </div>
               {errors.email && <p className="text-red-400 text-[10px] mt-2 font-bold tracking-wide uppercase">{errors.email.message}</p>}

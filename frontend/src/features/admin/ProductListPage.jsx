@@ -268,11 +268,11 @@ const ProductListPage = () => {
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <div className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
-            <Box className="text-[var(--accent)] group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300" size={28} />
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
+            <Zap size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Products Catalogue</h1>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Product Catalogue</h1>
             <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Inventory & Specifications Management</p>
           </div>
         </div>
@@ -282,7 +282,7 @@ const ProductListPage = () => {
           style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
         >
           <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span>Add New Product</span>
+          <span className="text-[12px] md:text-[14px]">Add New Product</span>
         </button>
       </div>
 
@@ -432,8 +432,8 @@ const ProductListPage = () => {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-10">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div className="space-y-6">
-                  <div className="p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-[32px]">
-                    <div className="flex items-center gap-3 mb-4"><div className="w-2 h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-lg font-black text-[var(--text-main)] uppercase tracking-widest">General Information</h3></div>
+                  <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
+                    <div className="flex items-center gap-3 mb-4"><div className="w-1 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">General Information</h3></div>
                     <div className="space-y-5">
                       <div><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Name</label><input {...register('product_name', { required: 'Name is required' })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all" placeholder="e.g. Industrial Dispenser X-1" /></div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -505,8 +505,8 @@ const ProductListPage = () => {
                       )}
                     </div>
                   </div>
-                  <div className="p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-[32px]">
-                    <div className="flex items-center gap-3 mb-4"><div className="w-2 h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Asset Management</h3></div>
+                  <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
+                    <div className="flex items-center gap-3 mb-4"><div className="w-1 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Asset Management</h3></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Upload Image</label><div className="relative group"><input type="file" {...register('image')} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" /><div className="w-full bg-[var(--input-bg)] border border-dashed border-[var(--text-dim)] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5 transition-all"><div className="p-3 bg-[var(--bg-workspace)] rounded-xl text-[var(--accent)]"><Plus size={24} /></div><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Upload Visual Asset</p></div></div></div>
                       <div className="space-y-3"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Technical Datasheet</label><div className="relative group"><input type="file" {...register('document')} accept=".pdf,.doc,.docx,.xls,.xlsx" className="absolute inset-0 opacity-0 cursor-pointer z-10" /><div className="w-full bg-[var(--input-bg)] border border-dashed border-[var(--text-dim)] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5 transition-all"><div className="p-3 bg-[var(--bg-workspace)] rounded-xl text-[var(--accent)]"><FileText size={24} /></div><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Upload Datasheet</p></div></div></div>

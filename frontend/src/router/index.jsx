@@ -21,12 +21,20 @@ const PageLoader = () => (
 
 const DashboardLayout = () => {
   const { user } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
   return (
     <div className="min-h-screen bg-[var(--bg-workspace)] transition-colors duration-300">
-      <Navbar />
+      <Navbar onMenuClick={toggleSidebar} />
       <div className="flex">
-        <Sidebar role={user?.role_name} />
-        <main className="flex-1 md:ml-64 p-6 pt-20 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]">
+        <Sidebar 
+          role={user?.role_name} 
+          isOpen={isSidebarOpen} 
+          onClose={() => setIsSidebarOpen(false)} 
+        />
+        <main className={`flex-1 md:ml-64 p-4 md:p-6 pt-24 md:pt-20 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]`}>
           <Suspense fallback={<PageLoader />}>
             <Outlet />
           </Suspense>

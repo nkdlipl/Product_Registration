@@ -203,11 +203,11 @@ const TeamsPage = () => {
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <div className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
-            {React.cloneElement(getRoleIcon(), { size: 28, className: "group-hover:scale-110 transition-transform duration-300" })}
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
+            {React.cloneElement(getRoleIcon(), { size: 24, className: "md:w-[28px] md:h-[28px] group-hover:scale-110 transition-transform duration-300" })}
           </div>
           <div>
-            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
               {role} Division
             </h1>
             <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
@@ -222,7 +222,7 @@ const TeamsPage = () => {
           style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
         >
           <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span>Add {role} Team</span>
+          <span className="text-[12px] md:text-[14px]">Add {role} Team</span>
         </button>
       </div>
 

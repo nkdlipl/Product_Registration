@@ -1,21 +1,28 @@
 import { useTheme } from '../../context/ThemeContext';
-import { Sun, Moon, Bell } from 'lucide-react';
+import { Sun, Moon, Bell, Menu } from 'lucide-react';
 
-const Navbar = () => {
+const Navbar = ({ onMenuClick }) => {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="fixed top-0 right-0 left-0 md:left-64 h-20 z-30 transition-all">
       <div
-        className="h-full px-8 flex items-center justify-between"
+        className="h-full px-4 md:px-8 flex items-center justify-between"
         style={{
           background: 'var(--grad-header)',
           borderBottom: '1px solid var(--border-color)',
           boxShadow: 'var(--card-shadow)',
         }}
       >
-        <div />
-        <div className="flex items-center gap-6">
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-3 rounded-xl transition-all bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--accent)]"
+        >
+          <Menu size={20} strokeWidth={3} />
+        </button>
+        <div className="hidden md:block" />
+        
+        <div className="flex items-center gap-4 md:gap-6">
           <button
             className="p-1 rounded-full transition-all group"
             style={{ color: 'var(--text-secondary)' }}
