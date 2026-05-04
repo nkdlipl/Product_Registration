@@ -229,7 +229,21 @@ const ProductListPage = () => {
       await removeAsset(selectedProduct.product_id, url, type);
       toast.success('Asset removed');
       const updatedProduct = { ...selectedProduct };
-      updatedProduct[type] = updatedProduct[type].filter(u => u !== url);
+      if (type === 'images') {
+        if (Array.isArray(updatedProduct.images)) {
+          updatedProduct.images = updatedProduct.images.filter(u => u !== url);
+        }
+        if (updatedProduct.image_url === url) {
+          updatedProduct.image_url = updatedProduct.images?.[0] || null;
+        }
+      } else if (type === 'documents') {
+        if (Array.isArray(updatedProduct.documents)) {
+          updatedProduct.documents = updatedProduct.documents.filter(u => u !== url);
+        }
+        if (updatedProduct.document_url === url) {
+          updatedProduct.document_url = updatedProduct.documents?.[0] || null;
+        }
+      }
       setSelectedProduct(updatedProduct);
       fetchProducts();
     } catch (error) {
@@ -507,9 +521,62 @@ const ProductListPage = () => {
                   </div>
                   <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
                     <div className="flex items-center gap-3 mb-4"><div className="w-1 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Asset Management</h3></div>
+                    
+                    {modalMode === 'edit' && (
+                      <div className="space-y-6">
+                        {/* Existing Images */}
+                        {((selectedProduct?.images && selectedProduct.images.length > 0) || selectedProduct?.image_url) && (
+                          <div className="space-y-3">
+                            <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Gallery</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                              {(selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image_url]).filter(Boolean).map((url, idx) => (
+                                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-[var(--border-color)] group bg-[var(--bg-workspace)]/50">
+                                  <img src={getFullUrl(url)} alt="" className="w-full h-full object-contain p-2" />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                    <button 
+                                      type="button" 
+                                      onClick={() => handleRemoveAsset(url, 'images')} 
+                                      className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Existing Documents */}
+                        {((selectedProduct?.documents && selectedProduct.documents.length > 0) || selectedProduct?.document_url) && (
+                          <div className="space-y-3">
+                            <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Documents</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {(selectedProduct.documents && selectedProduct.documents.length > 0 ? selectedProduct.documents : [selectedProduct.document_url]).filter(Boolean).map((url, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] rounded-xl group hover:border-[var(--accent)]/50 transition-all">
+                                  <div className="flex items-center gap-3 truncate">
+                                    <FileText size={16} className="text-[var(--accent)]" />
+                                    <span className="text-[11px] font-bold text-[var(--text-main)] truncate uppercase tracking-wider">{url.split('/').pop()}</span>
+                                  </div>
+                                  <button 
+                                    type="button" 
+                                    onClick={() => handleRemoveAsset(url, 'documents')} 
+                                    className="p-1.5 text-rose-500/50 hover:text-rose-500 transition-colors"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <div className="h-px bg-[var(--border-color)]" />
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Upload Image</label><div className="relative group"><input type="file" {...register('image')} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" /><div className="w-full bg-[var(--input-bg)] border border-dashed border-[var(--text-dim)] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5 transition-all"><div className="p-3 bg-[var(--bg-workspace)] rounded-xl text-[var(--accent)]"><Plus size={24} /></div><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Upload Visual Asset</p></div></div></div>
-                      <div className="space-y-3"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Technical Datasheet</label><div className="relative group"><input type="file" {...register('document')} accept=".pdf,.doc,.docx,.xls,.xlsx" className="absolute inset-0 opacity-0 cursor-pointer z-10" /><div className="w-full bg-[var(--input-bg)] border border-dashed border-[var(--text-dim)] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5 transition-all"><div className="p-3 bg-[var(--bg-workspace)] rounded-xl text-[var(--accent)]"><FileText size={24} /></div><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Upload Datasheet</p></div></div></div>
+                      <div className="space-y-3"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Upload New Image</label><div className="relative group"><input type="file" {...register('image')} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" /><div className="w-full bg-[var(--input-bg)] border border-dashed border-[var(--text-dim)] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5 transition-all"><div className="p-3 bg-[var(--bg-workspace)] rounded-xl text-[var(--accent)]"><Plus size={24} /></div><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Select Visual Asset</p></div></div></div>
+                      <div className="space-y-3"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Upload New Datasheet</label><div className="relative group"><input type="file" {...register('document')} accept=".pdf,.doc,.docx,.xls,.xlsx" className="absolute inset-0 opacity-0 cursor-pointer z-10" /><div className="w-full bg-[var(--input-bg)] border border-dashed border-[var(--text-dim)] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5 transition-all"><div className="p-3 bg-[var(--bg-workspace)] rounded-xl text-[var(--accent)]"><FileText size={24} /></div><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Select Datasheet</p></div></div></div>
                     </div>
                   </div>
 
