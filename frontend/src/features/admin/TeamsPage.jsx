@@ -6,9 +6,11 @@ import axiosInstance from '../../api/axiosInstance';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { Briefcase, ShoppingBag, Wrench, Layout, Plus, Loader2, Check, Box, Users, Info } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const TeamsPage = () => {
   const [searchParams] = useSearchParams();
@@ -29,7 +31,17 @@ const TeamsPage = () => {
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm();
+
+  const quillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      ['link'],
+      [{ 'align': [] }],
+      ['clean']
+    ],
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -228,93 +240,176 @@ const TeamsPage = () => {
 
       <DataTable columns={columns} data={data} loading={loading} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalMode === 'create' ? `Add ${role} Team` : modalMode === 'edit' ? `Update ${role} Team` : `${role} Team Profile`}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalMode === 'create' ? `Add ${role} Team` : modalMode === 'edit' ? `Update ${role} Team` : `${role} Team Profile`} maxWidth="max-w-5xl">
         <div className="space-y-6">
-          {modalMode === 'view' && (
-             <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex items-start gap-3">
-                <Info className="text-[var(--accent)] mt-0.5" size={18} />
-                <p className="text-xs text-[var(--text-muted)] font-medium leading-relaxed">Viewing active configuration for <strong>{selectedTeam?.team_name}</strong>. This record is currently operational.</p>
-             </div>
-          )}
+          {modalMode === 'view' ? (
+            <div className="space-y-6 animate-in fade-in duration-500 py-2">
+               <div className="grid grid-cols-1 gap-6">
+                  {/* Clean text-based layout without boxes */}
+                  <div className="space-y-5">
+                    <div className="border-b border-[var(--border-color)] pb-4">
+                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Team Designation</label>
+                      <div className="text-[var(--text-main)] font-black text-xl uppercase tracking-tight">
+                        {selectedTeam?.team_name}
+                      </div>
+                    </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Designation</label>
-                <input {...register('team_name', { required: 'Team name is required' })} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder={`e.g. ${role} Unit Alpha`} />
-              </div>
-              <div className="relative">
-                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Selection</label>
-                <div className="relative">
-                  <select {...register('product_name')} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)] appearance-none cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
-                    <option value="">Select Available Product</option>
-                    {availableItems.map(p => <option key={p.product_id} value={p.product_name}>{p.product_name}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
+                    <div className="border-b border-[var(--border-color)] pb-4">
+                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Associated Product</label>
+                      <div className="text-[var(--text-main)] font-bold text-base">
+                        {selectedTeam?.product_name || 'No Product Linked'}
+                      </div>
+                    </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="relative">
-                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Lead</label>
-                <div className="relative">
-                  <select {...register('team_lead_id')} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)] appearance-none cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
-                    <option value="">Select Team Lead</option>
-                    {allUsers.filter(u => u.role_name === 'Designer').map(u => <option key={u.user_id} value={u.user_id}>{u.full_name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="relative">
-                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Client Handler</label>
-                <div className="relative">
-                  <select {...register('client_handler_id')} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)] appearance-none cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
-                    <option value="">Select Client Handler</option>
-                    {allUsers.filter(u => u.role_name === 'Designer').map(u => <option key={u.user_id} value={u.user_id}>{u.full_name}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
+                    <div className="border-b border-[var(--border-color)] pb-4">
+                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Team Lead</label>
+                      <div className="text-[var(--text-main)] font-bold text-[14px]">
+                        {allUsers.find(u => u.user_id === selectedTeam?.team_lead_id)?.full_name || 'Not Assigned'}
+                      </div>
+                    </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Description</label>
-                <textarea {...register('product_description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-3 outline-none focus:border-[var(--accent)] transition-all text-[13px] resize-none disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder="Key product requirements..." />
-              </div>
-              <div>
-                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Description</label>
-                <textarea {...register('description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-3 outline-none focus:border-[var(--accent)] transition-all text-[13px] resize-none disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder="Operational directives..." />
-              </div>
-            </div>
+                    <div className="border-b border-[var(--border-color)] pb-4">
+                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Client Handler</label>
+                      <div className="text-[var(--text-main)] font-bold text-[14px]">
+                        {allUsers.find(u => u.user_id === selectedTeam?.client_handler_id)?.full_name || 'Not Assigned'}
+                      </div>
+                    </div>
 
-            <div>
-               <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1 flex items-center gap-2"><Users size={12} /> Personnel Selection</label>
-               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl max-h-48 overflow-y-auto custom-scrollbar">
-                 {allUsers.filter(u => u.role_name === 'Designer').map(u => {
-                   const isSelected = selectedMembers.includes(u.user_id);
-                   return (
-                     <div 
-                       key={u.user_id} 
-                       onClick={() => toggleSelection(u.user_id, selectedMembers, setSelectedMembers)} 
-                       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all border ${isSelected ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm' : 'bg-[var(--bg-card)] text-[var(--text-main)] border-[var(--border-color)] hover:border-[var(--accent)] cursor-pointer'}`}
-                     >
-                       <div className={`w-4 h-4 rounded flex items-center justify-center border ${isSelected ? 'bg-white/20 border-white/30' : 'bg-[var(--input-bg)] border-[var(--border-color)]'}`}>
-                         {isSelected && <Check size={10} className="text-white" />}
+                    <div className="border-b border-[var(--border-color)] pb-4">
+                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Product Description</label>
+                      <div className="text-[var(--text-main)] text-[14px] leading-relaxed rich-text-content mt-2">
+                        <div dangerouslySetInnerHTML={{ __html: selectedTeam?.product_description || '<span class="italic opacity-50">No description provided</span>' }} />
+                      </div>
+                    </div>
+
+                    <div className="border-b border-[var(--border-color)] pb-4">
+                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Team Directives</label>
+                      <div className="text-[var(--text-main)] text-[14px] leading-relaxed rich-text-content mt-2">
+                        <div dangerouslySetInnerHTML={{ __html: selectedTeam?.description || '<span class="italic opacity-50">No directives provided</span>' }} />
+                      </div>
+                    </div>
+
+                    <div>
+                       <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 flex items-center gap-2"><Users size={12} /> Active Personnel</label>
+                       <div className="flex flex-wrap gap-2">
+                         {selectedTeam?.member_ids?.map(id => {
+                            const user = allUsers.find(u => u.user_id === id);
+                            return user ? (
+                              <span key={id} className="px-3 py-1.5 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-lg text-[11px] font-black uppercase tracking-tight text-[var(--accent)]">
+                                {user.full_name}
+                              </span>
+                            ) : null;
+                         })}
+                         {(!selectedTeam?.member_ids || selectedTeam.member_ids.length === 0) && (
+                            <span className="text-[11px] text-[var(--text-dim)] italic">No personnel assigned to this team.</span>
+                         )}
                        </div>
-                       <span className={`text-[10px] font-black uppercase tracking-tight truncate ${isSelected ? 'text-white' : 'text-[var(--text-main)]'}`}>{u.full_name}</span>
-                     </div>
-                   );
-                 })}
+                    </div>
+                  </div>
                </div>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Designation</label>
+                  <input {...register('team_name', { required: 'Team name is required' })} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] text-[var(--text-main)]" placeholder={`e.g. ${role} Unit Alpha`} />
+                </div>
+                <div className="relative">
+                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Selection</label>
+                  <div className="relative">
+                    <select {...register('product_name')} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] text-[var(--text-main)] appearance-none cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
+                      <option value="">Select Available Product</option>
+                      {availableItems.map(p => <option key={p.product_id} value={p.product_name}>{p.product_name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-            {modalMode !== 'view' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="relative">
+                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Lead</label>
+                  <div className="relative">
+                    <select {...register('team_lead_id')} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] text-[var(--text-main)] appearance-none cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
+                      <option value="">Select Team Lead</option>
+                      {allUsers.filter(u => u.role_name === 'Designer').map(u => <option key={u.user_id} value={u.user_id}>{u.full_name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="relative">
+                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Client Handler</label>
+                  <div className="relative">
+                    <select {...register('client_handler_id')} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] text-[var(--text-main)] appearance-none cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
+                      <option value="">Select Client Handler</option>
+                      {allUsers.filter(u => u.role_name === 'Designer').map(u => <option key={u.user_id} value={u.user_id}>{u.full_name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Product Description</label>
+                  <Controller
+                    name="product_description"
+                    control={control}
+                    render={({ field }) => (
+                      <ReactQuill 
+                        theme="snow"
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        modules={quillModules}
+                        placeholder="Key product requirements..."
+                      />
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Team Description</label>
+                  <Controller
+                    name="description"
+                    control={control}
+                    render={({ field }) => (
+                      <ReactQuill 
+                        theme="snow"
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        modules={quillModules}
+                        placeholder="Operational directives..."
+                      />
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div>
+                 <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1 flex items-center gap-2"><Users size={12} /> Personnel Selection</label>
+                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl max-h-48 overflow-y-auto custom-scrollbar">
+                   {allUsers.filter(u => u.role_name === 'Designer').map(u => {
+                     const isSelected = selectedMembers.includes(u.user_id);
+                     return (
+                       <div 
+                         key={u.user_id} 
+                         onClick={() => toggleSelection(u.user_id, selectedMembers, setSelectedMembers)} 
+                         className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all border ${isSelected ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm' : 'bg-[var(--bg-card)] text-[var(--text-main)] border-[var(--border-color)] hover:border-[var(--accent)] cursor-pointer'}`}
+                       >
+                         <div className={`w-4 h-4 rounded flex items-center justify-center border ${isSelected ? 'bg-white/20 border-white/30' : 'bg-[var(--input-bg)] border-[var(--border-color)]'}`}>
+                           {isSelected && <Check size={10} className="text-white" />}
+                         </div>
+                         <span className={`text-[10px] font-black uppercase tracking-tight truncate ${isSelected ? 'text-white' : 'text-[var(--text-main)]'}`}>{u.full_name}</span>
+                       </div>
+                     );
+                   })}
+                 </div>
+              </div>
+
               <div className="pt-2">
                 <button disabled={isSubmitting} type="submit" className="btn-primary w-full py-3.5 shadow-lg flex items-center justify-center gap-2 text-[13px]" style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}>
                   {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : modalMode === 'create' ? `ADD ${role.toUpperCase()} TEAM` : `UPDATE ${role.toUpperCase()} TEAM`}
                 </button>
               </div>
-            )}
-          </form>
+            </form>
+          )}
         </div>
       </Modal>
     </div>

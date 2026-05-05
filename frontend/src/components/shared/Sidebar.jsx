@@ -15,7 +15,9 @@ import {
   Layers,
   PenTool,
   Zap,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose }) => {
@@ -130,7 +132,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
         </button>
 
         {/* LOGO */}
-        <div className="p-5.75 flex justify-center" style={{ borderBottom: '1px solid var(--border-color)' }}>
+        <div className="p-4 flex justify-center" style={{ borderBottom: '1px solid var(--border-color)' }}>
           <div className="flex items-center gap-2">
             <span className="text-[22px] font-black uppercase tracking-[0.2em] text-[var(--text-main)]">
               CRUD<span className="text-[var(--accent)]">EX</span>
@@ -335,18 +337,31 @@ const Sidebar = ({ role, isOpen, onClose }) => {
 
       </div>
 
-      {/* SIGN OUT */}
-      <div className="py-5 px-8" style={{ borderTop: '1px solid var(--border-color)' }}>
-        <button
-          onClick={logout}
-          className="w-full flex items-center gap-3 py-2 transition-all text-[10px] font-black uppercase tracking-[0.2em] group"
-          style={{ color: 'var(--text-secondary)' }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
-        >
-          <LogOut size={14} className="opacity-50 group-hover:opacity-100 transition-opacity" />
-          <span>Sign Out</span>
-        </button>
+      {/* FOOTER ACTIONS */}
+      <div className="py-5 px-6" style={{ borderTop: '1px solid var(--border-color)', background: 'var(--bg-elevated)' }}>
+        <div className="flex items-center justify-between gap-4">
+          <button
+            onClick={logout}
+            className="flex-1 flex items-center gap-3 py-2.5 transition-all text-[10px] font-black uppercase tracking-[0.2em] group"
+            style={{ color: 'var(--text-secondary)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
+          >
+            <LogOut size={16} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+            <span>Sign Out</span>
+          </button>
+
+          <button
+            onClick={toggleTheme}
+            className="p-2.5 rounded-xl transition-all border border-[var(--border-color)] bg-[var(--bg-workspace)] group shadow-sm"
+            style={{ color: 'var(--accent)' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+          >
+            {theme === 'light' ? <Moon size={18} className="fill-current" /> : <Sun size={18} className="fill-current" />}
+          </button>
+        </div>
       </div>
       </aside>
     </>

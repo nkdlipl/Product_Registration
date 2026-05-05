@@ -34,7 +34,7 @@ const DashboardLayout = () => {
           isOpen={isSidebarOpen} 
           onClose={() => setIsSidebarOpen(false)} 
         />
-        <main className={`flex-1 md:ml-64 p-4 md:p-6 pt-24 md:pt-20 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]`}>
+        <main className={`flex-1 md:ml-64 px-4 md:px-8 py-0 pt-[4.2rem] md:pt-[4.2rem] min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]`}>
           <Suspense fallback={<PageLoader />}>
             <Outlet />
           </Suspense>

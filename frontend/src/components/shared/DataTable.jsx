@@ -17,11 +17,11 @@ const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentP
           <thead>
             <tr style={{ background: 'var(--grad-header)' }}>
               {columns.map((col) => (
-                <th key={col.key} className="px-3 md:px-6 py-4 text-[10px] md:text-[12px] font-bold uppercase tracking-[0.07em]" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+                <th key={col.key} className="px-3 md:px-4 py-2.5 text-[10px] md:text-[12px] font-bold uppercase tracking-[0.07em]" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
                   {col.label}
                 </th>
               ))}
-              <th className="px-6 py-4 text-[12px] font-bold uppercase tracking-[0.07em] text-right" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+              <th className="px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.07em] text-right" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
                 Actions
               </th>
             </tr>
@@ -30,18 +30,17 @@ const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentP
             {data.map((row, index) => (
               <tr
                 key={row.id || index}
-                className="transition-colors duration-200"
-                style={{ borderBottom: '1px solid var(--border-color)' }}
+                className="transition-colors duration-200 group"
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = ''; }}
               >
                 {columns.map((col) => (
-                  <td key={col.key} className="px-3 md:px-6 py-4 text-[12px] md:text-[14px] font-medium" style={{ color: 'var(--text-main)' }}>
+                  <td key={col.key} className="px-3 md:px-4 py-2.5 text-[12px] md:text-[14px] font-medium" style={{ color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)' }}>
                     {col.render ? col.render(row) : row[col.key]}
                   </td>
                 ))}
 
-                <td className="px-3 md:px-6 py-4 text-right">
+                <td className="px-3 md:px-4 py-2.5 text-right" style={{ borderBottom: '1px solid var(--border-color)' }}>
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => onView(row)}

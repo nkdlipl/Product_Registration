@@ -21,7 +21,7 @@ const Breadcrumbs = ({ items = [] }) => {
           <li key={index}>
             <div className="flex items-center">
               {index > 0 && (
-                <ChevronRight size={16} strokeWidth={2} style={{ color: 'var(--border-color)', margin: '0 4px' }} />
+                <ChevronRight size={12} strokeWidth={4} className="text-[var(--text-muted)] mx-2 opacity-70" />
               )}
               {item.active ? (
                 <span

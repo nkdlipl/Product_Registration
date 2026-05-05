@@ -4,10 +4,12 @@ import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import CategoryModal from '../../components/shared/CategoryModal';
 import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download, X, Zap } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import { getCategories } from '../../api/categories';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const ProductListPage = () => {
   const [products, setProducts] = useState([]);
@@ -55,7 +57,17 @@ const ProductListPage = () => {
     return () => clearInterval(timer);
   }, [modalMode, selectedProduct, activeImageIdx]);
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm();
+
+  const quillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      ['link'],
+      [{ 'align': [] }],
+      ['clean']
+    ],
+  };
   const watchedCategory = watch('category');
   const watchedSubCategory = watch('sub_category');
 
@@ -160,13 +172,16 @@ const ProductListPage = () => {
         formData.append('specification', specJson);
       }
 
+      // Append non-file fields first
       Object.keys(data).forEach(key => {
-        if (key === 'image' || key === 'document') {
-          if (data[key] && data[key][0]) formData.append(key, data[key][0]);
-        } else if (key !== 'specification' && key !== 'fuel_types' && key !== 'nozzles' && key !== 'dispensing') {
+        if (key !== 'image' && key !== 'document' && key !== 'specification' && key !== 'fuel_types' && key !== 'nozzles' && key !== 'dispensing') {
           formData.append(key, data[key]);
         }
       });
+
+      // Append files last
+      if (data.image && data.image[0]) formData.append('image', data.image[0]);
+      if (data.document && data.document[0]) formData.append('document', data.document[0]);
 
       const validFaqs = faqRows.filter(f => f.question.trim() !== '');
       formData.append('faqs', JSON.stringify(validFaqs));
@@ -196,7 +211,17 @@ const ProductListPage = () => {
     setCurrentCategoryObject(null);
     setSpecRows([{ key: '', value: '' }]);
     setFaqRows([{ question: '', answer: '' }]);
-    reset({ product_name: '', description: '', category: '', sub_category: '', specification: '', feature: '', fuel_types: [], nozzles: '', dispensing: '' });
+    reset({
+      product_name: '',
+      category: '',
+      sub_category: '',
+      company_name: '',
+      description: '',
+      unit_price: '',
+      specification: '',
+      feature: '',
+      faqs: '[]'
+    });
     setIsModalOpen(true);
   };
 
@@ -218,7 +243,7 @@ const ProductListPage = () => {
     const hardware = parseHardwareSpec(product.specification);
     setSpecRows(parseSpecRows(product.specification));
     setFaqRows(product.faqs && product.faqs.length > 0 ? product.faqs : [{ question: '', answer: '' }]);
-    const resetData = { product_name: product.product_name, description: product.description || '', category: product.category || '', sub_category: product.sub_category || '', feature: product.feature || '', fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', specification: hardware ? hardware.original_spec : product.specification };
+    const resetData = { product_name: product.product_name, company_name: product.company_name || '', description: product.description || '', category: product.category || '', sub_category: product.sub_category || '', feature: product.feature || '', fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', specification: hardware ? hardware.original_spec : product.specification };
     reset(resetData);
     setIsModalOpen(true);
   };
@@ -273,6 +298,7 @@ const ProductListPage = () => {
       )
     },
     { key: 'product_name', label: 'Product Name' },
+    { key: 'company_name', label: 'Company Name' },
     { key: 'created_at', label: 'Registration Date', render: (row) => new Date(row.created_at).toLocaleDateString() }
   ];
 
@@ -349,7 +375,9 @@ const ProductListPage = () => {
               <div className="p-6 flex-1 flex flex-col">
                 <div className="flex-1 space-y-3">
                   <h3 className="text-[17px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">{product.product_name}</h3>
-                  <p className="text-[13px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-3">{product.description || 'No detailed description available.'}</p>
+                  <p className="text-[13px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-3">
+                    {(product.description || 'No detailed description available.').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ')}
+                  </p>
                 </div>
                 <div className="flex items-center justify-between pt-6 mt-6 border-t border-[var(--border-color)]">
                   <div />
@@ -415,7 +443,12 @@ const ProductListPage = () => {
                   ))}
                 </div>
                 <div className="p-10">
-                  {activeTab === 'description' && ( <p className="text-[15px] text-[var(--text-main)] leading-relaxed font-medium opacity-80">{selectedProduct?.description || 'No description available.'}</p> )}
+                  {activeTab === 'description' && ( 
+                    <div 
+                      className="text-[15px] text-[var(--text-main)] leading-relaxed font-medium opacity-80 rich-text-content"
+                      dangerouslySetInnerHTML={{ __html: selectedProduct?.description || 'No description available.' }}
+                    /> 
+                  )}
                   {activeTab === 'specification' && (() => {
                     let specTableRows = parseSpecRows(selectedProduct?.specification);
                     if (specTableRows.length > 0 && specTableRows[0].key) {
@@ -424,8 +457,15 @@ const ProductListPage = () => {
                     return ( <div className="text-center py-10"><p className="text-[var(--text-dim)] font-black uppercase tracking-widest text-[11px]">No technical data</p></div> );
                   })()}
                   {activeTab === 'features' && (
-                    <div className="space-y-4">
-                      {selectedProduct?.feature ? selectedProduct.feature.split('\n').filter(f => f.trim()).map((feat, idx) => ( <div key={idx} className="flex items-center gap-4 p-5 rounded-2xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)]"><Check size={16} className="text-[var(--accent)]" /><p className="text-[14px] text-[var(--text-main)] font-bold tracking-wide">{feat.trim()}</p></div> )) : ( <p className="text-center text-[var(--text-dim)] font-black uppercase tracking-widest text-[11px] py-10">No specific features listed</p> )}
+                    <div className="space-y-4 rich-text-content">
+                      {selectedProduct?.feature ? (
+                        <div 
+                          className="text-[14px] text-[var(--text-main)] font-bold tracking-wide leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: selectedProduct.feature }}
+                        />
+                      ) : ( 
+                        <p className="text-center text-[var(--text-dim)] font-black uppercase tracking-widest text-[11px] py-10">No specific features listed</p> 
+                      )}
                     </div>
                   )}
                   {activeTab === 'documents' && (
@@ -449,82 +489,47 @@ const ProductListPage = () => {
                   <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
                     <div className="flex items-center gap-3 mb-4"><div className="w-1 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">General Information</h3></div>
                     <div className="space-y-5">
-                      <div><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Name</label><input {...register('product_name', { required: 'Name is required' })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all" placeholder="e.g. Industrial Dispenser X-1" /></div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                          <div className="space-y-2">
-                            <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Category</label>
-                            <div className="flex gap-2">
-                              <input 
-                                {...register('category', { required: 'Required' })} 
-                                readOnly 
-                                onClick={openCategoryModal} 
-                                className="flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] cursor-pointer outline-none focus:border-[var(--accent)] transition-all" 
-                                placeholder="Select Category" 
-                              />
-                              {/* <button type="button" onClick={openCategoryModal} className="p-3 bg-[var(--nav-hover)] text-[var(--accent)] rounded-xl border border-[var(--border-color)] hover:bg-[var(--accent)] hover:text-white transition-all">
-                                <Tag size={18} />
-                              </button> */}
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Sub Category</label>
-                            <div className="flex gap2">
-                              <input 
-                                {...register('sub_category')} 
-                                readOnly 
-                                onClick={openSubCategoryModal} 
-                                className={`flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none transition-all ${!watchedCategory ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer focus:border-[var(--accent)]'}`} 
-                                placeholder="Select Sub-Category" 
-                              />
-                              {/* <button 
-                                type="button" 
-                                disabled={!watchedCategory} 
-                                onClick={openSubCategoryModal} 
-                                className={`p-3 rounded-xl border border-[var(--border-color)] transition-all ${!watchedCategory ? 'bg-[var(--bg-workspace)]/50 text-[var(--text-dim)]' : 'bg-[var(--nav-hover)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white'}`}
-                              >
-                                <Plus size={18} />
-                              </button> */}
-                            </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+                        <div>
+                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Name</label>
+                          <input {...register('company_name')} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" placeholder="Brand or Manufacturer..." />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Name</label>
+                          <input {...register('product_name', { required: 'Name is required' })} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" placeholder="Enterprise Dispenser X-1..." />
+                          {errors.product_name && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase tracking-wider ml-1">{errors.product_name.message}</p>}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Category</label>
+                          <div className="flex gap-2">
+                            <input {...register('category', { required: 'Required' })} readOnly onClick={openCategoryModal} className="flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] cursor-pointer outline-none focus:border-[var(--accent)] transition-all" placeholder="Select Category" />
                           </div>
                         </div>
+                        <div className="space-y-2">
+                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Sub Category</label>
+                          <div className="flex gap-2">
+                            <input {...register('sub_category')} readOnly onClick={openSubCategoryModal} className={`flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none transition-all ${!watchedCategory ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer focus:border-[var(--accent)]'}`} placeholder="Select Sub-Category" />
+                          </div>
+                        </div>
+                      </div>
 
                       {(watchedCategory?.toLowerCase() === 'dispenser' || watchedSubCategory?.toLowerCase() === 'dispenser') && (
                         <div className="pt-2">
-                          <button
-                            type="button"
-                            onClick={() => setIsHardwareModalOpen(true)}
-                            className="w-full p-5 bg-gradient-to-r from-[var(--accent)] to-[var(--soft)] text-white rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all flex items-center justify-between group border border-white/10"
-                            style={{ boxShadow: '0 10px 20px -5px var(--border-glow)' }}
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="p-3 bg-white/10 rounded-xl backdrop-blur-md">
-                                <Activity className="text-white" size={24} />
-                              </div>
-                              <div className="text-left">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Dispenser Specification</p>
-                                <h4 className="text-[15px] font-black uppercase tracking-tight">Configure Dispenser Hardware</h4>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {(watch('fuel_types')?.length > 0 || watch('nozzles') || watch('dispensing')) && (
-                                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-300">
-                                  <Check size={12} strokeWidth={4} />
-                                  <span>Configured</span>
-                                </div>
-                              )}
-                              <ChevronRight size={20} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
-                            </div>
+                          <button type="button" onClick={() => setIsHardwareModalOpen(true)} className="w-full p-5 bg-gradient-to-r from-[var(--accent)] to-[var(--soft)] text-white rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all flex items-center justify-between group border border-white/10" style={{ boxShadow: '0 10px 20px -5px var(--border-glow)' }}>
+                            <div className="flex items-center gap-4"><div className="p-3 bg-white/10 rounded-xl backdrop-blur-md"><Activity className="text-white" size={24} /></div><div className="text-left"><p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Dispenser Specification</p><h4 className="text-[15px] font-black uppercase tracking-tight">Configure Hardware</h4></div></div>
+                            <div className="flex items-center gap-3">{(watch('fuel_types')?.length > 0 || watch('nozzles') || watch('dispensing')) && ( <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-300"><Check size={12} strokeWidth={4} /><span>Configured</span></div> )}<ChevronRight size={20} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" /></div>
                           </button>
                         </div>
                       )}
                     </div>
                   </div>
+
                   <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
                     <div className="flex items-center gap-3 mb-4"><div className="w-1 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Asset Management</h3></div>
-                    
                     {modalMode === 'edit' && (
                       <div className="space-y-6">
-                        {/* Existing Images */}
                         {((selectedProduct?.images && selectedProduct.images.length > 0) || selectedProduct?.image_url) && (
                           <div className="space-y-3">
                             <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Gallery</label>
@@ -533,47 +538,28 @@ const ProductListPage = () => {
                                 <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-[var(--border-color)] group bg-[var(--bg-workspace)]/50">
                                   <img src={getFullUrl(url)} alt="" className="w-full h-full object-contain p-2" />
                                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                                    <button 
-                                      type="button" 
-                                      onClick={() => handleRemoveAsset(url, 'images')} 
-                                      className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"
-                                    >
-                                      <Trash2 size={16} />
-                                    </button>
+                                    <button type="button" onClick={() => handleRemoveAsset(url, 'images')} className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"><Trash2 size={16} /></button>
                                   </div>
                                 </div>
                               ))}
                             </div>
                           </div>
                         )}
-
-                        {/* Existing Documents */}
                         {((selectedProduct?.documents && selectedProduct.documents.length > 0) || selectedProduct?.document_url) && (
                           <div className="space-y-3">
                             <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Documents</label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {(selectedProduct.documents && selectedProduct.documents.length > 0 ? selectedProduct.documents : [selectedProduct.document_url]).filter(Boolean).map((url, idx) => (
                                 <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] rounded-xl group hover:border-[var(--accent)]/50 transition-all">
-                                  <div className="flex items-center gap-3 truncate">
-                                    <FileText size={16} className="text-[var(--accent)]" />
-                                    <span className="text-[11px] font-bold text-[var(--text-main)] truncate uppercase tracking-wider">{url.split('/').pop()}</span>
-                                  </div>
-                                  <button 
-                                    type="button" 
-                                    onClick={() => handleRemoveAsset(url, 'documents')} 
-                                    className="p-1.5 text-rose-500/50 hover:text-rose-500 transition-colors"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
+                                  <div className="flex items-center gap-3 truncate"><FileText size={16} className="text-[var(--accent)]" /><span className="text-[11px] font-bold text-[var(--text-main)] truncate uppercase tracking-wider">{url.split('/').pop()}</span></div>
+                                  <button type="button" onClick={() => handleRemoveAsset(url, 'documents')} className="p-1.5 text-rose-500/50 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
                                 </div>
                               ))}
                             </div>
                           </div>
                         )}
-                        <div className="h-px bg-[var(--border-color)]" />
                       </div>
                     )}
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Upload New Image</label><div className="relative group"><input type="file" {...register('image')} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" /><div className="w-full bg-[var(--input-bg)] border border-dashed border-[var(--text-dim)] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5 transition-all"><div className="p-3 bg-[var(--bg-workspace)] rounded-xl text-[var(--accent)]"><Plus size={24} /></div><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Select Visual Asset</p></div></div></div>
                       <div className="space-y-3"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Upload New Datasheet</label><div className="relative group"><input type="file" {...register('document')} accept=".pdf,.doc,.docx,.xls,.xlsx" className="absolute inset-0 opacity-0 cursor-pointer z-10" /><div className="w-full bg-[var(--input-bg)] border border-dashed border-[var(--text-dim)] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5 transition-all"><div className="p-3 bg-[var(--bg-workspace)] rounded-xl text-[var(--accent)]"><FileText size={24} /></div><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Select Datasheet</p></div></div></div>
@@ -581,130 +567,52 @@ const ProductListPage = () => {
                   </div>
 
                   <div className="p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-[32px]">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3"><div className="w-2 h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-lg font-black text-[var(--text-main)] uppercase tracking-widest">FAQs</h3></div>
-                      <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest opacity-60">{faqRows.filter(f => f.question.trim()).length} Items</span>
-                    </div>
+                    <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><div className="w-2 h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-lg font-black text-[var(--text-main)] uppercase tracking-widest">FAQs</h3></div></div>
                     <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
                       {faqRows.map((faq, idx) => (
                         <div key={idx} className="p-5 rounded-2xl bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] space-y-4 group">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">Question {idx + 1}</span>
-                            <button
-                              type="button"
-                              onClick={() => setFaqRows(faqRows.filter((_, i) => i !== idx))}
-                              disabled={faqRows.length === 1}
-                              className="text-[var(--text-dim)] hover:text-rose-500 disabled:opacity-10 transition-colors"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                          <input
-                            type="text"
-                            value={faq.question}
-                            onChange={(e) => {
-                              const updated = [...faqRows];
-                              updated[idx].question = e.target.value;
-                              setFaqRows(updated);
-                            }}
-                            placeholder="Enter question here..."
-                            className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold"
-                          />
-                          <textarea
-                            value={faq.answer}
-                            onChange={(e) => {
-                              const updated = [...faqRows];
-                              updated[idx].answer = e.target.value;
-                              setFaqRows(updated);
-                            }}
-                            placeholder="Enter answer here..."
-                            rows={2}
-                            className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-muted)] outline-none focus:border-[var(--accent)] transition-all resize-none font-medium"
-                          />
+                          <div className="flex items-center justify-between"><span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">Question {idx + 1}</span><button type="button" onClick={() => setFaqRows(faqRows.filter((_, i) => i !== idx))} disabled={faqRows.length === 1} className="text-[var(--text-dim)] hover:text-rose-500 disabled:opacity-10 transition-colors"><Trash2 size={16} /></button></div>
+                          <input type="text" value={faq.question} onChange={(e) => { const updated = [...faqRows]; updated[idx].question = e.target.value; setFaqRows(updated); }} placeholder="Enter question here..." className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" />
+                          <textarea value={faq.answer} onChange={(e) => { const updated = [...faqRows]; updated[idx].answer = e.target.value; setFaqRows(updated); }} placeholder="Enter answer here..." rows={2} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-muted)] outline-none focus:border-[var(--accent)] transition-all resize-none font-medium" />
                         </div>
                       ))}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setFaqRows([...faqRows, { question: '', answer: '' }])}
-                      className="flex items-center gap-2 text-[var(--accent)] text-[11px] font-black uppercase tracking-[0.2em] hover:opacity-80 transition-all ml-1"
-                    >
-                      <Plus size={16} strokeWidth={3} />
-                      <span>Add New FAQ Item</span>
-                    </button>
+                    <button type="button" onClick={() => setFaqRows([...faqRows, { question: '', answer: '' }])} className="flex items-center gap-2 text-[var(--accent)] text-[11px] font-black uppercase tracking-[0.2em] hover:opacity-80 transition-all ml-1"><Plus size={16} strokeWidth={3} /><span>Add New FAQ Item</span></button>
                   </div>
                 </div>
+
                 <div className="space-y-6">
-                   <div className="p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-[32px]">
+                  <div className="p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-[32px]">
                     <div className="flex items-center gap-3 mb-4"><div className="w-2 h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Technical Specifications</h3></div>
                     <div className="space-y-5">
-                      <div><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Description</label><textarea {...register('description')} rows={3} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all resize-none" placeholder="Primary operational description..." /></div>
-                      <div><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Key Features</label><textarea {...register('feature')} rows={4} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all resize-none" placeholder="• High durability&#10;• Weather resistant&#10;• Easy installation..." /></div>
-                      
+                      <div className="space-y-2"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Product Description</label><Controller name="description" control={control} render={({ field }) => ( <ReactQuill theme="snow" value={field.value || ''} onChange={field.onChange} modules={quillModules} readOnly={modalMode === 'view'} placeholder="Primary operational description..." /> )} /></div>
+                      <div className="space-y-2"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Key Features</label><Controller name="feature" control={control} render={({ field }) => ( <ReactQuill theme="snow" value={field.value || ''} onChange={field.onChange} modules={quillModules} readOnly={modalMode === 'view'} placeholder="• High durability&#10;• Weather resistant..." /> )} /></div>
                       <div className="pt-4 space-y-4">
-                        <div className="flex items-center justify-between ml-1">
-                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">Product Specifications</label>
-                          <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest opacity-60">{specRows.filter(r => r.key.trim()).length} Rows Defined</span>
-                        </div>
+                        <div className="flex items-center justify-between ml-1"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">Product Specifications</label></div>
                         <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-workspace)]/20">
-                          {/* Table Header */}
-                          <div className="grid grid-cols-[1fr_1fr_48px] bg-[var(--nav-hover)] border-b border-[var(--border-color)]">
-                            <div className="px-5 py-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Attribute</div>
-                            <div className="px-5 py-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest border-l border-[var(--border-color)]">Value</div>
-                            <div />
-                          </div>
-                          {/* Table Rows */}
+                          <div className="grid grid-cols-[1fr_1fr_48px] bg-[var(--nav-hover)] border-b border-[var(--border-color)]"><div className="px-5 py-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Attribute</div><div className="px-5 py-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest border-l border-[var(--border-color)]">Value</div><div /></div>
                           <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                             {specRows.map((row, idx) => (
                               <div key={idx} className="grid grid-cols-[1fr_1fr_48px] border-b border-[var(--border-color)] last:border-b-0 group hover:bg-[var(--accent)]/5 transition-colors">
-                                <input
-                                  type="text"
-                                  value={row.key}
-                                  onChange={(e) => {
-                                    const updated = [...specRows];
-                                    updated[idx].key = e.target.value;
-                                    setSpecRows(updated);
-                                  }}
-                                  placeholder="e.g. Item Type"
-                                  className="px-5 py-4 text-[13px] font-bold bg-transparent outline-none text-[var(--text-main)] placeholder-[var(--text-dim)]"
-                                />
-                                <input
-                                  type="text"
-                                  value={row.value}
-                                  onChange={(e) => {
-                                    const updated = [...specRows];
-                                    updated[idx].value = e.target.value;
-                                    setSpecRows(updated);
-                                  }}
-                                  placeholder="e.g. Camera Bracket"
-                                  className="px-5 py-4 text-[13px] font-bold bg-transparent outline-none text-[var(--text-muted)] placeholder-[var(--text-dim)] border-l border-[var(--border-color)]"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setSpecRows(specRows.filter((_, i) => i !== idx))}
-                                  disabled={specRows.length === 1}
-                                  className="flex items-center justify-center text-[var(--text-dim)] hover:text-rose-500 disabled:opacity-10 transition-colors"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
+                                <input type="text" value={row.key} onChange={(e) => { const updated = [...specRows]; updated[idx].key = e.target.value; setSpecRows(updated); }} placeholder="e.g. Item Type" className="px-5 py-4 text-[13px] font-bold bg-transparent outline-none text-[var(--text-main)] placeholder-[var(--text-dim)]" />
+                                <input type="text" value={row.value} onChange={(e) => { const updated = [...specRows]; updated[idx].value = e.target.value; setSpecRows(updated); }} placeholder="e.g. Camera Bracket" className="px-5 py-4 text-[13px] font-bold bg-transparent outline-none text-[var(--text-muted)] placeholder-[var(--text-dim)] border-l border-[var(--border-color)]" />
+                                <button type="button" onClick={() => setSpecRows(specRows.filter((_, i) => i !== idx))} disabled={specRows.length === 1} className="flex items-center justify-center text-[var(--text-dim)] hover:text-rose-500 disabled:opacity-10 transition-colors"><Trash2 size={16} /></button>
                               </div>
                             ))}
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setSpecRows([...specRows, { key: '', value: '' }])}
-                          className="flex items-center gap-2 text-[var(--accent)] text-[11px] font-black uppercase tracking-[0.2em] hover:opacity-80 transition-all ml-1"
-                        >
-                          <Plus size={16} strokeWidth={3} />
-                          <span>Add Specification Row</span>
-                        </button>
+                        <button type="button" onClick={() => setSpecRows([...specRows, { key: '', value: '' }])} className="flex items-center gap-2 text-[var(--accent)] text-[11px] font-black uppercase tracking-[0.2em] hover:opacity-80 transition-all ml-1"><Plus size={16} strokeWidth={3} /><span>Add Specification Row</span></button>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="pt-6 flex justify-end gap-4"><button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest hover:text-[var(--text-main)] transition-colors">Abort</button><button disabled={isSubmitting} type="submit" className="btn-primary px-12 py-4 shadow-xl text-[12px] uppercase tracking-[0.2em]" style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}>{isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (modalMode === 'create' ? 'Add Product' : 'Commit Changes')}</button></div>
+              <div className="pt-8 flex justify-end gap-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest hover:text-[var(--text-main)] transition-colors">Abort</button>
+                <button disabled={isSubmitting} type="submit" className="btn-primary px-12 py-4 shadow-xl text-[12px] uppercase tracking-[0.2em]" style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}>
+                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (modalMode === 'create' ? 'Add Product' : 'Commit Changes')}
+                </button>
+              </div>
             </form>
           )}
         </div>

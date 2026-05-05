@@ -15,6 +15,8 @@ const CustomerListPage = () => {
   const [modalMode, setModalMode] = useState('create');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [techContacts, setTechContacts] = useState([{ person: '', mobile: '' }]);
+  const [salesContacts, setSalesContacts] = useState([{ person: '', mobile: '' }]);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
 
@@ -37,17 +39,25 @@ const CustomerListPage = () => {
   const filteredCustomers = customers.filter(customer =>
     customer.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.customer_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    customer.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.technical_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    customer.sales_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
+      const payload = {
+        ...data,
+        technical_contacts: techContacts.filter(c => c.person.trim()),
+        sales_contacts: salesContacts.filter(c => c.person.trim())
+      };
+
       if (modalMode === 'create') {
-        await createCustomer(data);
+        await createCustomer(payload);
         toast.success('Customer added successfully');
       } else {
-        await updateCustomer(selectedCustomer.customer_id, data);
+        await updateCustomer(selectedCustomer.customer_id, payload);
         toast.success('Customer updated successfully');
       }
       setIsModalOpen(false);
@@ -64,14 +74,14 @@ const CustomerListPage = () => {
     setSelectedCustomer(null);
     reset({
       customer_code: '',
-      customer_name: '',
+      first_name: '',
+      middle_name: '',
+      last_name: '',
       company_name: '',
       company_address: '',
+      billing_address: '',
+      shipping_address: '',
       customer_site_location: '',
-      technical_contact_person: '',
-      technical_contact_mobile: '',
-      accounts_contact_person: '',
-      accounts_contact_mobile: '',
       udyam_aadhar_no: '',
       email: '',
       city: '',
@@ -81,6 +91,8 @@ const CustomerListPage = () => {
       gst_no: '',
       status: 'Active'
     });
+    setTechContacts([{ person: '', mobile: '' }]);
+    setSalesContacts([{ person: '', mobile: '' }]);
     setIsModalOpen(true);
   };
 
@@ -88,6 +100,8 @@ const CustomerListPage = () => {
     setModalMode('edit');
     setSelectedCustomer(customer);
     reset(customer);
+    setTechContacts(customer.technical_contacts?.length > 0 ? customer.technical_contacts : [{ person: '', mobile: '' }]);
+    setSalesContacts(customer.sales_contacts?.length > 0 ? customer.sales_contacts : [{ person: '', mobile: '' }]);
     setIsModalOpen(true);
   };
 
@@ -95,6 +109,8 @@ const CustomerListPage = () => {
     setModalMode('view');
     setSelectedCustomer(customer);
     reset(customer);
+    setTechContacts(customer.technical_contacts?.length > 0 ? customer.technical_contacts : [{ person: '', mobile: '' }]);
+    setSalesContacts(customer.sales_contacts?.length > 0 ? customer.sales_contacts : [{ person: '', mobile: '' }]);
     setIsModalOpen(true);
   };
 
@@ -184,209 +200,471 @@ const CustomerListPage = () => {
         title={modalMode === 'create' ? 'Register New Customer' : modalMode === 'edit' ? 'Update Customer Details' : 'Customer Profile'}
         maxWidth="max-w-6xl"
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
-            {/* Primary Details */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-                <Hash size={16} className="text-[var(--accent)]" />
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Identification & Company</h3>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Customer Code</label>
-                  <input
-                    {...register('customer_code', { required: 'Code is required' })}
-                    disabled={modalMode === 'view'}
-                    className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                    placeholder="CUST-001"
-                  />
-                  {errors.customer_code && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.customer_code.message}</p>}
+        {modalMode === 'view' ? (
+          <div className="space-y-6 animate-in fade-in duration-500 py-4">
+            <div className="grid grid-cols-1 gap-6">
+              {/* Identification & Company */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
+                  <Hash size={16} className="text-[var(--accent)]" />
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Identification & Company</h3>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Udyam Aadhar No</label>
-                  <input
-                    {...register('udyam_aadhar_no')}
-                    disabled={modalMode === 'view'}
-                    className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                    placeholder="UDYAM-XX-00-0000000"
-                  />
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Customer Code</label>
+                  <div className="text-[var(--text-main)] font-black text-lg uppercase tracking-tight">
+                    {selectedCustomer?.customer_code}
+                  </div>
+                </div>
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Full Name</label>
+                  <div className="text-[var(--text-main)] font-bold text-base">
+                    {[selectedCustomer?.first_name, selectedCustomer?.middle_name, selectedCustomer?.last_name].filter(Boolean).join(' ')}
+                  </div>
+                </div>
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Company Name</label>
+                  <div className="text-[var(--text-main)] font-bold text-base">
+                    {selectedCustomer?.company_name}
+                  </div>
+                </div>
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">GST Number</label>
+                  <div className="text-[var(--text-main)] font-bold text-[14px]">
+                    {selectedCustomer?.gst_no || 'Not Provided'}
+                  </div>
+                </div>
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Udyam Aadhar No</label>
+                  <div className="text-[var(--text-main)] font-bold text-[14px]">
+                    {selectedCustomer?.udyam_aadhar_no || 'Not Provided'}
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Customer Name</label>
-                <input
-                  {...register('customer_name', { required: 'Name is required' })}
-                  disabled={modalMode === 'view'}
-                  className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                  placeholder="John Doe"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Name</label>
-                <input
-                  {...register('company_name', { required: 'Company name is required' })}
-                  disabled={modalMode === 'view'}
-                  className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                  placeholder="Acme Corp"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">GST Number</label>
-                <input
-                  {...register('gst_no')}
-                  disabled={modalMode === 'view'}
-                  className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                  placeholder="27AAAAA0000A1Z5"
-                />
-              </div>
-
-              <div className="space-y-4 pt-4">
+              {/* Address & Location */}
+              <div className="space-y-5">
                 <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
                   <MapPin size={16} className="text-[var(--accent)]" />
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Address & Location</h3>
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Address & Location</h3>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Address</label>
-                  <textarea
-                    {...register('company_address')}
-                    disabled={modalMode === 'view'}
-                    rows={2}
-                    className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all resize-none placeholder:text-[var(--text-dim)]"
-                    placeholder="Enter full address..."
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">City</label>
-                    <input
-                      {...register('city')}
-                      disabled={modalMode === 'view'}
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">State</label>
-                    <input
-                      {...register('state')}
-                      disabled={modalMode === 'view'}
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                    />
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Billing Address</label>
+                  <div className="text-[var(--text-main)] text-[14px] leading-relaxed">
+                    {selectedCustomer?.billing_address || 'Not Provided'}
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Contact Persons Section */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-                <Briefcase size={16} className="text-[var(--accent)]" />
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Contact Personnel</h3>
-              </div>
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Shipping Address</label>
+                  <div className="text-[var(--text-main)] text-[14px] leading-relaxed">
+                    {selectedCustomer?.shipping_address || 'Not Provided'}
+                  </div>
+                </div>
 
-              {/* Technical Contact */}
-              <div className="bg-[var(--nav-hover)] p-5 rounded-2xl border border-[var(--border-color)] space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <PenTool size={14} className="text-[var(--text-dim)]" />
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Technical Contact</h4>
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Company Address</label>
+                  <div className="text-[var(--text-main)] text-[14px] leading-relaxed">
+                    {selectedCustomer?.company_address || 'Not Provided'}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1 opacity-60">Name</label>
-                  <input
-                    {...register('technical_contact_person')}
-                    disabled={modalMode === 'view'}
-                    className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1 opacity-60">Mobile No</label>
-                  <input
-                    {...register('technical_contact_mobile')}
-                    disabled={modalMode === 'view'}
-                    className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                  />
-                </div>
-              </div>
 
-              {/* Accounts Contact */}
-              <div className="bg-[var(--nav-hover)] p-5 rounded-2xl border border-[var(--border-color)] space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <CreditCard size={14} className="text-[var(--text-dim)]" />
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Accounts Contact</h4>
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">City</label>
+                  <div className="text-[var(--text-main)] font-bold text-[13px]">{selectedCustomer?.city || '-'}</div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1 opacity-60">Name</label>
-                  <input
-                    {...register('accounts_contact_person')}
-                    disabled={modalMode === 'view'}
-                    className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                  />
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">State</label>
+                  <div className="text-[var(--text-main)] font-bold text-[13px]">{selectedCustomer?.state || '-'}</div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1 opacity-60">Mobile No</label>
-                  <input
-                    {...register('accounts_contact_mobile')}
-                    disabled={modalMode === 'view'}
-                    className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                  />
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Pincode</label>
+                  <div className="text-[var(--text-main)] font-bold text-[13px]">{selectedCustomer?.pincode || '-'}</div>
+                </div>
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Country</label>
+                  <div className="text-[var(--text-main)] font-bold text-[13px]">{selectedCustomer?.country || '-'}</div>
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4">
+              {/* Contact Personnel */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
+                  <Briefcase size={16} className="text-[var(--accent)]" />
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Contact Personnel</h3>
+                </div>
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2 flex items-center gap-2">Technical Contacts</label>
+                  <div className="flex flex-wrap gap-3">
+                    {selectedCustomer?.technical_contacts?.map((c, i) => (
+                      <div key={i} className="px-4 py-2 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col">
+                        <span className="text-[11px] font-black uppercase tracking-tight text-[var(--text-main)]">{c.person}</span>
+                        <span className="text-[10px] font-bold text-[var(--accent)]">{c.mobile}</span>
+                      </div>
+                    ))}
+                    {(!selectedCustomer?.technical_contacts || selectedCustomer.technical_contacts.length === 0) && (
+                      <span className="text-[11px] text-[var(--text-dim)] italic">No technical contacts listed</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2 flex items-center gap-2">Sales Contacts</label>
+                  <div className="flex flex-wrap gap-3">
+                    {selectedCustomer?.sales_contacts?.map((c, i) => (
+                      <div key={i} className="px-4 py-2 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col">
+                        <span className="text-[11px] font-black uppercase tracking-tight text-[var(--text-main)]">{c.person}</span>
+                        <span className="text-[10px] font-bold text-[var(--accent)]">{c.mobile}</span>
+                      </div>
+                    ))}
+                    {(!selectedCustomer?.sales_contacts || selectedCustomer.sales_contacts.length === 0) && (
+                      <span className="text-[11px] text-[var(--text-dim)] italic">No sales contacts listed</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Communication & Status */}
+              <div className="space-y-5">
                 <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
                   <Mail size={16} className="text-[var(--accent)]" />
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Communication</h3>
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Communication & Status</h3>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Email Address</label>
-                  <input
-                    {...register('email')}
-                    disabled={modalMode === 'view'}
-                    type="email"
-                    className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Pincode</label>
-                    <input
-                      {...register('pincode')}
-                      disabled={modalMode === 'view'}
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                    />
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Email Address</label>
+                  <div className="text-[var(--text-main)] font-bold text-[14px]">
+                    {selectedCustomer?.email || 'Not Provided'}
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Country</label>
-                    <input
-                      {...register('country')}
-                      disabled={modalMode === 'view'}
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                    />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Account Status</label>
+                  <div className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mt-1 ${selectedCustomer?.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                    {selectedCustomer?.status}
                   </div>
                 </div>
               </div>
             </div>
+            
+            <div className="pt-6 border-t border-[var(--border-color)] flex justify-end">
+               <button onClick={() => setIsModalOpen(false)} className="px-8 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-[12px] font-black uppercase tracking-widest hover:bg-[var(--nav-hover)] transition-all">Close Profile</button>
+            </div>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+              {/* Primary Details */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
+                  <Hash size={16} className="text-[var(--accent)]" />
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Identification & Company</h3>
+                </div>
 
-          <div className="flex items-center gap-6 pt-6 border-t border-[var(--border-color)]">
-            <div className="flex-1">
-              <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Account Status</label>
-              <select
-                {...register('status')}
-                disabled={modalMode === 'view'}
-                className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all appearance-none cursor-pointer"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Customer Code</label>
+                    <input
+                      {...register('customer_code', { required: 'Code is required' })}
+                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                      placeholder="CUST-001"
+                    />
+                    {errors.customer_code && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.customer_code.message}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Udyam Aadhar No</label>
+                    <input
+                      {...register('udyam_aadhar_no')}
+                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                      placeholder="UDYAM-XX-00-0000000"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">First Name</label>
+                    <input
+                      {...register('first_name', { required: 'First name is required' })}
+                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                      placeholder="John"
+                    />
+                    {errors.first_name && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.first_name.message}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Middle Name</label>
+                    <input
+                      {...register('middle_name')}
+                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                      placeholder="M."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Last Name</label>
+                    <input
+                      {...register('last_name', { required: 'Last name is required' })}
+                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                      placeholder="Doe"
+                    />
+                    {errors.last_name && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.last_name.message}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Name</label>
+                  <input
+                    {...register('company_name', { required: 'Company name is required' })}
+                    className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                    placeholder="Acme Corp"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">GST Number</label>
+                  <input
+                    {...register('gst_no')}
+                    className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                    placeholder="27AAAAA0000A1Z5"
+                  />
+                </div>
+
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
+                    <MapPin size={16} className="text-[var(--accent)]" />
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Address & Location</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Billing Address</label>
+                      <textarea
+                        {...register('billing_address')}
+                        rows={2}
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all resize-none placeholder:text-[var(--text-dim)]"
+                        placeholder="Enter billing address..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Shipping Address</label>
+                      <textarea
+                        {...register('shipping_address')}
+                        rows={2}
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all resize-none placeholder:text-[var(--text-dim)]"
+                        placeholder="Enter shipping address..."
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Address</label>
+                    <textarea
+                      {...register('company_address')}
+                      rows={2}
+                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all resize-none placeholder:text-[var(--text-dim)]"
+                      placeholder="Enter full company address..."
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">City</label>
+                      <input
+                        {...register('city')}
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">State</label>
+                      <input
+                        {...register('state')}
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Persons Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
+                  <Briefcase size={16} className="text-[var(--accent)]" />
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Contact Personnel</h3>
+                </div>
+
+                {/* Technical Contacts */}
+                <div className="bg-[var(--nav-hover)] p-6 rounded-2xl border border-[var(--border-color)] space-y-6">
+                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4 mb-2">
+                    <div className="flex items-center gap-2">
+                      <PenTool size={16} className="text-[var(--accent)]" />
+                      <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">Technical Contacts</h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTechContacts([...techContacts, { person: '', mobile: '' }])}
+                      className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5 hover:opacity-70 transition-all"
+                    >
+                      <Plus size={14} /> Add Person
+                    </button>
+                  </div>
+                  <div className="space-y-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    {techContacts.map((contact, idx) => (
+                      <div key={idx} className="flex items-start gap-4 p-5 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] group transition-all hover:border-[var(--accent)]/30">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 ml-1 opacity-60">Person Name</label>
+                            <input
+                              value={contact.person}
+                              onChange={(e) => {
+                                const updated = [...techContacts];
+                                updated[idx].person = e.target.value;
+                                setTechContacts(updated);
+                              }}
+                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
+                              placeholder="Full Name"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 ml-1 opacity-60">Mobile Number</label>
+                            <input
+                              value={contact.mobile}
+                              onChange={(e) => {
+                                const updated = [...techContacts];
+                                updated[idx].mobile = e.target.value;
+                                setTechContacts(updated);
+                              }}
+                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
+                              placeholder="+91 XXXXX XXXXX"
+                            />
+                          </div>
+                        </div>
+                        <div className="pt-6">
+                          <button
+                            type="button"
+                            onClick={() => setTechContacts(techContacts.filter((_, i) => i !== idx))}
+                            className="p-2.5 rounded-xl text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+                            title="Remove contact"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sales Contacts */}
+                <div className="bg-[var(--nav-hover)] p-6 rounded-2xl border border-[var(--border-color)] space-y-6">
+                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4 mb-2">
+                    <div className="flex items-center gap-2">
+                      <CreditCard size={16} className="text-[var(--accent)]" />
+                      <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">Sales Contacts</h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSalesContacts([...salesContacts, { person: '', mobile: '' }])}
+                      className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5 hover:opacity-70 transition-all"
+                    >
+                      <Plus size={14} /> Add Person
+                    </button>
+                  </div>
+                  <div className="space-y-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    {salesContacts.map((contact, idx) => (
+                      <div key={idx} className="flex items-start gap-4 p-5 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] group transition-all hover:border-[var(--accent)]/30">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 ml-1 opacity-60">Person Name</label>
+                            <input
+                              value={contact.person}
+                              onChange={(e) => {
+                                const updated = [...salesContacts];
+                                updated[idx].person = e.target.value;
+                                setSalesContacts(updated);
+                              }}
+                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
+                              placeholder="Full Name"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 ml-1 opacity-60">Mobile Number</label>
+                            <input
+                              value={contact.mobile}
+                              onChange={(e) => {
+                                const updated = [...salesContacts];
+                                updated[idx].mobile = e.target.value;
+                                setSalesContacts(updated);
+                              }}
+                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
+                              placeholder="+91 XXXXX XXXXX"
+                            />
+                          </div>
+                        </div>
+                        <div className="pt-6">
+                          <button
+                            type="button"
+                            onClick={() => setSalesContacts(salesContacts.filter((_, i) => i !== idx))}
+                            className="p-2.5 rounded-xl text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+                            title="Remove contact"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
+                    <Mail size={16} className="text-[var(--accent)]" />
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Communication</h3>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Email Address</label>
+                    <input
+                      {...register('email')}
+                      type="email"
+                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Pincode</label>
+                      <input
+                        {...register('pincode')}
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Country</label>
+                      <input
+                        {...register('country')}
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {modalMode !== 'view' && (
+            <div className="flex items-center gap-6 pt-6 border-t border-[var(--border-color)]">
+              <div className="flex-1">
+                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Account Status</label>
+                <select
+                  {...register('status')}
+                  className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all appearance-none cursor-pointer"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+
               <div className="flex items-end gap-3 pt-6">
                 <button
                   type="button"
@@ -404,10 +682,9 @@ const CustomerListPage = () => {
                   {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : (modalMode === 'create' ? 'Save Customer' : 'Update Customer')}
                 </button>
               </div>
-            )}
-          </div>
-        </form>
-      </Modal>
+            </div>
+          </form>
+        )}      </Modal>
     </div>
   );
 };

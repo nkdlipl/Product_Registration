@@ -14,7 +14,7 @@ const getProducts = async (req, res, next) => {
     let paramIdx = 3;
 
     if (search) {
-      queryText += ` AND (product_name ILIKE $${paramIdx} OR product_code ILIKE $${paramIdx})`;
+      queryText += ` AND (product_name ILIKE $${paramIdx} OR product_code ILIKE $${paramIdx} OR company_name ILIKE $${paramIdx})`;
       params.push(`%${search}%`);
       paramIdx++;
     }
@@ -37,7 +37,7 @@ const getProducts = async (req, res, next) => {
 };
 
 const createProduct = async (req, res, next) => {
-  console.log('Incoming Product Data:', req.body);
+  console.log('DEBUG: createProduct Body:', req.body);
   const { 
     product_name, 
     product_code, 
@@ -48,7 +48,8 @@ const createProduct = async (req, res, next) => {
     feature,
     fuel_types,
     nozzles,
-    dispensing
+    dispensing,
+    company_name
   } = req.body;
 
   // Fallback for removed UI fields
@@ -94,9 +95,10 @@ const createProduct = async (req, res, next) => {
         image_url,
         document_url,
         images,
-        documents
+        documents,
+        company_name
       ) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
       [
         product_name, 
         final_product_code, 
@@ -110,7 +112,8 @@ const createProduct = async (req, res, next) => {
         image_url,
         document_url,
         images,
-        documents
+        documents,
+        company_name
       ]
     );
 
@@ -124,6 +127,7 @@ const createProduct = async (req, res, next) => {
 };
 
 const updateProduct = async (req, res, next) => {
+  console.log('DEBUG: updateProduct Body:', req.body);
   const { id } = req.params;
   const { 
     product_name, 
@@ -135,7 +139,8 @@ const updateProduct = async (req, res, next) => {
     feature,
     fuel_types,
     nozzles,
-    dispensing
+    dispensing,
+    company_name
   } = req.body;
 
   let specification = req.body.specification;
@@ -152,12 +157,13 @@ const updateProduct = async (req, res, next) => {
 
   try {
     // Fetch existing assets and data to fallback for missing UI fields
-    const currentProduct = await db.query('SELECT product_code, unit_price, images, documents FROM products WHERE product_id = $1', [id]);
+    const currentProduct = await db.query('SELECT product_code, unit_price, company_name, images, documents FROM products WHERE product_id = $1', [id]);
     if (currentProduct.rows.length === 0) {
       return res.status(404).json({ success: false, error: { message: 'Product not found' } });
     }
     const oldCode = currentProduct.rows[0].product_code;
     const oldPrice = currentProduct.rows[0].unit_price;
+    const oldCompany = currentProduct.rows[0].company_name;
     const oldImages = currentProduct.rows[0].images || [];
     const oldDocs = currentProduct.rows[0].documents || [];
 
@@ -186,23 +192,25 @@ const updateProduct = async (req, res, next) => {
           feature = $8,
           faqs = $9,
           images = $10,
-          documents = $11
+          documents = $11,
+          company_name = $12
     `;
     const params = [
       product_name, 
       product_code || oldCode, 
       description, 
-      unit_price || oldPrice || 0, 
+      unit_price !== undefined ? unit_price : (oldPrice || 0), 
       category, 
       sub_category, 
       specification, 
       feature,
       JSON.stringify(faqs),
       JSON.stringify(updatedImages),
-      JSON.stringify(updatedDocuments)
+      JSON.stringify(updatedDocuments),
+      company_name !== undefined ? company_name : oldCompany
     ];
 
-    let paramIdx = 12;
+    let paramIdx = 13;
     const finalImageUrl = updatedImages.length > 0 ? updatedImages[0] : null;
     const finalDocUrl = updatedDocuments.length > 0 ? updatedDocuments[0] : null;
 

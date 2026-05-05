@@ -26,14 +26,16 @@ const getCustomerById = async (req, res, next) => {
 const createCustomer = async (req, res, next) => {
   const {
     customer_code,
-    customer_name,
+    first_name,
+    middle_name,
+    last_name,
     company_name,
     company_address,
+    billing_address,
+    shipping_address,
     customer_site_location,
-    technical_contact_person,
-    technical_contact_mobile,
-    accounts_contact_person,
-    accounts_contact_mobile,
+    technical_contacts,
+    sales_contacts,
     udyam_aadhar_no,
     email,
     city,
@@ -44,19 +46,24 @@ const createCustomer = async (req, res, next) => {
     status
   } = req.body;
 
+  const customer_name = [first_name, middle_name, last_name].filter(Boolean).join(' ');
+
   try {
     const result = await db.query(
       `INSERT INTO customers (
-        customer_code, customer_name, company_name, company_address, 
-        customer_site_location, technical_contact_person, technical_contact_mobile,
-        accounts_contact_person, accounts_contact_mobile, udyam_aadhar_no,
+        customer_code, customer_name, first_name, middle_name, last_name,
+        company_name, company_address, billing_address, shipping_address,
+        customer_site_location, technical_contacts, sales_contacts, udyam_aadhar_no,
         email, city, state, country, pincode, gst_no, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) 
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) 
       RETURNING *`,
       [
-        customer_code, customer_name, company_name, company_address, 
-        customer_site_location, technical_contact_person, technical_contact_mobile,
-        accounts_contact_person, accounts_contact_mobile, udyam_aadhar_no,
+        customer_code, customer_name, first_name, middle_name, last_name,
+        company_name, company_address, billing_address, shipping_address,
+        customer_site_location, 
+        JSON.stringify(technical_contacts || []), 
+        JSON.stringify(sales_contacts || []), 
+        udyam_aadhar_no,
         email, city, state, country, pincode, gst_no, status || 'Active'
       ]
     );
@@ -73,14 +80,16 @@ const updateCustomer = async (req, res, next) => {
   const { id } = req.params;
   const {
     customer_code,
-    customer_name,
+    first_name,
+    middle_name,
+    last_name,
     company_name,
     company_address,
+    billing_address,
+    shipping_address,
     customer_site_location,
-    technical_contact_person,
-    technical_contact_mobile,
-    accounts_contact_person,
-    accounts_contact_mobile,
+    technical_contacts,
+    sales_contacts,
     udyam_aadhar_no,
     email,
     city,
@@ -91,19 +100,24 @@ const updateCustomer = async (req, res, next) => {
     status
   } = req.body;
 
+  const customer_name = [first_name, middle_name, last_name].filter(Boolean).join(' ');
+
   try {
     const result = await db.query(
       `UPDATE customers SET 
-        customer_code = $1, customer_name = $2, company_name = $3, company_address = $4, 
-        customer_site_location = $5, technical_contact_person = $6, technical_contact_mobile = $7,
-        accounts_contact_person = $8, accounts_contact_mobile = $9, udyam_aadhar_no = $10,
-        email = $11, city = $12, state = $13, country = $14, pincode = $15, gst_no = $16, status = $17,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE customer_id = $18 RETURNING *`,
+        customer_code = $1, customer_name = $2, first_name = $3, middle_name = $4, last_name = $5,
+        company_name = $6, company_address = $7, billing_address = $8, shipping_address = $9,
+        customer_site_location = $10, technical_contacts = $11, sales_contacts = $12,
+        udyam_aadhar_no = $13, email = $14, city = $15, state = $16, country = $17, pincode = $18, 
+        gst_no = $19, status = $20, updated_at = CURRENT_TIMESTAMP
+      WHERE customer_id = $21 RETURNING *`,
       [
-        customer_code, customer_name, company_name, company_address, 
-        customer_site_location, technical_contact_person, technical_contact_mobile,
-        accounts_contact_person, accounts_contact_mobile, udyam_aadhar_no,
+        customer_code, customer_name, first_name, middle_name, last_name,
+        company_name, company_address, billing_address, shipping_address,
+        customer_site_location, 
+        JSON.stringify(technical_contacts || []), 
+        JSON.stringify(sales_contacts || []),
+        udyam_aadhar_no,
         email, city, state, country, pincode, gst_no, status, id
       ]
     );
