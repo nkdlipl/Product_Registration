@@ -3,11 +3,13 @@ import { getProducts, createProduct, updateProduct, removeAsset, deleteProduct }
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import CategoryModal from '../../components/shared/CategoryModal';
-import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download, X, Zap } from 'lucide-react';
+import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download, X, Zap, Building2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import { getCategories } from '../../api/categories';
+import { getCompanies } from '../../api/companies';
+import CompanyModal from '../../components/shared/CompanyModal';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -16,7 +18,9 @@ const ProductListPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
 
   const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
@@ -32,17 +36,20 @@ const ProductListPage = () => {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [isHardwareModalOpen, setIsHardwareModalOpen] = useState(false);
   const [categoryModalMode, setCategoryModalMode] = useState('category'); 
+  const [companyModalMode, setCompanyModalMode] = useState('company'); 
   const [currentCategoryObject, setCurrentCategoryObject] = useState(null);
+  const [currentCompanyObject, setCurrentCompanyObject] = useState(null);
   const [modalMode, setModalMode] = useState('create'); 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); 
   const [activeTab, setActiveTab] = useState('description'); 
-  const [specRows, setSpecRows] = useState([{ key: '', value: '' }]);
-  const [faqRows, setFaqRows] = useState([{ question: '', answer: '' }]);
+  const [specRows, setSpecRows] = useState([]);
+  const [faqRows, setFaqRows] = useState([]);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
   useEffect(() => {
@@ -70,6 +77,7 @@ const ProductListPage = () => {
   };
   const watchedCategory = watch('category');
   const watchedSubCategory = watch('sub_category');
+  const watchedCompany = watch('company_name');
 
   const parseHardwareSpec = (specStr) => {
     try {
@@ -101,13 +109,28 @@ const ProductListPage = () => {
     setCurrentCategoryObject(category);
   };
 
+  const handleCompanyPick = (company) => {
+    setValue('company_name', company.name);
+    setValue('sub_company', ''); 
+    setCurrentCompanyObject(company);
+  };
+
   const handleSubCategoryPick = (subCategoryName) => {
     setValue('sub_category', subCategoryName);
+  };
+
+  const handleSubCompanyPick = (subCompanyName) => {
+    setValue('sub_company', subCompanyName);
   };
 
   const openCategoryModal = () => {
     setCategoryModalMode('category');
     setIsCategoryModalOpen(true);
+  };
+
+  const openCompanyModal = () => {
+    setCompanyModalMode('company');
+    setIsCompanyModalOpen(true);
   };
 
   const openSubCategoryModal = () => {
@@ -119,6 +142,15 @@ const ProductListPage = () => {
     setIsCategoryModalOpen(true);
   };
 
+  const openSubCompanyModal = () => {
+    if (!watchedCompany) {
+      toast.error('Please select a company first');
+      return;
+    }
+    setCompanyModalMode('subcompany');
+    setIsCompanyModalOpen(true);
+  };
+
   const fetchProducts = async () => {
     setLoading(true);
     try {
@@ -126,7 +158,8 @@ const ProductListPage = () => {
         page: pagination.page, 
         limit: pagination.limit,
         search: searchTerm || undefined,
-        category: selectedCategory || undefined
+        category: selectedCategory || undefined,
+        company: selectedCompany || undefined
       };
       const res = await getProducts(params);
       setProducts(res.data.data);
@@ -145,12 +178,22 @@ const ProductListPage = () => {
     } catch (error) {}
   };
 
-  useEffect(() => { fetchCategories(); }, []);
+  const fetchCompanies = async () => {
+    try {
+      const res = await getCompanies();
+      setCompanies(res.data.data || res.data || []);
+    } catch (error) {}
+  };
+
+  useEffect(() => { 
+    fetchCategories(); 
+    fetchCompanies();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => { fetchProducts(); }, 300);
     return () => clearTimeout(timer);
-  }, [searchTerm, selectedCategory, pagination.page]);
+  }, [searchTerm, selectedCategory, selectedCompany, pagination.page]);
 
   const onSubmit = async (data) => {
     if (modalMode === 'view') return;
@@ -206,16 +249,18 @@ const ProductListPage = () => {
   };
 
   const handleOpenCreate = () => {
+    setSpecRows([]);
+    setFaqRows([]);
     setModalMode('create');
     setSelectedProduct(null);
     setCurrentCategoryObject(null);
-    setSpecRows([{ key: '', value: '' }]);
-    setFaqRows([{ question: '', answer: '' }]);
+    setCurrentCompanyObject(null);
     reset({
       product_name: '',
       category: '',
       sub_category: '',
       company_name: '',
+      sub_company: '',
       description: '',
       unit_price: '',
       specification: '',
@@ -242,8 +287,8 @@ const ProductListPage = () => {
     setSelectedProduct(product);
     const hardware = parseHardwareSpec(product.specification);
     setSpecRows(parseSpecRows(product.specification));
-    setFaqRows(product.faqs && product.faqs.length > 0 ? product.faqs : [{ question: '', answer: '' }]);
-    const resetData = { product_name: product.product_name, company_name: product.company_name || '', description: product.description || '', category: product.category || '', sub_category: product.sub_category || '', feature: product.feature || '', fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', specification: hardware ? hardware.original_spec : product.specification };
+    setFaqRows(product.faqs || []);
+    const resetData = { product_name: product.product_name, company_name: product.company_name || '', sub_company: product.sub_company || '', description: product.description || '', category: product.category || '', sub_category: product.sub_category || '', feature: product.feature || '', fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', specification: hardware ? hardware.original_spec : product.specification };
     reset(resetData);
     setIsModalOpen(true);
   };
@@ -352,6 +397,18 @@ const ProductListPage = () => {
               {categories.map((cat) => ( <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option> ))}
             </select>
           </div>
+          <div className="relative group min-w-[180px] flex-1 md:flex-none">
+            <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={16} />
+            <select 
+              value={selectedCompany || ''} 
+              onChange={(e) => setSelectedCompany(e.target.value || null)} 
+              className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-11 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[13px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+            >
+              <option value="">All Manufacturers</option>
+              {companies.map((comp) => ( <option key={comp.id || comp.name} value={comp.name}>{comp.name}</option> ))}
+            </select>
+          </div>
           <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner">
             <button onClick={() => setViewMode('grid')} className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'grid' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`} title="Grid View"><LayoutGrid size={18} /></button>
             <button onClick={() => setViewMode('table')} className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'table' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`} title="Table View"><List size={18} /></button>
@@ -380,7 +437,10 @@ const ProductListPage = () => {
                   </p>
                 </div>
                 <div className="flex items-center justify-between pt-6 mt-6 border-t border-[var(--border-color)]">
-                  <div />
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
+                    <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">{product.company_name || 'Generic'}</span>
+                  </div>
                   <button onClick={(e) => { e.stopPropagation(); handleDelete(product); }} className="flex items-center gap-1.5 text-[9px] font-black text-rose-500/50 uppercase tracking-widest hover:text-rose-500 transition-all py-1.5 px-3 rounded-lg hover:bg-rose-500/10 group/del"><Trash2 size={12} />Delete</button>
                 </div>
               </div>
@@ -389,7 +449,25 @@ const ProductListPage = () => {
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalMode === 'create' ? 'Add Product' : modalMode === 'edit' ? 'Update Specifications' : 'Product Profile'} maxWidth="max-w-6xl">
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={modalMode === 'create' ? 'Add Product' : modalMode === 'edit' ? 'Update Specifications' : 'Product Profile'} 
+        maxWidth="max-w-[1400px]"
+        headerActions={modalMode !== 'view' && (
+          <div className="flex items-center gap-3">
+            <button
+              form="product-form"
+              type="submit"
+              disabled={isSubmitting}
+              className="btn-primary py-2 px-6 shadow-md flex items-center gap-2 text-[9px] font-black uppercase tracking-widest"
+              style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
+            >
+              {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save Product' : 'Update Product')}
+            </button>
+          </div>
+        )}
+      >
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-400">
           {modalMode === 'view' ? (
             <div className="space-y-12 pb-10">
@@ -418,12 +496,14 @@ const ProductListPage = () => {
                 <div className="lg:col-span-7 space-y-10 py-4">
                   <div>
                     <div className="flex items-center gap-3 mb-4"><span className="bg-[var(--nav-hover)] text-[var(--accent)] font-black text-[11px] uppercase tracking-[0.2em] px-3 py-1.5 rounded-lg border border-[var(--border-color)]">{selectedProduct?.category || 'General'}</span><span className="text-[var(--text-muted)] font-black text-[11px] uppercase tracking-widest opacity-40">Ref: {selectedProduct?.product_id?.toString().slice(0, 8).toUpperCase()}</span></div>
+                    {selectedProduct?.company_name && <p className="text-[12px] font-black text-[var(--accent)] uppercase tracking-[0.2em] mb-2">{selectedProduct.company_name}</p>}
                     <h1 className="text-4xl font-black text-[var(--text-main)] leading-tight tracking-tight">{selectedProduct?.product_name}</h1>
                   </div>
                   <div className="flex items-center gap-6 py-6 border-y border-[var(--border-color)]">
                     <div className="flex items-center gap-2"><CheckCircle className="text-emerald-500" size={16} /><span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest">Certified Operational</span></div>
                   </div>
                   <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+                    <div className="space-y-1"><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest opacity-60">Manufacturer</p><p className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-wider">{selectedProduct?.company_name || 'Generic Brand'}</p></div>
                     <div className="space-y-1"><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest opacity-60">Classification</p><p className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-wider">{selectedProduct?.sub_category || 'Industrial System'}</p></div>
                   </div>
                   <div className="flex items-center gap-4 pt-6">
@@ -483,7 +563,7 @@ const ProductListPage = () => {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-10">
+            <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-10">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div className="space-y-6">
                   <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
@@ -491,8 +571,9 @@ const ProductListPage = () => {
                     <div className="space-y-5">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
                         <div>
-                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Name</label>
-                          <input {...register('company_name')} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" placeholder="Brand or Manufacturer..." />
+                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company / Brand</label>
+                          <input {...register('company_name', { required: 'Company is required' })} readOnly onClick={openCompanyModal} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold cursor-pointer" placeholder="Select Manufacturer..." />
+                          {errors.company_name && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase tracking-wider ml-1">{errors.company_name.message}</p>}
                         </div>
                         <div>
                           <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Name</label>
@@ -501,6 +582,12 @@ const ProductListPage = () => {
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Division / Dept</label>
+                          <div className="flex gap-2">
+                            <input {...register('sub_company')} readOnly onClick={openSubCompanyModal} className={`flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none transition-all ${!watchedCompany ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer focus:border-[var(--accent)]'}`} placeholder="Select Division" />
+                          </div>
+                        </div>
                         <div className="space-y-2">
                           <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Category</label>
                           <div className="flex gap-2">
@@ -607,12 +694,6 @@ const ProductListPage = () => {
                   </div>
                 </div>
               </div>
-              <div className="pt-8 flex justify-end gap-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest hover:text-[var(--text-main)] transition-colors">Cancel</button>
-                <button disabled={isSubmitting} type="submit" className="btn-primary px-12 py-4 shadow-xl text-[12px] uppercase tracking-[0.2em]" style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}>
-                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (modalMode === 'create' ? 'Add Product' : 'Update Changes')}
-                </button>
-              </div>
             </form>
           )}
         </div>
@@ -708,6 +789,7 @@ const ProductListPage = () => {
       </Modal>
 
       <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} onSelect={handleSubCategoryPick} onSelectCategory={handleCategoryPick} initialCategory={categoryModalMode === 'subcategory' ? categories.find(c => c.name === watchedCategory) : null} />
+      <CompanyModal isOpen={isCompanyModalOpen} onClose={() => setIsCompanyModalOpen(false)} onSelect={handleSubCompanyPick} onSelectCompany={handleCompanyPick} initialCompany={companyModalMode === 'subcompany' ? companies.find(c => c.name === watchedCompany) : null} />
       {previewImageUrl && ( <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-10" onClick={() => setPreviewImageUrl(null)}><img src={previewImageUrl} className="max-w-full max-h-full object-contain shadow-2xl rounded-3xl" /><button className="absolute top-10 right-10 p-4 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all"><X size={32} /></button></div> )}
     </div>
   );

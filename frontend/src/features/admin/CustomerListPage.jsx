@@ -15,8 +15,8 @@ const CustomerListPage = () => {
   const [modalMode, setModalMode] = useState('create');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [techContacts, setTechContacts] = useState([{ person: '', mobile: '' }]);
-  const [salesContacts, setSalesContacts] = useState([{ person: '', mobile: '' }]);
+  const [techContacts, setTechContacts] = useState([]);
+  const [salesContacts, setSalesContacts] = useState([]);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
 
@@ -70,6 +70,8 @@ const CustomerListPage = () => {
   };
 
   const handleOpenCreate = () => {
+    setTechContacts([]);
+    setSalesContacts([]);
     setModalMode('create');
     setSelectedCustomer(null);
     reset({
@@ -92,8 +94,6 @@ const CustomerListPage = () => {
       status: 'Active',
       company_type: ''
     });
-    setTechContacts([{ person: '', mobile: '' }]);
-    setSalesContacts([{ person: '', mobile: '' }]);
     setIsModalOpen(true);
   };
 
@@ -101,8 +101,8 @@ const CustomerListPage = () => {
     setModalMode('edit');
     setSelectedCustomer(customer);
     reset(customer);
-    setTechContacts(customer.technical_contacts?.length > 0 ? customer.technical_contacts : [{ person: '', mobile: '' }]);
-    setSalesContacts(customer.sales_contacts?.length > 0 ? customer.sales_contacts : [{ person: '', mobile: '' }]);
+    setTechContacts(customer.technical_contacts || []);
+    setSalesContacts(customer.sales_contacts || []);
     setIsModalOpen(true);
   };
 
@@ -110,8 +110,8 @@ const CustomerListPage = () => {
     setModalMode('view');
     setSelectedCustomer(customer);
     reset(customer);
-    setTechContacts(customer.technical_contacts?.length > 0 ? customer.technical_contacts : [{ person: '', mobile: '' }]);
-    setSalesContacts(customer.sales_contacts?.length > 0 ? customer.sales_contacts : [{ person: '', mobile: '' }]);
+    setTechContacts(customer.technical_contacts || []);
+    setSalesContacts(customer.sales_contacts || []);
     setIsModalOpen(true);
   };
 
@@ -201,6 +201,19 @@ const CustomerListPage = () => {
         onClose={() => setIsModalOpen(false)}
         title={modalMode === 'create' ? 'Register New Customer' : modalMode === 'edit' ? 'Update Customer Details' : 'Customer Profile'}
         maxWidth="max-w-6xl"
+        headerActions={modalMode !== 'view' && (
+          <div className="flex items-center gap-3">
+            <button
+              form="customer-form"
+              type="submit"
+              disabled={isSubmitting}
+              className="btn-primary py-2 px-6 shadow-md flex items-center gap-2 text-[9px] font-black uppercase tracking-widest"
+              style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
+            >
+              {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save Customer' : 'Update Customer')}
+            </button>
+          </div>
+        )}
       >
         {modalMode === 'view' ? (
           <div className="space-y-6 animate-in fade-in duration-500 py-4">
@@ -370,7 +383,7 @@ const CustomerListPage = () => {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-4">
+          <form id="customer-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
               {/* Primary Details */}
               <div className="space-y-6">
@@ -525,8 +538,8 @@ const CustomerListPage = () => {
                 </div>
 
                 {/* Technical Contacts */}
-                <div className="bg-[var(--nav-hover)] p-6 rounded-2xl border border-[var(--border-color)] space-y-6">
-                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4 mb-2">
+                <div className="bg-[var(--nav-hover)] p-4 rounded-2xl border border-[var(--border-color)] space-y-3">
+                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3 mb-1">
                     <div className="flex items-center gap-2">
                       <PenTool size={16} className="text-[var(--accent)]" />
                       <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">Technical Contacts</h4>
@@ -539,12 +552,12 @@ const CustomerListPage = () => {
                       <Plus size={14} /> Add Person
                     </button>
                   </div>
-                  <div className="space-y-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-1 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                     {techContacts.map((contact, idx) => (
-                      <div key={idx} className="flex items-start gap-4 p-5 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] group transition-all hover:border-[var(--accent)]/30">
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div key={idx} className="flex items-start gap-4 p-2 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] group transition-all hover:border-[var(--accent)]/30">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 ml-1 opacity-60">Person Name</label>
+                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-0.5 ml-1 opacity-60">Person Name</label>
                             <input
                               value={contact.person}
                               onChange={(e) => {
@@ -552,12 +565,12 @@ const CustomerListPage = () => {
                                 updated[idx].person = e.target.value;
                                 setTechContacts(updated);
                               }}
-                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
+                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
                               placeholder="Full Name"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 ml-1 opacity-60">Mobile Number</label>
+                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-0.5 ml-1 opacity-60">Mobile Number</label>
                             <input
                               value={contact.mobile}
                               onChange={(e) => {
@@ -586,8 +599,8 @@ const CustomerListPage = () => {
                 </div>
 
                 {/* Sales Contacts */}
-                <div className="bg-[var(--nav-hover)] p-6 rounded-2xl border border-[var(--border-color)] space-y-6">
-                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4 mb-2">
+                <div className="bg-[var(--nav-hover)] p-4 rounded-2xl border border-[var(--border-color)] space-y-3">
+                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3 mb-1">
                     <div className="flex items-center gap-2">
                       <CreditCard size={16} className="text-[var(--accent)]" />
                       <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">Sales Contacts</h4>
@@ -600,12 +613,12 @@ const CustomerListPage = () => {
                       <Plus size={14} /> Add Person
                     </button>
                   </div>
-                  <div className="space-y-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-1 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                     {salesContacts.map((contact, idx) => (
-                      <div key={idx} className="flex items-start gap-4 p-5 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] group transition-all hover:border-[var(--accent)]/30">
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div key={idx} className="flex items-start gap-4 p-2 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] group transition-all hover:border-[var(--accent)]/30">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 ml-1 opacity-60">Person Name</label>
+                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-0.5 ml-1 opacity-60">Person Name</label>
                             <input
                               value={contact.person}
                               onChange={(e) => {
@@ -613,12 +626,12 @@ const CustomerListPage = () => {
                                 updated[idx].person = e.target.value;
                                 setSalesContacts(updated);
                               }}
-                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
+                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
                               placeholder="Full Name"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 ml-1 opacity-60">Mobile Number</label>
+                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-0.5 ml-1 opacity-60">Mobile Number</label>
                             <input
                               value={contact.mobile}
                               onChange={(e) => {
@@ -649,15 +662,28 @@ const CustomerListPage = () => {
                 <div className="space-y-4 pt-4">
                   <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
                     <Mail size={16} className="text-[var(--accent)]" />
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Communication</h3>
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Communication & Status</h3>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Email Address</label>
-                    <input
-                      {...register('email')}
-                      type="email"
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Email Address</label>
+                      <input
+                        {...register('email')}
+                        type="email"
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Account Status</label>
+                      <select
+                        {...register('status')}
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all appearance-none cursor-pointer"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+                      >
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -679,37 +705,6 @@ const CustomerListPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-6 pt-6 border-t border-[var(--border-color)]">
-              <div className="flex-1">
-                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Account Status</label>
-                <select
-                  {...register('status')}
-                  className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all appearance-none cursor-pointer"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-
-              <div className="flex items-end gap-3 pt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-3 text-sm font-bold text-[var(--text-muted)] uppercase tracking-widest hover:text-[var(--text-main)] transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="btn-primary py-3 px-10 shadow-lg flex items-center gap-2 text-sm"
-                  style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-                >
-                  {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : (modalMode === 'create' ? 'Save Customer' : 'Update Customer')}
-                </button>
-              </div>
-            </div>
           </form>
         )}      </Modal>
     </div>

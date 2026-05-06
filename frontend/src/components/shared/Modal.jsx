@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => {
+const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', headerActions }) => {
   if (!isOpen) return null;
 
   return (
@@ -23,7 +23,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => {
       >
         {/* Header */}
         <div
-          className="px-6 py-5 flex items-center justify-between flex-shrink-0"
+          className="px-6 py-4 flex items-center justify-between flex-shrink-0"
           style={{
             background: 'var(--grad-header)',
             borderBottom: '1px solid var(--border-color)',
@@ -35,15 +35,19 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => {
           >
             {title}
           </h3>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg transition-all"
-            style={{ color: 'var(--text-dim)' }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'var(--nav-hover)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = ''; }}
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-3">
+            {headerActions}
+            <div className="w-[1px] h-4 bg-[var(--border-color)] mx-1" />
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg transition-all"
+              style={{ color: 'var(--text-dim)' }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'var(--nav-hover)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = ''; }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}

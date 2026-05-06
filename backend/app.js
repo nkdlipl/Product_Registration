@@ -16,6 +16,7 @@ const productRoutes = require('./src/routes/products');
 const categoryRoutes = require('./src/routes/categories');
 const customerRoutes = require('./src/routes/customers');
 const featureMappingRoutes = require('./src/routes/featureMappingRoutes');
+const companyRoutes = require('./src/routes/companies');
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use(requestLogger);
 
 // Routes
 app.use('/api/categories', categoryRoutes);
+app.use('/api/companies', companyRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/designer', designerRoutes);

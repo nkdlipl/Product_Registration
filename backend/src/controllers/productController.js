@@ -6,7 +6,7 @@ const { parsePagination } = require('../utils/pagination');
 
 const getProducts = async (req, res, next) => {
   const { page, limit, offset } = parsePagination(req);
-  const { search, category } = req.query;
+  const { search, category, company } = req.query;
 
   try {
     let queryText = `SELECT *, COUNT(*) OVER() as total_count FROM products WHERE is_active = TRUE`;
@@ -22,6 +22,12 @@ const getProducts = async (req, res, next) => {
     if (category) {
       queryText += ` AND category = $${paramIdx}`;
       params.push(category);
+      paramIdx++;
+    }
+    
+    if (company) {
+      queryText += ` AND company_name = $${paramIdx}`;
+      params.push(company);
       paramIdx++;
     }
 
@@ -49,7 +55,8 @@ const createProduct = async (req, res, next) => {
     fuel_types,
     nozzles,
     dispensing,
-    company_name
+    company_name,
+    sub_company
   } = req.body;
 
   // Fallback for removed UI fields
@@ -96,9 +103,10 @@ const createProduct = async (req, res, next) => {
         document_url,
         images,
         documents,
-        company_name
+        company_name,
+        sub_company
       ) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
       [
         product_name, 
         final_product_code, 
@@ -113,7 +121,8 @@ const createProduct = async (req, res, next) => {
         document_url,
         images,
         documents,
-        company_name
+        company_name,
+        sub_company
       ]
     );
 
@@ -140,7 +149,8 @@ const updateProduct = async (req, res, next) => {
     fuel_types,
     nozzles,
     dispensing,
-    company_name
+    company_name,
+    sub_company
   } = req.body;
 
   let specification = req.body.specification;
@@ -157,13 +167,14 @@ const updateProduct = async (req, res, next) => {
 
   try {
     // Fetch existing assets and data to fallback for missing UI fields
-    const currentProduct = await db.query('SELECT product_code, unit_price, company_name, images, documents FROM products WHERE product_id = $1', [id]);
+    const currentProduct = await db.query('SELECT product_code, unit_price, company_name, sub_company, images, documents FROM products WHERE product_id = $1', [id]);
     if (currentProduct.rows.length === 0) {
       return res.status(404).json({ success: false, error: { message: 'Product not found' } });
     }
     const oldCode = currentProduct.rows[0].product_code;
     const oldPrice = currentProduct.rows[0].unit_price;
     const oldCompany = currentProduct.rows[0].company_name;
+    const oldSubCompany = currentProduct.rows[0].sub_company;
     const oldImages = currentProduct.rows[0].images || [];
     const oldDocs = currentProduct.rows[0].documents || [];
 
@@ -193,7 +204,8 @@ const updateProduct = async (req, res, next) => {
           faqs = $9,
           images = $10,
           documents = $11,
-          company_name = $12
+          company_name = $12,
+          sub_company = $13
     `;
     const params = [
       product_name, 
@@ -207,10 +219,11 @@ const updateProduct = async (req, res, next) => {
       JSON.stringify(faqs),
       JSON.stringify(updatedImages),
       JSON.stringify(updatedDocuments),
-      company_name !== undefined ? company_name : oldCompany
+      company_name !== undefined ? company_name : oldCompany,
+      sub_company !== undefined ? sub_company : oldSubCompany
     ];
 
-    let paramIdx = 13;
+    let paramIdx = 14;
     const finalImageUrl = updatedImages.length > 0 ? updatedImages[0] : null;
     const finalDocUrl = updatedDocuments.length > 0 ? updatedDocuments[0] : null;
 
