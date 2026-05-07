@@ -17,6 +17,7 @@ const categoryRoutes = require('./src/routes/categories');
 const customerRoutes = require('./src/routes/customers');
 const featureMappingRoutes = require('./src/routes/featureMappingRoutes');
 const companyRoutes = require('./src/routes/companies');
+const inventoryRoutes = require('./src/routes/inventory');
 
 const app = express();
 
@@ -30,7 +31,13 @@ if (!fs.existsSync(uploadDir)) {
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(uploadDir));
+app.use('/uploads', express.static(uploadDir, {
+  setHeaders: (res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+  }
+}));
 
 // CORS: Reverted to yesterday's style + hardcoded fallback for Netlify
 const origins = [
@@ -67,6 +74,7 @@ app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/feature-mappings', featureMappingRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));

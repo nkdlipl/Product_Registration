@@ -1,0 +1,438 @@
+
+TABLE: ROLES
+  - int | role_id | PK | 
+  - string | role_name |  | Admin, Sales, Designer, Maintenance
+  - text | description |  | 
+
+TABLE: PERMISSIONS
+  - int | permission_id | PK
+  - string | permission_key | 
+  - text | description | 
+
+TABLE: ROLE_PERMISSIONS
+  - int | role_id | FK
+  - int | permission_id | FK
+
+TABLE: USERS
+  - uuid | user_id | PK
+  - int | role_id | FK
+  - string | full_name | 
+  - string | email | UK
+  - text | password_hash | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: DESIGNER_PROFILES
+  - uuid | designer_id | PK, FK | Refers to USERS
+  - string | specialty |  | 
+  - text | portfolio_url |  | 
+  - boolean | availability |  | 
+
+TABLE: SALES_PROFILES
+  - uuid | sales_id | PK, FK | Refers to USERS
+  - string | region |  | 
+  - numeric | target_revenue |  | 
+  - date | hire_date |  | 
+
+TABLE: MAINTENANCE_PROFILES
+  - uuid | maintenance_id | PK, FK | Refers to USERS
+  - string | certification |  | 
+  - date | hire_date |  | 
+
+TABLE: TEAMS
+  - int | team_id | PK
+  - string | team_name | UK
+  - text | description | 
+  - timestamptz | created_at | 
+
+TABLE: TEAM_MEMBERS
+  - int | team_id | FK
+  - uuid | designer_id | FK
+  - timestamptz | joined_at | 
+  - boolean | is_lead | 
+
+TABLE: DESIGNER_PROJECTS
+  - uuid | designer_id | PK, FK
+  - int | project_id | PK, FK
+  - string | role_in_project | 
+
+TABLE: PRODUCT_CATEGORIES
+  - int | id | PK
+  - string | name | UK
+  - timestamptz | created_at | 
+
+TABLE: PRODUCT_SUB_CATEGORIES
+  - int | id | PK
+  - int | category_id | FK
+  - string | name | 
+  - timestamptz | created_at | 
+
+TABLE: PRODUCTS
+  - int | product_id | PK
+  - string | product_name | 
+  - string | product_code | UK
+  - text | description | 
+  - numeric | unit_price | 
+  - string | category | 
+  - string | sub_category | 
+  - text | specification | 
+  - text | feature | 
+  - jsonb | images | 
+  - jsonb | documents | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: FEATURE_MAPPINGS
+  - uuid | mapping_id | PK
+  - string | mapping_name | 
+  - jsonb | hardware_features | 
+  - jsonb | software_features | 
+  - timestamp | created_at | 
+  - timestamp | updated_at | 
+
+TABLE: PROJECTS
+  - int | project_id | PK | 
+  - int | team_id | FK | 
+  - int | product_id | FK | 
+  - string | project_name |  | 
+  - string | status |  | Planning, Active, Completed
+  - date | start_date |  | 
+  - date | end_date |  | 
+  - timestamptz | created_at |  | 
+
+TABLE: CUSTOMERS
+  - int | customer_id | PK
+  - string | customer_code | UK
+  - string | customer_name | 
+  - string | email | 
+  - string | company_name | 
+  - string | company_type | 
+  - string | gst_no | 
+  - string | status | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: SALES_OPPORTUNITIES
+  - int | opportunity_id | PK | 
+  - uuid | sales_id | FK | 
+  - int | product_id | FK | 
+  - string | client_name |  | 
+  - numeric | deal_value |  | 
+  - string | stage |  | Lead, Proposal, Negotiation, Closed
+  - date | expected_close |  | 
+  - timestamptz | closed_at |  | 
+
+TABLE: SALES_PRODUCTS
+  - uuid | sales_id | PK, FK
+  - int | product_id | PK, FK
+  - boolean | is_primary | 
+
+TABLE: MAINTENANCE_RECORDS
+  - int | record_id | PK
+  - int | product_id | FK
+  - string | record_title | 
+  - date | scheduled_date | 
+  - timestamptz | created_at | 
+
+TABLE: MAINTENANCE_TASKS
+  - int | task_id | PK | 
+  - int | record_id | FK | 
+  - uuid | maintenance_id | FK | 
+  - string | task_title |  | 
+  - string | priority |  | Low, Medium, High, Critical
+  - string | status |  | Open, In Progress, Done
+  - date | due_date |  | 
+  - timestamptz | completed_at |  | 
+
+TABLE: AUDIT_LOG
+  - int | log_id | PK
+  - uuid | user_id | FK
+  - string | action | 
+  - string | table_name | 
+  - string | record_id | 
+  - jsonb | old_values | 
+  - jsonb | new_values | 
+  - timestamptz | created_at | 
+
+TABLE: PCB_TYPE_MASTER
+  - bigint | pcb_type_id | PK
+  - varchar | type_name | UK
+  - text | type_description | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: PCB_MASTER
+  - bigint | pcb_id | PK
+  - bigint | pcb_type_id | FK
+  - varchar | part_no | UK
+  - boolean | requires_firmware | 
+  - int | processor_count | 
+  - text | description | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: PCB_FILE_MASTER
+  - bigint | pcb_file_id | PK
+  - bigint | pcb_id | FK
+  - text | processor_file_url | 
+  - text | brd_file_url | 
+  - text | sch_file_url | 
+  - text | bom_file_url | 
+  - text | stencil_file_url | 
+  - text | panel_gerber_file_url | 
+  - text | layer_stacking_file_url | 
+  - text | production_instruction_url | 
+  - timestamptz | created_at | 
+
+TABLE: PROCESSOR_MASTER
+  - bigint | processor_id | PK
+  - varchar | processor_type | 
+  - varchar | part_no | UK
+  - text | description | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: FIRMWARE_MASTER
+  - bigint | firmware_master_id | PK
+  - bigint | processor_id | FK
+  - varchar | firmware_branch_name | 
+  - varchar | current_firmware_version | 
+  - text | description | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: FIRMWARE_VERSION_MASTER
+  - bigint | firmware_version_id | PK
+  - bigint | firmware_master_id | FK
+  - varchar | firmware_version | 
+  - date | release_date | 
+  - text | firmware_file_url | 
+  - varchar | checksum | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+
+TABLE: FIRMWARE_FEATURE_MASTER
+  - bigint | firmware_feature_id | PK
+  - bigint | firmware_master_id | FK
+  - varchar | feature_name | 
+  - text | feature_description | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+
+TABLE: PCB_FIRMWARE_MAPPING
+  - bigint | pcb_firmware_mapping_id | PK
+  - bigint | pcb_id | FK
+  - bigint | processor_id | FK
+  - bigint | firmware_master_id | FK
+  - bigint | firmware_version_id | FK
+  - boolean | is_default | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+
+TABLE: PRODUCT_VERSION_MASTER
+  - bigint | product_version_id | PK
+  - int | product_id | FK
+  - varchar | version_no | 
+  - varchar | version_name | 
+  - text | version_description | 
+  - date | release_date | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+
+TABLE: PCB_PRODUCT_MAPPING
+  - bigint | pcb_product_mapping_id | PK
+  - bigint | pcb_id | FK
+  - int | product_id | FK
+  - bigint | product_version_id | FK
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: INVENTORY_CATEGORY_MASTER
+  - bigint | inventory_category_id | PK
+  - varchar | category_code | UK
+  - varchar | category_name | 
+  - text | description | 
+  - int | display_order | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: INVENTORY_COMPONENT_TYPE_MASTER
+  - bigint | component_type_id | PK
+  - bigint | inventory_category_id | FK
+  - varchar | component_type_code | UK
+  - varchar | component_type_name | 
+  - varchar | default_unit | 
+  - boolean | requires_serial_no | 
+  - boolean | requires_firmware | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: INVENTORY_ITEM_MASTER
+  - bigint | inventory_item_id | PK
+  - bigint | component_type_id | FK
+  - bigint | pcb_id | FK
+  - int | product_id | FK
+  - varchar | item_code | UK
+  - varchar | item_name | 
+  - varchar | part_no | 
+  - varchar | model_no | 
+  - varchar | manufacturer | 
+  - varchar | unit | 
+  - numeric | min_stock | 
+  - numeric | reorder_level | 
+  - boolean | is_serialized | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+  - timestamptz | updated_at | 
+
+TABLE: PRODUCT_COMPONENT_MAPPING
+  - bigint | product_component_id | PK
+  - int | product_id | FK
+  - bigint | product_version_id | FK
+  - bigint | inventory_item_id | FK
+  - numeric | required_qty | 
+  - varchar | usage_position | 
+  - boolean | is_mandatory | 
+  - text | remarks | 
+  - timestamptz | created_at | 
+
+TABLE: INVENTORY_LOCATION_MASTER
+  - bigint | location_id | PK
+  - varchar | location_code | UK
+  - varchar | location_name | 
+  - varchar | rack_no | 
+  - varchar | bin_no | 
+  - boolean | is_active | 
+  - timestamptz | created_at | 
+
+TABLE: INVENTORY_STOCK_MASTER
+  - bigint | stock_id | PK
+  - bigint | inventory_item_id | FK
+  - bigint | location_id | FK
+  - numeric | available_qty | 
+  - numeric | reserved_qty | 
+  - numeric | damaged_qty | 
+  - numeric | total_qty | 
+  - timestamptz | last_stock_update_at | 
+
+TABLE: INVENTORY_TRANSACTION_LOG
+  - bigint | transaction_id | PK
+  - bigint | inventory_item_id | FK
+  - bigint | location_id | FK
+  - varchar | transaction_type | 
+  - numeric | quantity | 
+  - varchar | reference_type | 
+  - varchar | reference_no | 
+  - bigint | performed_by | FK
+  - timestamptz | transaction_at | 
+  - text | remarks | 
+
+TABLE: INVENTORY_VENDOR_MASTER
+  - bigint | vendor_id | PK
+  - varchar | vendor_code | UK
+  - varchar | vendor_name | 
+  - varchar | contact_person | 
+  - varchar | phone_no | 
+  - varchar | email | 
+  - text | address | 
+  - boolean | is_active | 
+
+TABLE: INVENTORY_PURCHASE_MASTER
+  - bigint | purchase_id | PK
+  - bigint | vendor_id | FK
+  - varchar | purchase_no | UK
+  - date | purchase_date | 
+  - numeric | total_amount | 
+  - varchar | purchase_status | 
+  - text | remarks | 
+  - timestamptz | created_at | 
+
+TABLE: INVENTORY_PURCHASE_DETAIL
+  - bigint | purchase_detail_id | PK
+  - bigint | purchase_id | FK
+  - bigint | inventory_item_id | FK
+  - numeric | quantity | 
+  - numeric | unit_price | 
+  - numeric | tax_amount | 
+  - numeric | line_total | 
+  - varchar | batch_no | 
+  - date | warranty_expiry_date | 
+
+TABLE: INVENTORY_ITEM_FILE_MASTER
+  - bigint | inventory_file_id | PK
+  - bigint | inventory_item_id | FK
+  - varchar | file_type | 
+  - varchar | file_name | 
+  - text | file_url | 
+  - varchar | mime_type | 
+  - boolean | is_active | 
+  - timestamptz | uploaded_at | 
+
+TABLE: PCB_PART_DETAIL
+  - bigint | pcb_part_detail_id | PK
+  - bigint | inventory_item_id | FK
+  - bigint | pcb_id | FK
+  - varchar | pcb_category | 
+  - varchar | revision_no | 
+  - varchar | layer_count | 
+  - varchar | board_size | 
+  - varchar | gerber_file_url | 
+  - varchar | bom_file_url | 
+  - text | remarks | 
+
+TABLE: ELECTRONIC_PART_DETAIL
+  - bigint | electronic_detail_id | PK
+  - bigint | inventory_item_id | FK
+  - varchar | component_family | 
+  - varchar | voltage_rating | 
+  - varchar | current_rating | 
+  - varchar | power_rating | 
+  - varchar | communication_interface | 
+  - varchar | firmware_applicable | 
+  - jsonb | technical_specs | 
+  - text | remarks | 
+
+TABLE: CABLE_CONNECTOR_DETAIL
+  - bigint | cable_connector_id | PK
+  - bigint | inventory_item_id | FK
+  - varchar | cable_type | 
+  - varchar | connector_type | 
+  - varchar | pin_count | 
+  - varchar | length | 
+  - varchar | gauge | 
+  - varchar | color_code | 
+  - boolean | is_shielded | 
+  - text | remarks | 
+
+TABLE: ELECTRICAL_PART_DETAIL
+  - bigint | electrical_detail_id | PK
+  - bigint | inventory_item_id | FK
+  - varchar | voltage_rating | 
+  - varchar | current_rating | 
+  - varchar | phase_type | 
+  - varchar | frequency | 
+  - varchar | protection_class | 
+  - varchar | mounting_type | 
+  - jsonb | technical_specs | 
+  - text | remarks | 
+
+TABLE: STRUCTURAL_COMPONENT_DETAIL
+  - bigint | structural_detail_id | PK
+  - bigint | inventory_item_id | FK
+  - varchar | material_type | 
+  - varchar | dimension | 
+  - varchar | weight | 
+  - varchar | surface_finish | 
+  - varchar | mounting_position | 
+  - varchar | drawing_file_url | 
+  - jsonb | technical_specs | 
+  - text | remarks | 

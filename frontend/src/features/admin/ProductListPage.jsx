@@ -689,11 +689,31 @@ const ProductListPage = () => {
                         </div>
                       </div>
 
-                      {(watchedCategory?.toLowerCase() === 'dispenser' || watchedSubCategory?.toLowerCase() === 'dispenser') && (
+                      {(watchedCategory?.toLowerCase().includes('dispenser') || watchedSubCategory?.toLowerCase().includes('dispenser')) && (
                         <div className="pt-2">
-                          <button type="button" onClick={() => setIsHardwareModalOpen(true)} className="w-full p-5 bg-gradient-to-r from-[var(--accent)] to-[var(--soft)] text-white rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all flex items-center justify-between group border border-white/10" style={{ boxShadow: '0 10px 20px -5px var(--border-glow)' }}>
-                            <div className="flex items-center gap-4"><div className="p-3 bg-white/10 rounded-xl backdrop-blur-md"><Activity className="text-white" size={24} /></div><div className="text-left"><p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Dispenser Specification</p><h4 className="text-[15px] font-black uppercase tracking-tight">Configure Hardware</h4></div></div>
-                            <div className="flex items-center gap-3">{(watch('fuel_types')?.length > 0 || watch('nozzles') || watch('dispensing')) && ( <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-300"><Check size={12} strokeWidth={4} /><span>Configured</span></div> )}<ChevronRight size={20} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" /></div>
+                          <button 
+                            type="button" 
+                            onClick={() => setIsHardwareModalOpen(true)} 
+                            className="w-full p-5 bg-[var(--bg-sidebar)] border border-[var(--border-color)] text-[var(--accent)] rounded-2xl shadow-sm hover:shadow-md hover:border-[var(--accent)]/50 hover:scale-[1.01] transition-all flex items-center justify-between group"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-[var(--accent)]/10 rounded-xl">
+                                <Activity className="text-[var(--accent)]" size={24} />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-70">Dispenser Specification</p>
+                                <h4 className="text-[15px] font-black uppercase tracking-tight text-[var(--text-main)]">Configure Hardware</h4>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {(watch('fuel_types')?.length > 0 || watch('nozzles') || watch('dispensing')) && ( 
+                                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                                  <Check size={12} strokeWidth={4} />
+                                  <span>Configured</span>
+                                </div> 
+                              )}
+                              <ChevronRight size={20} strokeWidth={3} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] group-hover:translate-x-1 transition-all" />
+                            </div>
                           </button>
                         </div>
                       )}

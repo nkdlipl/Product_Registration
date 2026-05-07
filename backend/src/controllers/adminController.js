@@ -168,8 +168,14 @@ const getAdminStats = async (req, res, next) => {
       JOIN roles r ON t.role_id = r.role_id
       WHERE r.role_name = 'Designer'
     `);
-    const productCount = await db.query('SELECT COUNT(*) FROM products');
+    const productCount = await db.query('SELECT COUNT(*) FROM products WHERE is_active = TRUE');
     const customerCount = await db.query('SELECT COUNT(*) FROM customers');
+
+    // New Inventory Counts
+    const pcbCount = await db.query('SELECT COUNT(*) FROM pcb_master WHERE is_active = TRUE');
+    const electronicsCount = await db.query('SELECT COUNT(*) FROM electronic_part_detail');
+    const electricalCount = await db.query('SELECT COUNT(*) FROM electrical_part_detail');
+    const structuralCount = await db.query('SELECT COUNT(*) FROM structural_component_detail');
 
     const stats = {
       designers: parseInt(designerCount.rows[0].count),
@@ -178,6 +184,12 @@ const getAdminStats = async (req, res, next) => {
       teams: parseInt(teamCount.rows[0].count),
       products: parseInt(productCount.rows[0].count),
       customers: parseInt(customerCount.rows[0].count),
+      inventory: {
+        pcb: parseInt(pcbCount.rows[0].count),
+        electronics: parseInt(electronicsCount.rows[0].count),
+        electrical: parseInt(electricalCount.rows[0].count),
+        structural: parseInt(structuralCount.rows[0].count)
+      }
     };
 
     console.log('DEBUG: Backend Stats:', stats);

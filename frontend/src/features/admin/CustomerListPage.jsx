@@ -513,7 +513,7 @@ const CustomerListPage = () => {
                           </div>
                         </div>
                       ))}
-                      {addresses.length === 0 && <div className="py-8 text-center border-2 border-dashed border-[var(--border-color)] rounded-xl opacity-20 text-[10px] font-black uppercase tracking-widest">No addresses added</div>}
+                      {addresses.length === 0 && <div className="py-4 text-center border-2 border-dashed border-[var(--border-color)] rounded-xl opacity-20 text-[10px] font-black uppercase tracking-widest">No addresses added</div>}
                     </div>
                   </div>
                 </div>

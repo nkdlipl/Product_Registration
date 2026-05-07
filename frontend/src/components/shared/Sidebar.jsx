@@ -18,7 +18,11 @@ import {
   X,
   Sun,
   Moon,
-  Cpu
+  Cpu,
+  UserCog,
+  Building2,
+  CircuitBoard,
+  Plug
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose }) => {
@@ -28,7 +32,8 @@ const Sidebar = ({ role, isOpen, onClose }) => {
   const navigate = useNavigate();
   const [openMenus, setOpenMenus] = useState({
     users: false,
-    designers: false
+    designers: false,
+    inventory: false
   });
 
   const handleNavigate = (path) => {
@@ -51,6 +56,10 @@ const Sidebar = ({ role, isOpen, onClose }) => {
     location.pathname === '/admin/sales' ||
     location.pathname === '/admin/designers' ||
     location.pathname.includes('/admin/teams')
+  );
+  
+  const isInventorySection = (
+    location.pathname.includes('/admin/inventory')
   );
 
   const NavItem = ({ to, label, icon: Icon, isSubItem = false }) => (
@@ -222,7 +231,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                 className="flex items-center gap-4 cursor-pointer flex-1"
               >
                 <div className="w-6 flex justify-center relative z-10">
-                  <Users
+                  <UserCog
                     size={20}
                     strokeWidth={2.5}
                     style={{ color: isUserSection ? 'var(--accent)' : 'var(--text-dim)' }}
@@ -319,6 +328,71 @@ const Sidebar = ({ role, isOpen, onClose }) => {
 
             <NavItem to="/admin/products" label="Products" icon={Zap} />
             <NavItem to="/admin/customers" label="Customers" icon={Users} />
+            
+            {/* Inventory row */}
+            <div
+              className="flex items-center justify-between px-8 py-3.5 transition-all duration-300 group cursor-pointer"
+              style={{
+                color: isInventorySection ? 'var(--primary)' : 'var(--text-muted)',
+                background: isInventorySection ? 'var(--nav-active)' : undefined,
+                borderLeft: isInventorySection ? '3px solid var(--accent)' : '3px solid transparent',
+              }}
+              onMouseEnter={e => {
+                if (!isInventorySection) {
+                  e.currentTarget.style.background = 'var(--nav-hover)';
+                  e.currentTarget.style.color = 'var(--text-main)';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isInventorySection) {
+                  e.currentTarget.style.background = '';
+                  e.currentTarget.style.color = 'var(--text-muted)';
+                }
+              }}
+            >
+              <div
+                onClick={() => navigate('/admin/inventory')}
+                className="flex items-center gap-4 cursor-pointer flex-1"
+              >
+                <div className="w-6 flex justify-center relative z-10">
+                  <Box
+                    size={20}
+                    strokeWidth={2.5}
+                    style={{ color: isInventorySection ? 'var(--accent)' : 'var(--text-dim)' }}
+                    className="group-hover:text-[var(--accent)] transition-colors duration-300"
+                  />
+                </div>
+                <span
+                  className="text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
+                >
+                  Inventory
+                </span>
+              </div>
+              <div
+                onClick={(e) => { e.stopPropagation(); toggleMenu('inventory'); }}
+                className="cursor-pointer p-1.5 rounded-lg transition-all"
+              >
+                <ChevronDown
+                  size={16}
+                  className="transition-transform duration-500"
+                  style={{
+                    transform: openMenus.inventory ? 'rotate(180deg)' : 'rotate(0deg)',
+                    color: openMenus.inventory ? 'var(--accent)' : 'var(--text-dim)',
+                  }}
+                  strokeWidth={3}
+                />
+              </div>
+            </div>
+
+            <SubMenu isOpen={openMenus.inventory}>
+              <div className="space-y-0.5 py-1">
+                <NavItem to="/admin/inventory/pcb" label="PCB" icon={Cpu} isSubItem />
+                <NavItem to="/admin/inventory/electronics" label="Electronics Parts" icon={CircuitBoard} isSubItem />
+                <NavItem to="/admin/inventory/electrical" label="Electrical Parts" icon={Plug} isSubItem />
+                <NavItem to="/admin/inventory/structural" label="Structural Parts" icon={Layers} isSubItem />
+              </div>
+            </SubMenu>
+
             <NavItem to="/admin/feature-mapping" label="Feature Mapping" icon={Cpu} />
           </div>
         )}

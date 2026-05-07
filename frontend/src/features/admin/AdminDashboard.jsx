@@ -11,7 +11,12 @@ import {
   LayoutDashboard,
   Clock,
   ExternalLink,
-  Plus
+  Plus,
+  Box,
+  Cpu,
+  Building2,
+  CircuitBoard,
+  Plug
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -181,6 +186,31 @@ const AdminDashboard = () => {
               <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center">
                 <p className="text-[32px] font-black text-[var(--text-main)] mb-1">{stats?.maintenance || 0}</p>
                 <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Service Staff</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mb-8 mt-12">
+              <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] flex items-center gap-2">
+                <Box size={14} className="text-[var(--accent)]" /> Inventory Breakdown
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center group cursor-pointer hover:border-[var(--accent)] transition-all" onClick={() => navigate('/admin/inventory/pcb')}>
+                <p className="text-[28px] font-black text-[var(--text-main)] mb-1 group-hover:text-[var(--accent)] transition-colors">{stats?.inventory?.pcb || 0}</p>
+                <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">PCB Units</p>
+              </div>
+              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center group cursor-pointer hover:border-[var(--accent)] transition-all" onClick={() => navigate('/admin/inventory/electronics')}>
+                <p className="text-[28px] font-black text-[var(--text-main)] mb-1 group-hover:text-[var(--accent)] transition-colors">{stats?.inventory?.electronics || 0}</p>
+                <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Electronic Parts</p>
+              </div>
+              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center group cursor-pointer hover:border-[var(--accent)] transition-all" onClick={() => navigate('/admin/inventory/electrical')}>
+                <p className="text-[28px] font-black text-[var(--text-main)] mb-1 group-hover:text-[var(--accent)] transition-colors">{stats?.inventory?.electrical || 0}</p>
+                <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Electrical Parts</p>
+              </div>
+              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center group cursor-pointer hover:border-[var(--accent)] transition-all" onClick={() => navigate('/admin/inventory/structural')}>
+                <p className="text-[28px] font-black text-[var(--text-main)] mb-1 group-hover:text-[var(--accent)] transition-colors">{stats?.inventory?.structural || 0}</p>
+                <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Structural Parts</p>
               </div>
             </div>
 
