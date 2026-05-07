@@ -181,6 +181,11 @@ const Sidebar = ({ role, isOpen, onClose }) => {
 
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">
+        {isAdmin && (
+          <div className="mb-6">
+            <NavItem to="/admin/dashboard" label="Analytics Hub" icon={LayoutDashboard} />
+          </div>
+        )}
 
         {isAdmin && (
           <div className="mt-4">

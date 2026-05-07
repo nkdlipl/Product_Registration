@@ -46,6 +46,8 @@ const DashboardLayout = () => {
 };
 
 
+const AdminDashboard = lazy(() => import('../features/admin/AdminDashboard'));
+
 const Router = () => {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -55,6 +57,7 @@ const Router = () => {
         
         {/* Admin Routes */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Admin']}><DashboardLayout /></RoleGuard></AuthGuard>}>
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserListPage />} />
           <Route path="/admin/designers" element={<UserListPage initialRole="Designer" />} />
           <Route path="/admin/maintenance" element={<UserListPage initialRole="Maintenance" />} />
@@ -81,7 +84,7 @@ const Router = () => {
           <Route path="/maintenance/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Maintenance Dashboard Initialization...</div>} />
         </Route>
 
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/" element={<Navigate to="/admin/dashboard" />} />
         <Route path="*" element={<div className="p-10 text-center font-black text-[var(--text-main)] bg-[var(--bg-workspace)] h-screen uppercase tracking-widest text-sm">404 — Record Not Found</div>} />
       </Routes>
     </Suspense>

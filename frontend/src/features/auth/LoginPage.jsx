@@ -16,7 +16,7 @@ const LoginPage = () => {
 
   if (isAuthenticated && user) {
     const roleRoutes = {
-      Admin: '/admin/users',
+      Admin: '/admin/dashboard',
       Designer: '/designer/dashboard',
       Sales: '/sales/dashboard',
       Maintenance: '/maintenance/dashboard'
@@ -32,7 +32,7 @@ const LoginPage = () => {
       toast.success(`Access Granted. Welcome back, ${loggedUser.full_name}.`);
       
       const roleRoutes = {
-        Admin: '/admin/users',
+        Admin: '/admin/dashboard',
         Designer: '/designer/dashboard',
         Sales: '/sales/dashboard',
         Maintenance: '/maintenance/dashboard'

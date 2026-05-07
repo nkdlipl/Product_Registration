@@ -168,13 +168,20 @@ const getAdminStats = async (req, res, next) => {
       JOIN roles r ON t.role_id = r.role_id
       WHERE r.role_name = 'Designer'
     `);
+    const productCount = await db.query('SELECT COUNT(*) FROM products');
+    const customerCount = await db.query('SELECT COUNT(*) FROM customers');
 
-    sendSuccess(res, {
+    const stats = {
       designers: parseInt(designerCount.rows[0].count),
       sales: parseInt(salesCount.rows[0].count),
       maintenance: parseInt(maintenanceCount.rows[0].count),
       teams: parseInt(teamCount.rows[0].count),
-    });
+      products: parseInt(productCount.rows[0].count),
+      customers: parseInt(customerCount.rows[0].count),
+    };
+
+    console.log('DEBUG: Backend Stats:', stats);
+    sendSuccess(res, stats);
   } catch (error) {
     next(error);
   }
