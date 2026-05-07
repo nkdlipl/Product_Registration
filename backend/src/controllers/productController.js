@@ -64,16 +64,6 @@ const createProduct = async (req, res, next) => {
   const final_unit_price = unit_price || 0;
 
   let specification = req.body.specification;
-  const isDispenser = category?.toLowerCase() === 'dispenser' || sub_category?.toLowerCase() === 'dispenser';
-  
-  if (isDispenser) {
-    specification = JSON.stringify({
-      fuel_types: Array.isArray(fuel_types) ? fuel_types : (fuel_types ? [fuel_types] : []),
-      nozzles,
-      dispensing,
-      original_spec: specification
-    });
-  }
 
   const imageFiles = req.files['image'] || [];
   const documentFiles = req.files['document'] || [];
@@ -154,16 +144,6 @@ const updateProduct = async (req, res, next) => {
   } = req.body;
 
   let specification = req.body.specification;
-  const isDispenser = category?.toLowerCase() === 'dispenser' || sub_category?.toLowerCase() === 'dispenser';
-  
-  if (isDispenser) {
-    specification = JSON.stringify({
-      fuel_types: Array.isArray(fuel_types) ? fuel_types : (fuel_types ? [fuel_types] : []),
-      nozzles,
-      dispensing,
-      original_spec: specification
-    });
-  }
 
   try {
     // Fetch existing assets and data to fallback for missing UI fields

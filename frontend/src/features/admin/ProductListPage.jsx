@@ -81,8 +81,19 @@ const ProductListPage = () => {
   const parseHardwareSpec = (specStr) => {
     try {
       if (!specStr) return null;
-      const parsed = JSON.parse(specStr);
-      if (parsed && typeof parsed === 'object' && 'fuel_types' in parsed) return parsed;
+      let parsed = typeof specStr === 'string' ? JSON.parse(specStr) : specStr;
+      
+      // Recover from potential double-nesting caused by previous backend logic
+      if (parsed?.original_spec && typeof parsed.original_spec === 'string') {
+        try {
+          const inner = JSON.parse(parsed.original_spec);
+          if (inner && (inner.fuel_types || inner.dispenser_type || inner.nozzles)) {
+            parsed = { ...inner, ...parsed };
+          }
+        } catch(e) {}
+      }
+      
+      if (parsed && typeof parsed === 'object' && ('fuel_types' in parsed || 'dispenser_type' in parsed || 'nozzles' in parsed)) return parsed;
     } catch (e) {}
     return null;
   };
@@ -90,13 +101,17 @@ const ProductListPage = () => {
   const parseSpecRows = (specStr) => {
     try {
       if (!specStr) return [{ key: '', value: '' }];
-      const outerParsed = JSON.parse(specStr);
-      if (outerParsed?.fuel_types !== undefined && outerParsed?.original_spec) {
+      const outerParsed = typeof specStr === 'string' ? JSON.parse(specStr) : specStr;
+      
+      // If it's a hardware spec object, look for original_spec
+      if (outerParsed?.original_spec) {
         try {
-          const innerParsed = JSON.parse(outerParsed.original_spec);
+          const innerParsed = typeof outerParsed.original_spec === 'string' ? JSON.parse(outerParsed.original_spec) : outerParsed.original_spec;
           if (innerParsed?.type === 'specs_table' && Array.isArray(innerParsed.rows)) return innerParsed.rows;
         } catch (e) {}
       }
+      
+      // If it's already a specs table
       if (outerParsed?.type === 'specs_table' && Array.isArray(outerParsed.rows)) return outerParsed.rows;
     } catch (e) {}
     return [{ key: '', value: '' }];
@@ -202,11 +217,13 @@ const ProductListPage = () => {
       const validRows = specRows.filter(r => r.key.trim() !== '');
       const specJson = validRows.length > 0 ? JSON.stringify({ type: 'specs_table', rows: validRows }) : '';
 
-      if (watchedCategory?.toLowerCase() === 'dispenser' || watchedSubCategory?.toLowerCase() === 'dispenser') {
+      const isDispenser = watchedCategory?.toLowerCase().includes('dispenser') || watchedSubCategory?.toLowerCase().includes('dispenser');
+      if (isDispenser) {
         const hardwareSpec = {
           fuel_types: data.fuel_types || [],
           nozzles: data.nozzles || '',
           dispensing: data.dispensing || '',
+          dispenser_type: data.dispenser_type || '',
           original_spec: specJson
         };
         formData.append('specification', JSON.stringify(hardwareSpec));
@@ -216,7 +233,7 @@ const ProductListPage = () => {
 
       // Append non-file fields first
       Object.keys(data).forEach(key => {
-        if (key !== 'image' && key !== 'document' && key !== 'specification' && key !== 'fuel_types' && key !== 'nozzles' && key !== 'dispensing') {
+        if (key !== 'image' && key !== 'document' && key !== 'specification' && key !== 'fuel_types' && key !== 'nozzles' && key !== 'dispensing' && key !== 'dispenser_type') {
           formData.append(key, data[key]);
         }
       });
@@ -276,7 +293,7 @@ const ProductListPage = () => {
     setModalMode('view');
     setActiveTab('description');
     setActiveImageIdx(0);
-    const resetData = { ...product, fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', specification: hardware ? hardware.original_spec : product.specification };
+    const resetData = { ...product, fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', dispenser_type: hardware?.dispenser_type || '', specification: hardware ? hardware.original_spec : product.specification };
     reset(resetData);
     setIsModalOpen(true);
   };
@@ -287,7 +304,7 @@ const ProductListPage = () => {
     const hardware = parseHardwareSpec(product.specification);
     setSpecRows(parseSpecRows(product.specification));
     setFaqRows(product.faqs || []);
-    const resetData = { product_name: product.product_name, company_name: product.company_name || '', sub_company: product.sub_company || '', description: product.description || '', category: product.category || '', sub_category: product.sub_category || '', feature: product.feature || '', fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', specification: hardware ? hardware.original_spec : product.specification };
+    const resetData = { product_name: product.product_name, company_name: product.company_name || '', sub_company: product.sub_company || '', description: product.description || '', category: product.category || '', sub_category: product.sub_category || '', feature: product.feature || '', fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', dispenser_type: hardware?.dispenser_type || '', specification: hardware ? hardware.original_spec : product.specification };
     reset(resetData);
     setIsModalOpen(true);
   };
@@ -528,11 +545,59 @@ const ProductListPage = () => {
                     /> 
                   )}
                   {activeTab === 'specification' && (() => {
-                    let specTableRows = parseSpecRows(selectedProduct?.specification);
-                    if (specTableRows.length > 0 && specTableRows[0].key) {
-                      return ( <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden">{specTableRows.map((row, idx) => ( <div key={idx} className={`grid grid-cols-[220px_1fr] border-b border-[var(--border-color)] last:border-b-0 ${idx % 2 === 0 ? 'bg-[var(--bg-workspace)]/30' : 'bg-[var(--bg-workspace)]/10'}`}><div className="px-6 py-4 text-[13px] font-black text-[var(--text-muted)] border-r border-[var(--border-color)] uppercase tracking-wider">{row.key}</div><div className="px-6 py-4 text-[13px] text-[var(--text-main)] font-bold">{row.value || '—'}</div></div> ))}</div> );
-                    }
-                    return ( <div className="text-center py-10"><p className="text-[var(--text-dim)] font-black uppercase tracking-widest text-[11px]">No technical data</p></div> );
+                    const hardware = parseHardwareSpec(selectedProduct?.specification);
+                    const specTableRows = parseSpecRows(selectedProduct?.specification);
+                    
+                    return (
+                      <div className="space-y-8">
+                        {hardware && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-8 bg-[var(--nav-hover)] rounded-[24px] border border-[var(--border-color)] shadow-inner">
+                            {hardware.fuel_types?.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest opacity-70">Fuel Variants</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {hardware.fuel_types.map(f => <span key={f} className="px-2.5 py-1 bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] text-[10px] font-black rounded-lg uppercase tracking-tight">{f}</span>)}
+                                </div>
+                              </div>
+                            )}
+                            {hardware.dispenser_type && (
+                              <div className="space-y-2">
+                                <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest opacity-70">Dispenser Type</p>
+                                <p className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.dispenser_type}</p>
+                              </div>
+                            )}
+                            {hardware.nozzles && (
+                              <div className="space-y-2">
+                                <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest opacity-70">Nozzle Setup</p>
+                                <p className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.nozzles}</p>
+                              </div>
+                            )}
+                            {hardware.dispensing && (
+                              <div className="space-y-2">
+                                <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest opacity-70">Dispensing Flow</p>
+                                <p className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.dispensing}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {specTableRows.length > 0 && specTableRows[0].key ? (
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2 px-1"><LayoutGrid size={14} className="text-[var(--accent)]" /><h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Technical Parameters</h4></div>
+                            <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-card)]">
+                              {specTableRows.map((row, idx) => (
+                                <div key={idx} className={`grid grid-cols-[220px_1fr] border-b border-[var(--border-color)] last:border-b-0 ${idx % 2 === 0 ? 'bg-[var(--bg-workspace)]/30' : 'bg-[var(--bg-workspace)]/10'}`}>
+                                  <div className="px-6 py-4 text-[13px] font-black text-[var(--text-muted)] border-r border-[var(--border-color)] uppercase tracking-wider">{row.key}</div>
+                                  <div className="px-6 py-4 text-[13px] text-[var(--text-main)] font-bold">{row.value || '—'}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          !hardware && <div className="text-center py-12 bg-[var(--bg-workspace)]/20 rounded-3xl border-2 border-dashed border-[var(--border-color)]"><p className="text-[var(--text-dim)] font-black uppercase tracking-widest text-[11px] opacity-40">No technical data specified</p></div>
+                        )}
+                      </div>
+                    );
                   })()}
                   {activeTab === 'features' && (
                     <div className="space-y-4 rich-text-content">
@@ -714,7 +779,7 @@ const ProductListPage = () => {
              </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[var(--accent)]">
                 <Tag size={14} strokeWidth={3} />
@@ -729,11 +794,11 @@ const ProductListPage = () => {
                 ].map(type => (
                   <label key={type.id} className="relative cursor-pointer group">
                     <input type="checkbox" value={type.id} {...register('fuel_types')} disabled={modalMode === 'view'} className="peer sr-only" />
-                    <div className="flex items-center gap-4 p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-all peer-checked:border-[var(--accent)] peer-checked:bg-[var(--nav-hover)] group-hover:border-[var(--accent)]/50">
+                    <div className="flex items-center gap-4 p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-all peer-checked:border-[var(--accent)] peer-checked:bg-[var(--nav-hover)] group-hover:border-[var(--accent)]/50 peer-checked:[&_svg]:scale-100 peer-checked:[&_.check-box]:bg-[var(--accent)] peer-checked:[&_.check-box]:border-[var(--accent)]">
                       <div className="text-[var(--text-dim)] peer-checked:text-[var(--accent)] transition-colors">{type.icon}</div>
                       <span className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-tighter">{type.label}</span>
-                      <div className="ml-auto w-5 h-5 rounded-md border border-[var(--border-color)] bg-[var(--input-bg)] peer-checked:bg-[var(--accent)] peer-checked:border-[var(--accent)] transition-all flex items-center justify-center">
-                        <Check size={12} className="text-white opacity-0 peer-checked:opacity-100 transition-opacity" strokeWidth={5} />
+                      <div className="check-box ml-auto w-6 h-6 rounded-md border-2 border-[var(--border-color)] bg-[var(--bg-workspace)] transition-all flex items-center justify-center">
+                        <Check size={14} className="text-white scale-0 transition-transform" strokeWidth={4.5} />
                       </div>
                     </div>
                   </label>
@@ -741,36 +806,70 @@ const ProductListPage = () => {
               </div>
             </div>
 
-            <div className="space-y-4 border-l border-[var(--border-color)] pl-8">
+            <div className="space-y-4 border-l border-[var(--border-color)] pl-6">
               <div className="flex items-center gap-2 text-[var(--accent)]">
-                <Box size={14} strokeWidth={3} />
-                <label className="text-[11px] font-black uppercase tracking-widest">Nozzle Count</label>
+                <LayoutGrid size={14} strokeWidth={3} />
+                <label className="text-[11px] font-black uppercase tracking-widest">Dispenser Type</label>
               </div>
               <div className="space-y-3">
-                {[1, 2, 3].map(num => (
-                  <label key={num} className="relative cursor-pointer block group">
-                    <input type="radio" value={`${num} Nozzle`} {...register('nozzles')} disabled={modalMode === 'view'} className="peer sr-only" />
-                    <div className="flex items-center justify-between p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-all peer-checked:border-[var(--accent)] peer-checked:bg-[var(--nav-hover)] group-hover:border-[var(--accent)]/50">
-                      <span className="text-[12px] font-bold text-[var(--text-main)] uppercase tracking-tight">{num} Nozzle</span>
-                      <div className="w-5 h-5 rounded-full border-2 border-[var(--border-color)] peer-checked:border-[var(--accent)] peer-checked:border-[6px] transition-all" />
+                {['Mini', 'Tower', 'Storage', 'MultiProduct'].map(type => (
+                  <label key={type} className="relative cursor-pointer block group">
+                    <input type="radio" value={type} {...register('dispenser_type')} disabled={modalMode === 'view'} className="peer sr-only" />
+                    <div className="flex items-center justify-between p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-all peer-checked:border-[var(--accent)] peer-checked:bg-[var(--nav-hover)] group-hover:border-[var(--accent)]/50 peer-checked:[&_.dot]:scale-100">
+                      <span className="text-[12px] font-bold text-[var(--text-main)] uppercase tracking-tight">{type}</span>
+                      <div className="w-5 h-5 rounded-full border-2 border-[var(--border-color)] peer-checked:border-[var(--accent)] flex items-center justify-center transition-all">
+                        <div className="dot w-2.5 h-2.5 rounded-full bg-[var(--accent)] scale-0 transition-transform" />
+                      </div>
                     </div>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-4 border-l border-[var(--border-color)] pl-8">
+            <div className="space-y-4 border-l border-[var(--border-color)] pl-6">
+              <div className="flex items-center gap-2 text-[var(--accent)]">
+                <Box size={14} strokeWidth={3} />
+                <label className="text-[11px] font-black uppercase tracking-widest">Nozzle Count</label>
+              </div>
+              <div className="space-y-3">
+                {[1, 2, 3].filter(num => {
+                  const fuelCount = watch('fuel_types')?.length || 0;
+                  if (fuelCount > 1 && num === 1) return false;
+                  if (fuelCount > 2 && num === 2) return false;
+                  return true;
+                }).map(num => (
+                  <label key={num} className="relative cursor-pointer block group">
+                    <input type="radio" value={`${num} Nozzle`} {...register('nozzles')} disabled={modalMode === 'view'} className="peer sr-only" />
+                    <div className="flex items-center justify-between p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-all peer-checked:border-[var(--accent)] peer-checked:bg-[var(--nav-hover)] group-hover:border-[var(--accent)]/50 peer-checked:[&_.dot]:scale-100">
+                      <span className="text-[12px] font-bold text-[var(--text-main)] uppercase tracking-tight">{num} Nozzle</span>
+                      <div className="w-5 h-5 rounded-full border-2 border-[var(--border-color)] peer-checked:border-[var(--accent)] flex items-center justify-center transition-all">
+                        <div className="dot w-2.5 h-2.5 rounded-full bg-[var(--accent)] scale-0 transition-transform" />
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 border-l border-[var(--border-color)] pl-6">
               <div className="flex items-center gap-2 text-[var(--accent)]">
                 <Activity size={14} strokeWidth={3} />
                 <label className="text-[11px] font-black uppercase tracking-widest">Dispensing Flow</label>
               </div>
               <div className="space-y-3">
-                {[1, 2, 3].map(num => (
+                {[1, 2, 3].filter(num => {
+                  const nozzleValue = watch('nozzles');
+                  if (!nozzleValue) return true; // Show all if no nozzle selected yet
+                  const nozzleCount = parseInt(nozzleValue) || 0;
+                  return num <= nozzleCount;
+                }).map(num => (
                   <label key={num} className="relative cursor-pointer block group">
                     <input type="radio" value={`${num} dispensing`} {...register('dispensing')} disabled={modalMode === 'view'} className="peer sr-only" />
-                    <div className="flex items-center justify-between p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-all peer-checked:border-[var(--accent)] peer-checked:bg-[var(--nav-hover)] group-hover:border-[var(--accent)]/50">
+                    <div className="flex items-center justify-between p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-all peer-checked:border-[var(--accent)] peer-checked:bg-[var(--nav-hover)] group-hover:border-[var(--accent)]/50 peer-checked:[&_.dot]:scale-100">
                       <span className="text-[12px] font-bold text-[var(--text-main)] uppercase tracking-tight">{num} dispensing</span>
-                      <div className="w-5 h-5 rounded-full border-2 border-[var(--border-color)] peer-checked:border-[var(--accent)] peer-checked:border-[6px] transition-all" />
+                      <div className="w-5 h-5 rounded-full border-2 border-[var(--border-color)] peer-checked:border-[var(--accent)] flex items-center justify-center transition-all">
+                        <div className="dot w-2.5 h-2.5 rounded-full bg-[var(--accent)] scale-0 transition-transform" />
+                      </div>
                     </div>
                   </label>
                 ))}
