@@ -18,6 +18,18 @@ const categoriesList = [
 const ElectronicsPartsPage = () => {
   const navigate = useNavigate();
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
+  const buildFileUrl = (filePath) => {
+    if (!filePath) return "#";
+
+    if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+      return filePath;
+    }
+
+    const cleanPath = filePath.startsWith("/") ? filePath : `/${filePath}`;
+    const cleanBase = FILE_BASE_URL ? FILE_BASE_URL.replace(/\/$/, "") : "";
+
+    return `${cleanBase}${cleanPath}`;
+  };
   const [items, setItems] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -203,7 +215,7 @@ const ElectronicsPartsPage = () => {
 
   const handleDownload = async (url, filename) => {
     try {
-      const fullUrl = `${FILE_BASE_URL}/${url}`;
+      const fullUrl = buildFileUrl(url);
       const response = await fetch(fullUrl);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
@@ -216,7 +228,7 @@ const ElectronicsPartsPage = () => {
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       toast.error('Download failed. Opening in new tab instead.');
-      window.open(`${FILE_BASE_URL}/${url}`, '_blank');
+      window.open(buildFileUrl(url), '_blank');
     }
   };
 
@@ -323,7 +335,7 @@ const ElectronicsPartsPage = () => {
           {url && (
             <>
               <a 
-                href={`${FILE_BASE_URL}/${url}`} 
+                href={buildFileUrl(url)} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 title="View File"
@@ -721,9 +733,9 @@ const ElectronicsPartsPage = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                         {selectedItem.part_images.map((img, idx) => (
                            <div key={idx} className="aspect-square rounded-[24px] border-2 border-[var(--border-color)] overflow-hidden bg-[var(--bg-workspace)] group relative cursor-pointer shadow-md">
-                                <img src={`${FILE_BASE_URL}/${img}`} alt="Part Visual" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <img src={buildFileUrl(img)} alt="Part Visual" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                                    <a href={`${FILE_BASE_URL}/${img}`} target="_blank" rel="noreferrer" title="View Image" className="p-3 bg-white/10 backdrop-blur-xl rounded-full text-white hover:bg-[var(--accent)] hover:scale-110 transition-all border border-white/20 shadow-lg"><Eye size={22} /></a>
+                                    <a href={buildFileUrl(img)} target="_blank" rel="noreferrer" title="View Image" className="p-3 bg-white/10 backdrop-blur-xl rounded-full text-white hover:bg-[var(--accent)] hover:scale-110 transition-all border border-white/20 shadow-lg"><Eye size={22} /></a>
                                     <button onClick={() => handleDownload(img)} title="Download Image" className="p-3 bg-white/10 backdrop-blur-xl rounded-full text-white hover:bg-[var(--accent)] hover:scale-110 transition-all border border-white/20 shadow-lg"><Download size={22} /></button>
                                 </div>
                            </div>

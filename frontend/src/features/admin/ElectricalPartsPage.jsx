@@ -12,6 +12,18 @@ import { getElectricalParts, createElectricalPart, updateElectricalPart, deleteE
 import { getProducts } from '../../api/products';
 
 const FILE_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const buildFileUrl = (filePath) => {
+  if (!filePath) return "#";
+
+  if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+    return filePath;
+  }
+
+  const cleanPath = filePath.startsWith("/") ? filePath : `/${filePath}`;
+  const cleanBase = FILE_BASE_URL ? FILE_BASE_URL.replace(/\/$/, "") : "";
+
+  return `${cleanBase}${cleanPath}`;
+};
 
 const categoriesList = [
     'Pump',
@@ -186,7 +198,7 @@ const ElectricalPartsPage = () => {
 
   const handleDownload = async (url, filename) => {
     try {
-      const fullUrl = `${FILE_BASE_URL}/${url}`;
+      const fullUrl = buildFileUrl(url);
       const response = await fetch(fullUrl);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
@@ -199,7 +211,7 @@ const ElectricalPartsPage = () => {
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       toast.error('Download failed. Opening in new tab.');
-      window.open(`${FILE_BASE_URL}/${url}`, '_blank');
+      window.open(buildFileUrl(url), '_blank');
     }
   };
 
@@ -318,7 +330,7 @@ const ElectricalPartsPage = () => {
           {url && (
             <>
               <a 
-                href={`${FILE_BASE_URL}/${url}`} 
+                href={buildFileUrl(url)} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 title="View File"
@@ -647,9 +659,9 @@ const ElectricalPartsPage = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                         {selectedItem.part_images.map((img, idx) => (
                            <div key={idx} className="aspect-square rounded-[24px] border-2 border-[var(--border-color)] overflow-hidden bg-[var(--bg-workspace)] group relative cursor-pointer shadow-md">
-                                <img src={`${FILE_BASE_URL}/${img}`} alt="Part" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <img src={buildFileUrl(img)} alt="Part" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                                    <a href={`${FILE_BASE_URL}/${img}`} target="_blank" rel="noreferrer" title="View" className="p-3 bg-white/10 backdrop-blur-xl rounded-full text-white hover:bg-[var(--accent)] transition-all shadow-lg"><Eye size={22} /></a>
+                                    <a href={buildFileUrl(img)} target="_blank" rel="noreferrer" title="View" className="p-3 bg-white/10 backdrop-blur-xl rounded-full text-white hover:bg-[var(--accent)] transition-all shadow-lg"><Eye size={22} /></a>
                                     <button onClick={() => handleDownload(img)} title="Download" className="p-3 bg-white/10 backdrop-blur-xl rounded-full text-white hover:bg-[var(--accent)] transition-all shadow-lg"><Download size={22} /></button>
                                 </div>
                            </div>
@@ -854,9 +866,9 @@ const ElectricalPartsPage = () => {
                                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 mb-6">
                                         {selectedItem.part_images.map((img, idx) => (
                                             <div key={idx} className="relative aspect-square rounded-xl border border-[var(--border-color)] overflow-hidden group">
-                                                <img src={`${FILE_BASE_URL}/${img}`} alt="Part" className="w-full h-full object-cover" />
+                                                <img src={buildFileUrl(img)} alt="Part" className="w-full h-full object-cover" />
                                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                                                    <a href={`${FILE_BASE_URL}/${img}`} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
+                                                    <a href={buildFileUrl(img)} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
                                                     <button type="button" onClick={() => handleRemoveImage(img)} className="text-rose-500 hover:text-white"><Trash2 size={16} /></button>
                                                 </div>
                                             </div>
