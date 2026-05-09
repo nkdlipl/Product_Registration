@@ -277,6 +277,51 @@ table td {
 /* ═══════════════════════════════════════
    ANIMATIONS
    ═══════════════════════════════════════ */
+@keyframes entrance-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes entrance-down {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes entrance-right {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 5px var(--nav-active); }
+  50% { box-shadow: 0 0 20px var(--nav-active); }
+}
+
+.animate-entrance-up { animation: entrance-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-entrance-down { animation: entrance-down 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-entrance-right { animation: entrance-right 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-scale-in { animation: scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-glow { animation: glow-pulse 2s infinite; }
+
+.hover-scale-sm:hover { transform: scale(1.02); transition: transform 0.2s ease; }
+.hover-scale-md:hover { transform: scale(1.05); transition: transform 0.2s ease; }
+
 @keyframes pulse-soft {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

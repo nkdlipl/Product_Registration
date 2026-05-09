@@ -156,7 +156,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
           <div className="relative group">
             {/* Avatar */}
             <div
-              className="w-24 h-24 rounded-full p-0.5 overflow-hidden shadow-xl transition-all duration-500"
+              className="w-24 h-24 rounded-full p-0.5 overflow-hidden shadow-xl transition-all duration-500 animate-float"
               style={{ border: '2px solid var(--accent)', background: 'var(--bg-elevated)' }}
             >
               <img
@@ -191,13 +191,13 @@ const Sidebar = ({ role, isOpen, onClose }) => {
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">
         {isAdmin && (
-          <div className="mb-6">
+          <div className="mb-6 animate-entrance-right" style={{ animationDelay: '100ms' }}>
             <NavItem to="/admin/dashboard" label="Dashboard" icon={LayoutDashboard} />
           </div>
         )}
 
         {isAdmin && (
-          <div className="mt-4">
+          <div className="mt-4 animate-entrance-right" style={{ animationDelay: '200ms' }}>
             <p
               className="px-8 mb-2 uppercase font-bold"
               style={{ color: 'var(--text-muted)', fontSize: '11px', letterSpacing: '0.1em' }}
@@ -326,8 +326,12 @@ const Sidebar = ({ role, isOpen, onClose }) => {
               </div>
             </SubMenu>
 
-            <NavItem to="/admin/products" label="Products" icon={Zap} />
-            <NavItem to="/admin/customers" label="Customers" icon={Users} />
+            <div className="animate-entrance-right" style={{ animationDelay: '300ms' }}>
+              <NavItem to="/admin/products" label="Products" icon={Zap} />
+            </div>
+            <div className="animate-entrance-right" style={{ animationDelay: '400ms' }}>
+              <NavItem to="/admin/customers" label="Customers" icon={Users} />
+            </div>
             
             {/* Inventory row */}
             <div
@@ -393,7 +397,9 @@ const Sidebar = ({ role, isOpen, onClose }) => {
               </div>
             </SubMenu>
 
-            <NavItem to="/admin/feature-mapping" label="Feature Mapping" icon={Cpu} />
+            <div className="animate-entrance-right" style={{ animationDelay: '500ms' }}>
+              <NavItem to="/admin/feature-mapping" label="Feature Mapping" icon={Cpu} />
+            </div>
           </div>
         )}
 

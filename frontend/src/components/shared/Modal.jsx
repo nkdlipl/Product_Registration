@@ -8,14 +8,14 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', header
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 backdrop-blur-sm animate-in fade-in duration-300"
         style={{ background: 'var(--border-glow, rgba(5, 15, 25, 0.8))' }}
         onClick={onClose}
       />
 
       {/* Modal Content */}
       <div
-        className={`relative w-full ${maxWidth} rounded-2xl shadow-2xl p-0 overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]`}
+        className={`relative w-full ${maxWidth} rounded-2xl shadow-2xl p-0 overflow-hidden animate-scale-in flex flex-col max-h-[90vh]`}
         style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border-color)',

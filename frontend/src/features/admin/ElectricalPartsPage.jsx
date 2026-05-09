@@ -43,6 +43,16 @@ const categoriesList = [
     'SPD(Surge Protection Device)'
 ];
 
+const CATEGORY_ICONS = {
+    'Pump': Activity,
+    'Nozzle': Wrench,
+    'Solenoid Valve': Settings,
+    'Relay Box': Box,
+    'Transformer': Zap,
+    'RCCB': Shield,
+    'SPD(Surge Protection Device)': ShieldAlert
+};
+
 const ElectricalPartsPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -150,8 +160,6 @@ const ElectricalPartsPage = () => {
         status: 'Active',
         part_category: '', part_name: '', part_number: '', manufacturer: '', part_type: '', description: '', used_in_product: '', material: '',
         rated_voltage: '', rated_current: '', power_rating: '', phase_type: '', frequency: '', input_type: '', output_type: '', connector_type: '', mounting_type: '', protection_rating: '', operating_temperature: '', dimensions: '', weight: '',
-        serial_number: '', batch_number: '', quantity_available: 0, minimum_stock_level: 0, unit_of_measurement: '', storage_location: '', condition: '', is_damaged: false, damage_description: '', is_assigned: false, assigned_device_id: '', last_inspection_date: '', next_inspection_date: '',
-        supplier_name: '', supplier_contact: '', purchase_date: '', purchase_order_number: '', invoice_number: '', purchase_price: 0, warranty_period: '', warranty_start_date: '', warranty_end_date: '', warranty_status: '', gst_number: '', remarks: '',
         category_name: ''
     });
     setIsModalOpen(true);
@@ -168,7 +176,7 @@ const ElectricalPartsPage = () => {
           if (mode === 'edit') {
               // Convert dates for inputs
               const formattedData = { ...fullData };
-              ['last_inspection_date', 'next_inspection_date', 'purchase_date', 'warranty_start_date', 'warranty_end_date'].forEach(dateField => {
+              ['purchase_date', 'warranty_start_date', 'warranty_end_date'].forEach(dateField => {
                   if (formattedData[dateField]) {
                       formattedData[dateField] = new Date(formattedData[dateField]).toISOString().split('T')[0];
                   }
@@ -428,7 +436,6 @@ const ElectricalPartsPage = () => {
                 <FormField label="Suction Size" name="suction_size" placeholder="e.g. 1 inch" />
                 <FormField label="Outlet Size" name="outlet_size" placeholder="e.g. 1 inch" />
                 <FormField label="Fluid Compatibility" name="fluid_compatibility" placeholder="e.g. Water, Oil" />
-                <FormField label="Pump Material" name="pump_material" placeholder="e.g. Stainless Steel" />
                 <FormField label="RPM" name="rpm" placeholder="e.g. 1440" />
                 <FormField label="Seal Type" name="seal_type" placeholder="e.g. Mechanical" />
                 <FormField label="Noise Level" name="noise_level" placeholder="e.g. 60 dB" />
@@ -450,18 +457,16 @@ const ElectricalPartsPage = () => {
                 <FormField label="Seal Material" name="seal_material" placeholder="e.g. Viton" />
                 <FormField label="Operating Pressure" name="operating_pressure" placeholder="e.g. 3 bar" />
                 <FormField label="Color Code" name="color_code" placeholder="e.g. Red" />
-                <FormField label="Nozzle Weight" name="nozzle_weight" placeholder="e.g. 500g" />
+                <FormField label="Color Code" name="color_code" placeholder="e.g. Red" />
             </>
         );
         case 'Solenoid Valve': return (
             <>
                 <FormField label="Valve Type" name="valve_type" placeholder="e.g. Normally Closed" />
                 <FormField label="Operation Type" name="operation_type" placeholder="e.g. Direct Acting" />
-                <FormField label="Coil Voltage" name="coil_voltage" placeholder="e.g. 24V DC" />
                 <FormField label="Coil Power" name="coil_power" placeholder="e.g. 10W" />
                 <FormField label="Port Size" name="port_size" placeholder="e.g. 1/2 inch" />
                 <FormField label="Number of Ports" name="number_of_ports" placeholder="e.g. 2/2 Way" />
-                <FormField label="Body Material" name="body_material" placeholder="e.g. Brass" />
                 <FormField label="Medium Compatibility" name="medium_compatibility" placeholder="e.g. Air, Water, Gas" />
                 <FormField label="Pressure Range" name="pressure_range" placeholder="e.g. 0-10 bar" />
                 <FormField label="Response Time" name="response_time" placeholder="e.g. 20 ms" />
@@ -473,7 +478,6 @@ const ElectricalPartsPage = () => {
         case 'Relay Box': return (
             <>
                 <FormField label="Relay Box Type" name="relay_box_type" placeholder="e.g. Multi-channel" />
-                <FormField label="Input Voltage" name="input_voltage" placeholder="e.g. 230V AC" />
                 <FormField label="Output Voltage" name="output_voltage" placeholder="e.g. 24V DC" />
                 <FormField label="Number of Relays" name="number_of_relays" placeholder="e.g. 8" />
                 <FormField label="Relay Rating" name="relay_rating" placeholder="e.g. 10A" />
@@ -541,10 +545,10 @@ const ElectricalPartsPage = () => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-10">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
         <div className="flex items-center gap-5">
-          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
-            <Plug size={24} className="text-[#f59e0b]" />
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <Plug size={24} className="text-[#f59e0b] group-hover:scale-110 transition-transform duration-300" />
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">
@@ -597,7 +601,7 @@ const ElectricalPartsPage = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
         title={modalMode === 'create' ? "Register Electrical Part" : modalMode === 'edit' ? "Edit Electrical Specifications" : "Technical Data Sheet"}
-        maxWidth="max-w-6xl"
+        maxWidth={!selectedCategory && modalMode === 'create' ? 'max-w-2xl' : 'max-w-6xl'}
         headerActions={
           <div className="flex items-center gap-3">
              {modalMode !== 'view' && (
@@ -691,28 +695,22 @@ const ElectricalPartsPage = () => {
                       {Object.entries(selectedItem).map(([key, value]) => {
                           const ignoreKeys = ['part_id', 'tech_id', 'inventory_id', 'procurement_id', 'spec_id', 'file_id', 'image_id', 'created_at', 'updated_at', 'part_images', 'files', 'parameters', 'is_active'];
                           if (ignoreKeys.includes(key) || !value || typeof value === 'object') return null;
-                          if (Object.keys(selectedItem).indexOf(key) < 20) return null; // Very basic filter to only show extra params, could be better
-                          return <DataSheetEntry key={key} label={key.replace(/_/g, ' ')} value={String(value)} />;
+                          if (Object.keys(selectedItem).indexOf(key) < 20) return null; // Very basic filter to only show extra params
+                          const displayValue = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value);
+                          return <DataSheetEntry key={key} label={key.replace(/_/g, ' ')} value={displayValue} />;
                       })}
                    </div>
                 </div>
              )}
 
-             {/* Files */}
              <div className="space-y-6">
                 <div className="flex items-center gap-4 ml-4">
                    <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[#f59e0b] shadow-sm"><FileUp size={20} /></div>
                    <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Documentation Library</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                    <FileCard label="Datasheet" url={selectedItem?.files?.datasheet_url} />
-                   <FileCard label="Wiring Diagram" url={selectedItem?.files?.wiring_diagram_url} />
-                   <FileCard label="Installation Manual" url={selectedItem?.files?.installation_manual_url} />
-                   <FileCard label="Test Report" url={selectedItem?.files?.test_report_url} />
-                   <FileCard label="Calibration Cert" url={selectedItem?.files?.calibration_cert_url} />
-                   <FileCard label="Compliance Cert" url={selectedItem?.files?.compliance_cert_url} />
                    <FileCard label="Warranty Document" url={selectedItem?.files?.warranty_doc_url} />
-                   <FileCard label="Invoice" url={selectedItem?.files?.invoice_url} />
                 </div>
              </div>
 
@@ -735,49 +733,73 @@ const ElectricalPartsPage = () => {
                     </div>
                 </div>
              )}
+          </div>        ) : !selectedCategory && modalMode === 'create' ? (
+          /* Category Selection Landing Page */
+          <div className="flex flex-col h-full items-center justify-center py-8 px-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+             <div className="max-w-4xl w-full">
+                <div className="text-center mb-8 relative">
+                   <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#f59e0b]/5 rounded-full blur-3xl animate-pulse" />
+                   <div className="w-14 h-14 bg-gradient-to-br from-[var(--bg-card)] to-[var(--nav-hover)] border-2 border-[#f59e0b]/20 rounded-[20px] flex items-center justify-center mx-auto mb-4 shadow-xl shadow-[#f59e0b]/10 relative z-10 -rotate-3 hover:rotate-0 transition-transform duration-500">
+                       <Layers size={28} className="text-[#f59e0b]" />
+                   </div>
+                   <h3 className="text-xl font-black text-[var(--text-main)] uppercase tracking-tight mb-1">
+                       Select <span className="text-[#f59e0b]">Electrical Category</span>
+                   </h3>
+                   <p className="text-[11px] font-bold text-[var(--text-muted)] opacity-80 uppercase tracking-widest">
+                       Classification Required
+                   </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
+                   {categoriesList.map((cat, idx) => {
+                      const Icon = CATEGORY_ICONS[cat] || Layers;
+                      return (
+                        <button 
+                           key={cat}
+                           type="button"
+                           onClick={() => { 
+                               setValue('category_name', cat, { shouldValidate: true }); 
+                               setSelectedCategory(cat); 
+                               setModalTab('general'); 
+                           }}
+                           style={{ animationDelay: `${idx * 40}ms` }}
+                           className="p-5 bg-white/40 backdrop-blur-md border border-white/20 rounded-[28px] hover:border-[#f59e0b] hover:bg-white/60 transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-2"
+                        >
+                           <div className="w-10 h-10 bg-gradient-to-br from-white to-[var(--nav-hover)] rounded-[14px] flex items-center justify-center shadow-sm group-hover:shadow-[#f59e0b]/10 transition-all duration-500 group-hover:scale-110 relative z-10">
+                               <Icon size={20} className="text-[var(--text-dim)] group-hover:text-[#f59e0b] transition-colors duration-500" />
+                           </div>
+                           <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-main)] group-hover:text-[#f59e0b] transition-colors duration-500 text-center relative z-10">{cat}</span>
+                        </button>
+                      );
+                   })}
+                </div>
+             </div>
           </div>
+
         ) : (
           <div className="flex flex-col h-full max-h-[85vh]">
+            {modalMode === 'create' && (
+                <div className="flex justify-between items-center mb-4 bg-[var(--bg-workspace)]/50 p-2.5 rounded-2xl border border-[var(--border-color)] animate-in fade-in duration-500">
+                   <div className="flex items-center gap-3 pl-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Selected Category:</span>
+                      <span className="text-[11px] font-black text-[var(--accent)] bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-3 py-1 rounded-full flex items-center gap-1.5"><Layers size={12}/> {selectedCategory}</span>
+                   </div>
+                   <button 
+                      type="button" 
+                      onClick={() => { setValue('category_name', ''); setSelectedCategory(''); }} 
+                      className="text-[10px] font-black uppercase tracking-widest text-[var(--text-main)] hover:text-white flex items-center gap-1.5 bg-[var(--bg-card)] hover:bg-[var(--accent)] px-4 py-2 rounded-xl border border-[var(--border-color)] hover:border-[var(--accent)] shadow-sm transition-all"
+                   >
+                      <ArrowLeft size={12} /> Change Category
+                   </button>
+                </div>
+            )}
+
             {/* Tabs */}
-            <div className="flex bg-[var(--bg-workspace)]/50 p-1.5 rounded-2xl mb-8 border border-[var(--border-color)] flex-wrap gap-1">
+            <div className="flex bg-[var(--bg-workspace)]/50 p-1.5 rounded-2xl mb-4 border border-[var(--border-color)] flex-wrap gap-1">
                 {[
-                { id: 'general', label: 'General', icon: Info },
+                { id: 'general', label: 'General Information', icon: Info },
                 { id: 'technical', label: 'Technical Spec', icon: Settings },
-                { id: 'categories', label: 'Category Params', icon: Layers },
-                { id: 'inventory', label: 'Inventory', icon: Package },
-                { id: 'procurement', label: 'Procurement', icon: ShoppingCart },
                 { id: 'files', label: 'Files', icon: FileUp }
                 ].map((tab) => {
-                    if (tab.id === 'categories') {
-                        return (
-                            <div key={tab.id} className="relative group flex-1 min-w-[120px]">
-                                <button
-                                    type="button"
-                                    onClick={() => setModalTab(tab.id)}
-                                    className={`w-full flex items-center justify-center gap-3 py-3 rounded-xl transition-all duration-300 font-black text-[9px] uppercase tracking-widest ${modalTab === tab.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--nav-hover)] hover:text-[var(--text-main)]'}`}
-                                >
-                                    <tab.icon size={14} strokeWidth={3} />
-                                    <span>{tab.label}</span>
-                                </button>
-                                <div className="absolute left-0 top-full mt-2 w-48 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 py-2 flex flex-col max-h-[300px] overflow-y-auto custom-scrollbar">
-                                    {categoriesList.map(cat => (
-                                        <button
-                                            key={cat}
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                setValue('category_name', cat, { shouldValidate: true });
-                                                setModalTab('categories');
-                                            }}
-                                            className={`w-full text-left px-4 py-2 text-[11px] font-bold uppercase tracking-wider hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] transition-colors ${selectedCategory === cat ? 'text-[var(--accent)] bg-[var(--nav-hover)]' : 'text-[var(--text-main)]'}`}
-                                        >
-                                            {cat}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    }
                     return (
                         <button
                             key={tab.id}
@@ -798,6 +820,7 @@ const ElectricalPartsPage = () => {
                 {modalTab === 'general' && (
                     <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <input type="hidden" {...register('category_name')} value={selectedCategory} />
                             <FormField label="Part Category" name="part_category" placeholder="e.g. Pump" required />
                             <FormField label="Part Name" name="part_name" placeholder="e.g. Water Circulation Pump" required />
                         </div>
@@ -816,110 +839,49 @@ const ElectricalPartsPage = () => {
                 )}
 
                 {modalTab === 'technical' && (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                            <FormField label="Rated Voltage" name="rated_voltage" />
-                            <FormField label="Rated Current" name="rated_current" />
-                            <FormField label="Power Rating" name="power_rating" />
-                            <FormField label="Phase Type" name="phase_type" />
-                            <FormField label="Frequency" name="frequency" />
-                            <FormField label="Input Type" name="input_type" />
-                            <FormField label="Output Type" name="output_type" />
-                            <FormField label="Connector Type" name="connector_type" />
-                            <FormField label="Mounting Type" name="mounting_type" />
-                            <FormField label="Protection Rating" name="protection_rating" />
-                            <FormField label="Operating Temperature" name="operating_temperature" />
-                            <FormField label="Dimensions" name="dimensions" />
-                            <FormField label="Weight" name="weight" />
+                    <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-10">
+                        {/* Standard Parameters */}
+                        <div className="space-y-6">
+                            <h4 className="text-[11px] font-black uppercase tracking-widest text-[#f59e0b] mb-6 flex items-center gap-2 bg-[#f59e0b]/5 px-4 py-2 rounded-lg border-l-4 border-[#f59e0b]">
+                                <Settings size={14} /> Global Technical Parameters
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+                                <FormField label="Rated Voltage" name="rated_voltage" />
+                                <FormField label="Rated Current" name="rated_current" />
+                                <FormField label="Power Rating" name="power_rating" />
+                                <FormField label="Phase Type" name="phase_type" />
+                                <FormField label="Frequency" name="frequency" />
+                                <FormField label="Input Type" name="input_type" />
+                                <FormField label="Output Type" name="output_type" />
+                                <FormField label="Connector Type" name="connector_type" />
+                                <FormField label="Mounting Type" name="mounting_type" />
+                                <FormField label="Protection Rating" name="protection_rating" />
+                                <FormField label="Operating Temperature" name="operating_temperature" />
+                                <FormField label="Dimensions" name="dimensions" />
+                                <FormField label="Weight" name="weight" />
+                            </div>
                         </div>
-                    </div>
-                )}
 
-                {modalTab === 'categories' && (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                        <input type="hidden" {...register('category_name')} value={selectedCategory} />
-                        
+                        {/* Category Specialized Parameters */}
                         {selectedCategory && (
-                            <div>
-                                <h4 className="text-[14px] font-black uppercase tracking-widest text-[#f59e0b] mb-6 flex items-center gap-2">
-                                    <Layers size={18} /> {selectedCategory} Parameters
+                            <div className="space-y-6 pt-4 border-t border-[var(--border-color)]">
+                                <h4 className="text-[11px] font-black uppercase tracking-widest text-[#f59e0b] mb-6 flex items-center gap-2 bg-[#f59e0b]/5 px-4 py-2 rounded-lg border-l-4 border-[#f59e0b]">
+                                    <Activity size={14} /> Specialized {selectedCategory} Parameters
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
                                     {renderCategoryFields()}
                                 </div>
                             </div>
                         )}
-                        {!selectedCategory && (
-                            <div className="p-12 text-center border border-dashed border-[var(--border-color)] rounded-3xl opacity-50 mt-2">
-                                <Layers size={48} className="mx-auto mb-4 text-[var(--text-dim)]" />
-                                <p className="text-[12px] font-black uppercase tracking-widest text-[var(--text-muted)]">Hover over the 'Category Params' tab above to select a category</p>
-                            </div>
-                        )}
                     </div>
                 )}
 
-                {modalTab === 'inventory' && (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                            <FormField label="Serial Number" name="serial_number" />
-                            <FormField label="Batch Number" name="batch_number" />
-                            <FormField label="Quantity Available" name="quantity_available" type="number" />
-                            <FormField label="Minimum Stock Level" name="minimum_stock_level" type="number" />
-                            <FormField label="Unit of Measurement" name="unit_of_measurement" />
-                            <FormField label="Storage Location" name="storage_location" />
-                            <FormField label="Condition" name="condition" />
-                            <div className="flex items-center h-full pt-6">
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input type="checkbox" {...register('is_damaged')} className="w-5 h-5 accent-[var(--accent)]" />
-                                    <span className="text-[11px] font-black text-[var(--text-main)] uppercase tracking-widest">Is Damaged</span>
-                                </label>
-                            </div>
-                            <FormField label="Damage Description" name="damage_description" />
-                            <div className="flex items-center h-full pt-6">
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input type="checkbox" {...register('is_assigned')} className="w-5 h-5 accent-[var(--accent)]" />
-                                    <span className="text-[11px] font-black text-[var(--text-main)] uppercase tracking-widest">Is Assigned</span>
-                                </label>
-                            </div>
-                            <FormField label="Assigned Device ID" name="assigned_device_id" />
-                            <FormField label="Last Inspection Date" name="last_inspection_date" type="date" />
-                            <FormField label="Next Inspection Date" name="next_inspection_date" type="date" />
-                        </div>
-                    </div>
-                )}
 
-                {modalTab === 'procurement' && (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                            <FormField label="Supplier Name" name="supplier_name" />
-                            <FormField label="Supplier Contact" name="supplier_contact" />
-                            <FormField label="Purchase Date" name="purchase_date" type="date" />
-                            <FormField label="Purchase Order Number" name="purchase_order_number" />
-                            <FormField label="Invoice Number" name="invoice_number" />
-                            <FormField label="Purchase Price" name="purchase_price" type="number" />
-                            <FormField label="Warranty Period" name="warranty_period" />
-                            <FormField label="Warranty Start Date" name="warranty_start_date" type="date" />
-                            <FormField label="Warranty End Date" name="warranty_end_date" type="date" />
-                            <SelectField label="Warranty Status" name="warranty_status" options={['Active', 'Expired', 'Void']} />
-                            <FormField label="GST Number" name="gst_number" />
-                            <div className="md:col-span-3">
-                                <TextAreaField label="Remarks" name="remarks" />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {modalTab === 'files' && (
+                 {modalTab === 'files' && (
                     <div className="animate-in fade-in slide-in-from-left-4 duration-500">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                            <FileInput label="Datasheet" name="file_datasheet" existingUrl={selectedItem?.files?.datasheet_url} />
-                            <FileInput label="Wiring Diagram" name="file_wiring" existingUrl={selectedItem?.files?.wiring_diagram_url} />
-                            <FileInput label="Installation Manual" name="file_manual" existingUrl={selectedItem?.files?.installation_manual_url} />
-                            <FileInput label="Test Report" name="file_test_report" existingUrl={selectedItem?.files?.test_report_url} />
-                            <FileInput label="Calibration Certificate" name="file_calib_cert" existingUrl={selectedItem?.files?.calibration_cert_url} />
-                            <FileInput label="Compliance Certificate" name="file_compliance" existingUrl={selectedItem?.files?.compliance_cert_url} />
+                            <FileInput label="Datasheet File" name="file_datasheet" existingUrl={selectedItem?.files?.datasheet_url} />
                             <FileInput label="Warranty Document" name="file_warranty" existingUrl={selectedItem?.files?.warranty_doc_url} />
-                            <FileInput label="Invoice / Purchase Bill" name="file_invoice" existingUrl={selectedItem?.files?.invoice_url} />
                             
                             <div className="md:col-span-2">
                             <div className="space-y-3 p-6 bg-[var(--nav-hover)]/30 border border-dashed border-[var(--border-color)] rounded-[24px]">
@@ -954,6 +916,7 @@ const ElectricalPartsPage = () => {
                         </div>
                     </div>
                 )}
+
 
                 </form>
             </div>

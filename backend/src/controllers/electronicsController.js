@@ -44,14 +44,41 @@ const getElectronicsPartById = async (req, res, next) => {
         const part = partResult.rows[0];
 
         const techSpecResult = await db.query('SELECT * FROM ELECTRONICS_TECH_SPEC WHERE part_id = $1', [id]);
+        
+        // Dynamic Category Fetching
         const catSpecResult = await db.query('SELECT * FROM ELECTRONICS_CATEGORY_SPEC WHERE part_id = $1', [id]);
+        let categoryData = catSpecResult.rows[0] || {};
+        const catName = categoryData.category_name;
+
+        // Specialized Table Fetching Mapping
+        const tableMap = {
+            'Battery': 'battery_specs',
+            'Flow Meter': 'flow_meter_specs',
+            'SMPS': 'smps_specs',
+            'Printer': 'printer_specs',
+            'Speaker': 'speaker_specs',
+            'Amplifier': 'amplifier_specs',
+            'Temperature Sensor': 'temperature_sensor_specs',
+            'Quality Sensor': 'quality_sensor_specs',
+            'Pressure Sensor': 'pressure_sensor_specs',
+            'EMI-EMC Filter': 'emi_emc_filter_specs',
+            'DC Meter': 'dc_meter_specs'
+        };
+
+        if (catName && tableMap[catName]) {
+            const specRes = await db.query(`SELECT * FROM ${tableMap[catName]} WHERE part_id = $1`, [id]);
+            if (specRes.rows[0]) {
+                categoryData.spec_data = specRes.rows[0];
+            }
+        }
+
         const filesResult = await db.query('SELECT * FROM ELECTRONICS_FILES WHERE part_id = $1', [id]);
         const imagesResult = await db.query('SELECT image_url FROM ELECTRONICS_IMAGES WHERE part_id = $1', [id]);
 
         sendSuccess(res, {
             ...part,
             techSpec: techSpecResult.rows[0] || {},
-            categorySpec: catSpecResult.rows[0] || {},
+            categorySpec: categoryData,
             files: filesResult.rows[0] || {},
             part_images: imagesResult.rows.map(row => row.image_url)
         });
@@ -90,12 +117,43 @@ const createElectronicsPart = async (req, res, next) => {
             [partId, rated_voltage, rated_current, power_rating, input_type, output_type, connector_type, communication_iface, mounting_type, operating_temp, protection_rating, dimensions, weight]
         );
 
-        // 3. Category Spec
+        // 3. Category Spec & Specialized Routing
         if (category_name && spec_data) {
+            const parsedData = typeof spec_data === 'string' ? JSON.parse(spec_data) : spec_data;
+            
             await db.query(
                 `INSERT INTO ELECTRONICS_CATEGORY_SPEC (part_id, category_name, spec_data) VALUES ($1, $2, $3)`,
-                [partId, category_name, typeof spec_data === 'string' ? spec_data : JSON.stringify(spec_data)]
+                [partId, category_name, JSON.stringify(parsedData)]
             );
+
+            // Mapping definitions for specialized tables
+            const mapping = {
+                'Battery': { table: 'battery_specs', columns: ['chemistry', 'cycle_life', 'nominal_voltage', 'capacity', 'internal_resistance', 'charge_temp', 'discharge_temp'] },
+                'Flow Meter': { table: 'flow_meter_specs', columns: ['flow_range', 'pipe_diameter', 'pulse_rate', 'max_pressure', 'fluid_type', 'output_protocol'] },
+                'SMPS': { table: 'smps_specs', columns: ['input_voltage', 'output_voltage', 'output_current', 'efficiency', 'ripple_noise', 'cooling_method'] },
+                'Printer': { table: 'printer_specs', columns: ['print_method', 'print_speed', 'paper_size', 'interface', 'resolution'] },
+                'Speaker': { table: 'speaker_specs', columns: ['speaker_type', 'impedance', 'power_output', 'frequency_response', 'sensitivity', 'dimensions'] },
+                'Amplifier': { table: 'amplifier_specs', columns: ['amplifier_type', 'ic_chipset', 'input_voltage', 'output_power', 'channel_type', 'speaker_impedance_support', 'input_signal_type', 'volume_control', 'protection'] },
+                'Temperature Sensor': { table: 'temperature_sensor_specs', columns: ['sensor_type', 'sensor_model', 'temperature_range', 'accuracy', 'output_signal', 'interface', 'probe_type', 'cable_length', 'calibration_required'] },
+                'Quality Sensor': { table: 'quality_sensor_specs', columns: ['sensor_type', 'measured_parameter', 'measuring_range', 'accuracy', 'output_signal', 'communication_protocol', 'fluid_compatibility', 'calibration_required', 'calibration_data'] },
+                'Pressure Sensor': { table: 'pressure_sensor_specs', columns: ['pressure_range', 'pressure_type', 'output_signal', 'accuracy', 'thread_size', 'overload_pressure', 'burst_pressure', 'medium_compatibility', 'operating_voltage'] },
+                'EMI-EMC Filter': { table: 'emi_emc_filter_specs', columns: ['filter_type', 'rated_voltage', 'rated_current', 'frequency_range', 'leakage_current', 'filter_stage', 'mounting_type', 'certification', 'application'] },
+                'DC Meter': { table: 'dc_meter_specs', columns: ['meter_type', 'voltage_range', 'current_range', 'display_type', 'accuracy_class', 'shunt_required', 'communication_interface', 'protocol', 'power_supply', 'mounting_type'] }
+            };
+
+            if (mapping[category_name]) {
+                const { table, columns } = mapping[category_name];
+                
+                // Extract file URLs for specialized tables
+                const datasheetUrl = req.files && req.files['file_datasheet'] ? `/uploads/inventory/${req.files['file_datasheet'][0].filename}` : null;
+                const warrantyUrl = req.files && req.files['file_warranty'] ? `/uploads/inventory/${req.files['file_warranty'][0].filename}` : null;
+                const imagesGallery = req.files && req.files['part_images'] ? JSON.stringify(req.files['part_images'].map(img => `/uploads/inventory/${img.filename}`)) : null;
+
+                const colNames = ['part_id', ...columns, 'datasheet_file', 'warranty_document', 'part_images_gallery'];
+                const placeholders = colNames.map((_, i) => `$${i + 1}`).join(', ');
+                const values = [partId, ...columns.map(col => parsedData[col]), datasheetUrl, warrantyUrl, imagesGallery];
+                await db.query(`INSERT INTO ${table} (${colNames.join(', ')}) VALUES (${placeholders})`, values);
+            }
         }
 
         // 4. Files
@@ -177,20 +235,64 @@ const updateElectronicsPart = async (req, res, next) => {
             );
         }
 
-        // 3. Category Spec
+        // 3. Category Spec & Specialized Routing
         if (category_name && spec_data) {
-            const parsedSpecData = typeof spec_data === 'string' ? spec_data : JSON.stringify(spec_data);
+            const parsedSpecData = typeof spec_data === 'string' ? JSON.parse(spec_data) : spec_data;
             const existingCatSpec = await db.query('SELECT cat_spec_id FROM ELECTRONICS_CATEGORY_SPEC WHERE part_id = $1', [id]);
+            
             if (existingCatSpec.rows.length > 0) {
                 await db.query(
                     `UPDATE ELECTRONICS_CATEGORY_SPEC SET category_name = $1, spec_data = $2 WHERE part_id = $3`,
-                    [category_name, parsedSpecData, id]
+                    [category_name, JSON.stringify(parsedSpecData), id]
                 );
             } else {
                 await db.query(
                     `INSERT INTO ELECTRONICS_CATEGORY_SPEC (part_id, category_name, spec_data) VALUES ($1, $2, $3)`,
-                    [id, category_name, parsedSpecData]
+                    [id, category_name, JSON.stringify(parsedSpecData)]
                 );
+            }
+
+            // Mapping definitions for specialized tables
+            const mapping = {
+                'Battery': { table: 'battery_specs', columns: ['chemistry', 'cycle_life', 'nominal_voltage', 'capacity', 'internal_resistance', 'charge_temp', 'discharge_temp'] },
+                'Flow Meter': { table: 'flow_meter_specs', columns: ['flow_range', 'pipe_diameter', 'pulse_rate', 'max_pressure', 'fluid_type', 'output_protocol'] },
+                'SMPS': { table: 'smps_specs', columns: ['input_voltage', 'output_voltage', 'output_current', 'efficiency', 'ripple_noise', 'cooling_method'] },
+                'Printer': { table: 'printer_specs', columns: ['print_method', 'print_speed', 'paper_size', 'interface', 'resolution'] },
+                'Speaker': { table: 'speaker_specs', columns: ['speaker_type', 'impedance', 'power_output', 'frequency_response', 'sensitivity', 'dimensions'] },
+                'Amplifier': { table: 'amplifier_specs', columns: ['amplifier_type', 'ic_chipset', 'input_voltage', 'output_power', 'channel_type', 'speaker_impedance_support', 'input_signal_type', 'volume_control', 'protection'] },
+                'Temperature Sensor': { table: 'temperature_sensor_specs', columns: ['sensor_type', 'sensor_model', 'temperature_range', 'accuracy', 'output_signal', 'interface', 'probe_type', 'cable_length', 'calibration_required'] },
+                'Quality Sensor': { table: 'quality_sensor_specs', columns: ['sensor_type', 'measured_parameter', 'measuring_range', 'accuracy', 'output_signal', 'communication_protocol', 'fluid_compatibility', 'calibration_required', 'calibration_data'] },
+                'Pressure Sensor': { table: 'pressure_sensor_specs', columns: ['pressure_range', 'pressure_type', 'output_signal', 'accuracy', 'thread_size', 'overload_pressure', 'burst_pressure', 'medium_compatibility', 'operating_voltage'] },
+                'EMI-EMC Filter': { table: 'emi_emc_filter_specs', columns: ['filter_type', 'rated_voltage', 'rated_current', 'frequency_range', 'leakage_current', 'filter_stage', 'mounting_type', 'certification', 'application'] },
+                'DC Meter': { table: 'dc_meter_specs', columns: ['meter_type', 'voltage_range', 'current_range', 'display_type', 'accuracy_class', 'shunt_required', 'communication_interface', 'protocol', 'power_supply', 'mounting_type'] }
+            };
+
+            if (mapping[category_name]) {
+                const { table, columns } = mapping[category_name];
+                const exists = await db.query(`SELECT spec_id FROM ${table} WHERE part_id = $1`, [id]);
+                
+                // Extract file URLs for specialized tables
+                const datasheetUrl = req.files && req.files['file_datasheet'] ? `/uploads/inventory/${req.files['file_datasheet'][0].filename}` : null;
+                const warrantyUrl = req.files && req.files['file_warranty'] ? `/uploads/inventory/${req.files['file_warranty'][0].filename}` : null;
+                const imagesGallery = req.files && req.files['part_images'] ? JSON.stringify(req.files['part_images'].map(img => `/uploads/inventory/${img.filename}`)) : null;
+
+                if (exists.rows.length > 0) {
+                    let updateCols = columns.map((col, i) => `${col} = $${i + 1}`);
+                    let params = [...columns.map(col => parsedSpecData[col])];
+                    let idx = columns.length + 1;
+
+                    if (datasheetUrl) { updateCols.push(`datasheet_file = $${idx++}`); params.push(datasheetUrl); }
+                    if (warrantyUrl) { updateCols.push(`warranty_document = $${idx++}`); params.push(warrantyUrl); }
+                    if (imagesGallery) { updateCols.push(`part_images_gallery = $${idx++}`); params.push(imagesGallery); }
+
+                    params.push(id);
+                    await db.query(`UPDATE ${table} SET ${updateCols.join(', ')} WHERE part_id = $${idx}`, params);
+                } else {
+                    const colNames = ['part_id', ...columns, 'datasheet_file', 'warranty_document', 'part_images_gallery'];
+                    const placeholders = colNames.map((_, i) => `$${i + 1}`).join(', ');
+                    const values = [id, ...columns.map(col => parsedSpecData[col]), datasheetUrl, warrantyUrl, imagesGallery];
+                    await db.query(`INSERT INTO ${table} (${colNames.join(', ')}) VALUES (${placeholders})`, values);
+                }
             }
         }
 

@@ -407,19 +407,19 @@ const ProductListPage = () => {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
         <div className="flex items-center gap-5">
-          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
             <Zap size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Product Catalogue</h1>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">Product Catalogue</h1>
             <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Inventory & Specifications Management</p>
           </div>
         </div>
         <button 
           onClick={handleOpenCreate} 
-          className="btn-primary shadow-lg px-8 py-3 group"
+          className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
           style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
         >
           <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />

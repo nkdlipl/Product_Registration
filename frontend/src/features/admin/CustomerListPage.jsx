@@ -189,13 +189,13 @@ const CustomerListPage = () => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
         <div className="flex items-center gap-5">
-          <div className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
+          <div className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
             <Users className="text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" size={28} />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Customer Management</h1>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">Customer Management</h1>
             <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Directory of registered clients and companies</p>
           </div>
         </div>

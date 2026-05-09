@@ -5,15 +5,104 @@ import Modal from '../../components/shared/Modal';
 import { getElectronicsParts, createElectronicsPart, getElectronicsPartById, deleteElectronicsPart, updateElectronicsPart, deleteElectronicsFile } from '../../api/inventory';
 import { getProducts } from '../../api/products';
 import { 
-  Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2
+  Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
-const categoriesList = [
-    'Battery', 'Flow Meter', 'SMPS', 'Printer', 'Speaker', 'Amplifier', 
-    'Temperature Sensor', 'Quality Sensor', 'Pressure Sensor', 'EMI-EMC Filter', 'DC Meter'
-];
+
+const CATEGORY_CONFIG = {
+    'Battery': {
+        icon: Battery,
+        techSpecs: ['Chemistry', 'Cycle Life', 'Capacity', 'Internal Resistance', 'Charge Temp', 'Discharge Temp'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    },
+    'Flow Meter': {
+        icon: Gauge,
+        techSpecs: ['Flow Range', 'Pipe Diameter', 'Pulse Rate', 'Max Pressure', 'Fluid Type', 'Output Protocol'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    },
+    'SMPS': {
+        icon: Zap,
+        techSpecs: ['Output Voltage', 'Output Current', 'Efficiency', 'Ripple Noise', 'Cooling Method'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    },
+    'Printer': {
+        icon: Printer,
+        techSpecs: ['Print Method', 'Print Speed', 'Paper Size', 'Resolution'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    },
+    'Speaker': {
+        icon: Volume2,
+        techSpecs: ['Speaker Type', 'Impedance', 'Power Output', 'Frequency Response', 'Sensitivity'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    },
+    'Amplifier': {
+        icon: Speaker,
+        techSpecs: ['Amplifier Type', 'IC Chipset', 'Output Power', 'Channel Type', 'Speaker Impedance Support', 'Input Signal Type', 'Volume Control', 'Protection'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    },
+    'Temperature Sensor': {
+        icon: Thermometer,
+        techSpecs: ['Sensor Type', 'Sensor Model', 'Temperature Range', 'Accuracy', 'Probe Type', 'Cable Length', 'Calibration Required'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    },
+    'Quality Sensor': {
+        icon: FlaskConical,
+        techSpecs: ['Sensor Type', 'Measured Parameter', 'Measuring Range', 'Accuracy', 'Fluid Compatibility', 'Calibration Required'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    },
+    'Pressure Sensor': {
+        icon: Gauge,
+        techSpecs: ['Pressure Range', 'Pressure Type', 'Accuracy', 'Thread Size', 'Overload Pressure', 'Burst Pressure', 'Medium Compatibility'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    },
+    'EMI-EMC Filter': {
+        icon: ShieldCheck,
+        techSpecs: ['Filter Type', 'Frequency Range', 'Leakage Current', 'Filter Stage', 'Certification', 'Application'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    },
+    'DC Meter': {
+        icon: Binary,
+        techSpecs: ['Meter Type', 'Voltage Range', 'Current Range', 'Display Type', 'Accuracy Class', 'Shunt Required', 'Protocol'],
+        files: [
+            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
+            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
+        ]
+    }
+};
+
+const categoriesList = Object.keys(CATEGORY_CONFIG);
 
 const ElectronicsPartsPage = () => {
   const navigate = useNavigate();
@@ -605,9 +694,9 @@ const ElectronicsPartsPage = () => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-10">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
         <div className="flex items-center gap-5">
-          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
             <CircuitBoard size={24} className="text-[var(--accent)]" />
           </div>
           <div>
@@ -621,7 +710,7 @@ const ElectronicsPartsPage = () => {
         </div>
         <button 
           onClick={handleOpenCreate}
-          className="btn-primary shadow-lg px-8 py-3 group"
+          className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
           style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
         >
           <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
@@ -630,8 +719,8 @@ const ElectronicsPartsPage = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="space-y-6">
-        <div className="workspace-card p-4 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)]">
+      <div className="space-y-6 animate-entrance-up" style={{ animationDelay: '200ms' }}>
+        <div className="workspace-card p-4 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] hover-scale-sm transition-all duration-500">
           <div className="relative flex-1 group w-full">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
             <input 
@@ -644,17 +733,19 @@ const ElectronicsPartsPage = () => {
           </div>
         </div>
 
-        <DataTable 
-          columns={columns}
-          data={items}
-          loading={loading}
-          totalCount={pagination.total}
-          currentPage={pagination.page}
-          totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
-          onView={handleView}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+        <div className="animate-in fade-in duration-700 delay-300">
+          <DataTable 
+            columns={columns}
+            data={items}
+            loading={loading}
+            totalCount={pagination.total}
+            currentPage={pagination.page}
+            totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
+            onView={handleView}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </div>
       </div>
 
       {/* Management Modal */}
@@ -662,7 +753,7 @@ const ElectronicsPartsPage = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
         title={modalMode === 'create' ? "Register Electronics Part" : modalMode === 'edit' ? "Edit Specifications" : "Component Data Sheet"}
-        maxWidth="max-w-6xl"
+        maxWidth={!selectedCategory && modalMode === 'create' ? 'max-w-2xl' : 'max-w-6xl'}
         headerActions={
           <div className="flex items-center gap-3">
              {modalMode !== 'view' && (
@@ -770,13 +861,8 @@ const ElectronicsPartsPage = () => {
                    <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Documentation Library</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                   <FileCard label="Datasheet" url={selectedItem?.files?.datasheet_url} />
-                   <FileCard label="Wiring Diagram" url={selectedItem?.files?.wiring_diagram_url} />
-                   <FileCard label="User Manual" url={selectedItem?.files?.user_manual_url} />
-                   <FileCard label="Test Report" url={selectedItem?.files?.test_report_url} />
-                   <FileCard label="Calibration Certificate" url={selectedItem?.files?.calibration_cert_url} />
-                   <FileCard label="Warranty Certificate" url={selectedItem?.files?.warranty_cert_url} />
-                   <FileCard label="Invoice / Bill" url={selectedItem?.files?.invoice_url} />
+                    <FileCard label="Datasheet" url={selectedItem?.files?.datasheet_url} />
+                    <FileCard label="Warranty Document" url={selectedItem?.files?.warranty_cert_url} />
                 </div>
              </div>
 
@@ -801,47 +887,73 @@ const ElectronicsPartsPage = () => {
                 </div>
              )}
           </div>
+        ) : !selectedCategory && modalMode === 'create' ? (
+          /* Category Selection Landing Page */
+          <div className="flex flex-col h-full items-center justify-center py-8 px-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+             <div className="max-w-4xl w-full">
+                <div className="text-center mb-8 relative">
+                   <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-[var(--accent)]/5 rounded-full blur-3xl animate-pulse" />
+                   <div className="w-14 h-14 bg-gradient-to-br from-[var(--bg-card)] to-[var(--nav-hover)] border-2 border-[var(--accent)]/20 rounded-[20px] flex items-center justify-center mx-auto mb-4 shadow-xl shadow-[var(--accent)]/10 relative z-10 rotate-3 hover:rotate-0 transition-transform duration-500">
+                       <CircuitBoard size={28} className="text-[var(--accent)]" />
+                   </div>
+                   <h3 className="text-xl font-black text-[var(--text-main)] uppercase tracking-tight mb-1">
+                       Select <span className="text-[var(--accent)]">Part Category</span>
+                   </h3>
+                   <p className="text-[11px] font-bold text-[var(--text-muted)] opacity-80 uppercase tracking-widest">
+                       Classification Required
+                   </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
+                   {categoriesList.map((cat, idx) => {
+                      const Icon = CATEGORY_CONFIG[cat]?.icon || Layers;
+                      return (
+                        <button 
+                           key={cat}
+                           type="button"
+                           onClick={() => { 
+                               setValue('category_name', cat, { shouldValidate: true }); 
+                               setSelectedCategory(cat); 
+                               setModalTab('general'); 
+                           }}
+                           style={{ animationDelay: `${idx * 40}ms` }}
+                           className="p-5 bg-white/40 backdrop-blur-md border border-white/20 rounded-[28px] hover:border-[var(--accent)] hover:bg-white/60 transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-2"
+                        >
+                           <div className="w-10 h-10 bg-gradient-to-br from-white to-[var(--nav-hover)] rounded-[14px] flex items-center justify-center shadow-sm group-hover:shadow-[var(--accent)]/10 transition-all duration-500 group-hover:scale-110 relative z-10">
+                               <Icon size={20} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors duration-500" />
+                           </div>
+                           <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors duration-500 text-center relative z-10">{cat}</span>
+                        </button>
+                      );
+                   })}
+                </div>
+             </div>
+          </div>
         ) : (
           /* Create / Edit Mode (Tabs) */
           <div className="flex flex-col h-full max-h-[85vh]">
+            {modalMode === 'create' && (
+                <div className="flex justify-between items-center mb-4 bg-[var(--bg-workspace)]/50 p-2.5 rounded-2xl border border-[var(--border-color)] animate-in fade-in duration-500">
+                   <div className="flex items-center gap-3 pl-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Selected Category:</span>
+                      <span className="text-[11px] font-black text-[var(--accent)] bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-3 py-1 rounded-full flex items-center gap-1.5"><CircuitBoard size={12}/> {selectedCategory}</span>
+                   </div>
+                   <button 
+                      type="button" 
+                      onClick={() => { setValue('category_name', ''); setSelectedCategory(''); }} 
+                      className="text-[10px] font-black uppercase tracking-widest text-[var(--text-main)] hover:text-white flex items-center gap-1.5 bg-[var(--bg-card)] hover:bg-[var(--accent)] px-4 py-2 rounded-xl border border-[var(--border-color)] hover:border-[var(--accent)] shadow-sm transition-all"
+                   >
+                      <ArrowLeft size={12} /> Change Category
+                   </button>
+                </div>
+            )}
+
             {/* Tab Navigation */}
-            <div className="flex bg-[var(--bg-workspace)]/50 p-1.5 rounded-2xl mb-8 border border-[var(--border-color)] flex-wrap gap-1">
+            <div className="flex bg-[var(--bg-workspace)]/50 p-1.5 rounded-2xl mb-4 border border-[var(--border-color)] flex-wrap gap-1">
                 {[
-                { id: 'general', label: 'General', icon: Info },
+                { id: 'general', label: 'General Information', icon: Info },
                 { id: 'technical', label: 'Technical Spec', icon: Settings },
-                { id: 'categories', label: 'Category Params', icon: CircuitBoard },
-                { id: 'files', label: 'Files & Media', icon: FileUp }
+                { id: 'files', label: 'Files', icon: FileUp }
                 ].map((tab) => {
-                    if (tab.id === 'categories') {
-                        return (
-                            <div key={tab.id} className="relative group flex-1 min-w-[120px]">
-                                <button
-                                    type="button"
-                                    onClick={() => setModalTab(tab.id)}
-                                    className={`w-full flex items-center justify-center gap-3 py-3 rounded-xl transition-all duration-300 font-black text-[10px] uppercase tracking-widest ${modalTab === tab.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--nav-hover)] hover:text-[var(--text-main)]'}`}
-                                >
-                                    <tab.icon size={14} strokeWidth={3} />
-                                    <span>{tab.label}</span>
-                                </button>
-                                <div className="absolute left-0 top-full mt-2 w-48 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 py-2 flex flex-col max-h-[300px] overflow-y-auto custom-scrollbar">
-                                    {categoriesList.map(cat => (
-                                        <button
-                                            key={cat}
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                setValue('category_name', cat, { shouldValidate: true });
-                                                setModalTab('categories');
-                                            }}
-                                            className={`w-full text-left px-4 py-2 text-[11px] font-bold uppercase tracking-wider hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] transition-colors ${selectedCategory === cat ? 'text-[var(--accent)] bg-[var(--nav-hover)]' : 'text-[var(--text-main)]'}`}
-                                        >
-                                            {cat}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    }
                     return (
                         <button
                             key={tab.id}
@@ -863,6 +975,7 @@ const ElectronicsPartsPage = () => {
                 {modalTab === 'general' && (
                     <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <input type="hidden" {...register('category_name')} value={selectedCategory} />
                             <FormField label="Part Category" name="part_category" placeholder="e.g. Sensors" required />
                             <FormField label="Part Name" name="part_name" placeholder="e.g. Laser Distance Sensor" required />
                         </div>
@@ -889,21 +1002,39 @@ const ElectronicsPartsPage = () => {
                 )}
 
                 {modalTab === 'technical' && (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                            <FormField label="Rated Voltage" name="rated_voltage" placeholder="e.g. 24V DC" />
-                            <FormField label="Rated Current" name="rated_current" placeholder="e.g. 10A" />
-                            <FormField label="Power Rating" name="power_rating" placeholder="e.g. 240W" />
-                            <FormField label="Input Type" name="input_type" placeholder="e.g. Analog 4-20mA" />
-                            <FormField label="Output Type" name="output_type" placeholder="e.g. Digital NPN" />
-                            <FormField label="Connector Type" name="connector_type" placeholder="e.g. M12 4-pin" />
-                            <FormField label="Communication Interface" name="communication_iface" placeholder="e.g. RS485 / IO-Link" />
-                            <FormField label="Mounting Type" name="mounting_type" placeholder="e.g. DIN Rail" />
-                            <FormField label="Operating Temperature" name="operating_temp" placeholder="e.g. -20 to 80 °C" />
-                            <FormField label="Protection Rating" name="protection_rating" placeholder="e.g. IP67" />
-                            <FormField label="Dimensions" name="dimensions" placeholder="e.g. 50x50x20 mm" />
-                            <FormField label="Weight" name="weight" placeholder="e.g. 150g" />
+                    <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-10">
+                        {/* Standard Parameters */}
+                        <div className="space-y-6">
+                            <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)] mb-6 flex items-center gap-2 bg-[var(--accent)]/5 px-4 py-2 rounded-lg border-l-4 border-[var(--accent)]">
+                                <Settings size={14} /> Global Technical Parameters
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+                                <FormField label="Rated Voltage" name="rated_voltage" placeholder="e.g. 24V DC" />
+                                <FormField label="Rated Current" name="rated_current" placeholder="e.g. 10A" />
+                                <FormField label="Power Rating" name="power_rating" placeholder="e.g. 240W" />
+                                <FormField label="Input Type" name="input_type" placeholder="e.g. Analog 4-20mA" />
+                                <FormField label="Output Type" name="output_type" placeholder="e.g. Digital NPN" />
+                                <FormField label="Connector Type" name="connector_type" placeholder="e.g. M12 4-pin" />
+                                <FormField label="Communication Interface" name="communication_iface" placeholder="e.g. RS485 / IO-Link" />
+                                <FormField label="Mounting Type" name="mounting_type" placeholder="e.g. DIN Rail" />
+                                <FormField label="Operating Temperature" name="operating_temp" placeholder="e.g. -20 to 80 °C" />
+                                <FormField label="Protection Rating" name="protection_rating" placeholder="e.g. IP67" />
+                                <FormField label="Dimensions" name="dimensions" placeholder="e.g. 50x50x20 mm" />
+                                <FormField label="Weight" name="weight" placeholder="e.g. 150g" />
+                            </div>
                         </div>
+
+                        {/* Category Specialized Parameters */}
+                        {selectedCategory && (
+                            <div className="space-y-6 pt-4 border-t border-[var(--border-color)]">
+                                <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)] mb-6 flex items-center gap-2 bg-[var(--accent)]/5 px-4 py-2 rounded-lg border-l-4 border-[var(--accent)]">
+                                    <Activity size={14} /> Specialized {selectedCategory} Parameters
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+                                    {renderCategoryFields()}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -912,20 +1043,21 @@ const ElectronicsPartsPage = () => {
                         <input type="hidden" {...register('category_name', { required: 'Category is required' })} value={selectedCategory} />
                         {errors.category_name && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors.category_name.message}</p>}
                         
-                        {selectedCategory && (
-                            <div>
-                                <h4 className="text-[14px] font-black uppercase tracking-widest text-[var(--accent)] mb-6 flex items-center gap-2">
-                                    <CircuitBoard size={18} /> {selectedCategory} Parameters
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                                    {renderCategoryFields()}
-                                </div>
-                            </div>
-                        )}
                         {!selectedCategory && (
                             <div className="p-12 text-center border border-dashed border-[var(--border-color)] rounded-3xl opacity-50 mt-2">
                                 <CircuitBoard size={48} className="mx-auto mb-4 text-[var(--text-dim)]" />
                                 <p className="text-[12px] font-black uppercase tracking-widest text-[var(--text-muted)]">Hover over the 'Category Params' tab above to select a category</p>
+                            </div>
+                        )}
+
+                        {selectedCategory && (
+                            <div className="mt-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <h4 className="text-[14px] font-black uppercase tracking-widest text-[var(--accent)] mb-6 flex items-center gap-2 border-b border-[var(--border-color)] pb-4">
+                                    <Activity size={18} /> Detailed {selectedCategory} Parameters
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+                                    {renderCategoryFields()}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -934,13 +1066,21 @@ const ElectronicsPartsPage = () => {
                 {modalTab === 'files' && (
                     <div className="animate-in fade-in slide-in-from-left-4 duration-500">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                            <FileInput label="Datasheet (.pdf)" name="file_datasheet" existingUrl={selectedItem?.files?.datasheet_url} />
-                            <FileInput label="Wiring Diagram (.pdf, .dwg)" name="file_wiring" existingUrl={selectedItem?.files?.wiring_diagram_url} />
-                            <FileInput label="User Manual (.pdf)" name="file_manual" existingUrl={selectedItem?.files?.user_manual_url} />
-                            <FileInput label="Test Report (.pdf)" name="file_test_report" existingUrl={selectedItem?.files?.test_report_url} />
-                            <FileInput label="Calibration Certificate (.pdf)" name="file_calib_cert" existingUrl={selectedItem?.files?.calibration_cert_url} />
-                            <FileInput label="Warranty Certificate (.pdf)" name="file_warranty" existingUrl={selectedItem?.files?.warranty_cert_url} />
-                            <FileInput label="Invoice / Purchase Bill" name="file_invoice" existingUrl={selectedItem?.files?.invoice_url} />
+                            {CATEGORY_CONFIG[selectedCategory] ? (
+                                CATEGORY_CONFIG[selectedCategory].files.map(file => (
+                                    <FileInput 
+                                        key={file.id} 
+                                        label={file.label} 
+                                        name={file.id} 
+                                        existingUrl={selectedItem?.files?.[`${file.id.replace('file_', '')}_url`]} 
+                                    />
+                                ))
+                            ) : (
+                                <>
+                                    <FileInput label="Datasheet File" name="file_datasheet" existingUrl={selectedItem?.files?.datasheet_url} />
+                                    <FileInput label="Warranty Document" name="file_warranty" existingUrl={selectedItem?.files?.warranty_cert_url} />
+                                </>
+                            )}
                             
                             <div className="md:col-span-2">
                             <div className="space-y-3 p-6 bg-[var(--nav-hover)]/30 border border-dashed border-[var(--border-color)] rounded-[24px]">
