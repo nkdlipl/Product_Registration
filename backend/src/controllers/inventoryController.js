@@ -8,7 +8,9 @@ const getPCBs = async (req, res, next) => {
 
   try {
     let queryText = `
-      SELECT p.*, pt.type_name as pcb_type, COUNT(*) OVER() as total_count 
+      SELECT p.*, pt.type_name as pcb_type, 
+      (SELECT image_url FROM pcb_images WHERE pcb_id = p.pcb_id LIMIT 1) as image_url,
+      COUNT(*) OVER() as total_count 
       FROM PCB_MASTER p
       LEFT JOIN PCB_TYPE_MASTER pt ON p.pcb_type_id = pt.pcb_type_id
       WHERE p.is_active = TRUE

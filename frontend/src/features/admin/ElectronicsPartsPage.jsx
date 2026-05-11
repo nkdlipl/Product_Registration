@@ -5,7 +5,7 @@ import Modal from '../../components/shared/Modal';
 import { getElectronicsParts, createElectronicsPart, getElectronicsPartById, deleteElectronicsPart, updateElectronicsPart, deleteElectronicsFile } from '../../api/inventory';
 import { getProducts } from '../../api/products';
 import { 
-  Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers
+  Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers, LayoutGrid, List
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -107,24 +107,144 @@ const categoriesList = Object.keys(CATEGORY_CONFIG);
 const ElectronicsPartsPage = () => {
   const navigate = useNavigate();
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
-  const buildFileUrl = (filePath) => {
-  if (!filePath) return "#";
+  const ELECTRONICS_SPEC_FIELDS = {
+  "Battery": [
+    { "label": "Battery Chemistry", "key": "battery_chemistry" },
+    { "label": "Battery Voltage", "key": "battery_voltage" },
+    { "label": "Battery Capacity", "key": "battery_capacity" },
+    { "label": "Cell Count", "key": "cell_count" },
+    { "label": "Rechargeable", "key": "rechargeable" },
+    { "label": "Charging Voltage", "key": "charging_voltage" },
+    { "label": "Max Charging Current", "key": "max_charging_current" },
+    { "label": "Max Discharge Current", "key": "max_discharge_current" },
+    { "label": "Backup Time", "key": "backup_time" },
+    { "label": "Battery Connector Type", "key": "battery_connector_type" },
+    { "label": "Cycle Life", "key": "cycle_life" },
+    { "label": "BMS Available", "key": "bms_available" }
+  ],
+  "Flow Meter": [
+    { "label": "Flow Meter Type", "key": "flow_meter_type" },
+    { "label": "Flow Range", "key": "flow_range" },
+    { "label": "Accuracy", "key": "accuracy" },
+    { "label": "Pulse Output", "key": "pulse_output" },
+    { "label": "Pulses Per Liter", "key": "pulses_per_liter" },
+    { "label": "K-Factor", "key": "k_factor" },
+    { "label": "Fluid Compatibility", "key": "fluid_compatibility" },
+    { "label": "Inlet Size", "key": "inlet_size" },
+    { "label": "Outlet Size", "key": "outlet_size" },
+    { "label": "Max Pressure", "key": "max_pressure" },
+    { "label": "Calibration Required", "key": "calibration_required" },
+    { "label": "Calibration Certificate Number", "key": "calibration_cert_no" }
+  ],
+  "SMPS": [
+    { "label": "Input Voltage Range", "key": "input_voltage_range" },
+    { "label": "Output Voltage", "key": "output_voltage" },
+    { "label": "Output Current", "key": "output_current" },
+    { "label": "Output Power", "key": "output_power" },
+    { "label": "Efficiency", "key": "efficiency" },
+    { "label": "Number of Outputs", "key": "num_outputs" },
+    { "label": "Protection", "key": "protection" },
+    { "label": "Cooling Type", "key": "cooling_type" },
+    { "label": "SMPS Type", "key": "smps_type" },
+    { "label": "Ripple Noise", "key": "ripple_noise" }
+  ],
+  "Printer": [
+    { "label": "Printer Type", "key": "printer_type" },
+    { "label": "Printer Model", "key": "printer_model" },
+    { "label": "Print Width", "key": "print_width" },
+    { "label": "Paper Roll Size", "key": "paper_roll_size" },
+    { "label": "Print Speed", "key": "print_speed" },
+    { "label": "Interface", "key": "interface" },
+    { "label": "Baud Rate", "key": "baud_rate" },
+    { "label": "Cutter Available", "key": "cutter_available" },
+    { "label": "Paper Sensor Available", "key": "paper_sensor_available" },
+    { "label": "Operating Voltage", "key": "operating_voltage" },
+    { "label": "Supported Language", "key": "supported_language" }
+  ],
+  "Speaker": [
+    { "label": "Speaker Type", "key": "speaker_type" },
+    { "label": "Power Rating", "key": "power_rating" },
+    { "label": "Impedance", "key": "impedance" },
+    { "label": "Frequency Range", "key": "frequency_range" },
+    { "label": "Sound Level", "key": "sound_level" },
+    { "label": "Operating Voltage", "key": "operating_voltage" },
+    { "label": "Connector Type", "key": "connector_type" },
+    { "label": "Mounting Type", "key": "mounting_type" }
+  ],
+  "Amplifier": [
+    { "label": "Amplifier Type", "key": "amplifier_type" },
+    { "label": "IC/Chipset", "key": "ic_chipset" },
+    { "label": "Input Voltage", "key": "input_voltage" },
+    { "label": "Output Power", "key": "output_power" },
+    { "label": "Channel Type", "key": "channel_type" },
+    { "label": "Speaker Impedance Support", "key": "speaker_impedance_support" },
+    { "label": "Input Signal Type", "key": "input_signal_type" },
+    { "label": "Volume Control", "key": "volume_control" },
+    { "label": "Protection", "key": "protection" }
+  ],
+  "Temperature Sensor": [
+    { "label": "Sensor Type", "key": "sensor_type" },
+    { "label": "Sensor Model", "key": "sensor_model" },
+    { "label": "Temperature Range", "key": "temperature_range" },
+    { "label": "Accuracy", "key": "accuracy" },
+    { "label": "Output Signal", "key": "output_signal" },
+    { "label": "Interface", "key": "interface" },
+    { "label": "Probe Type", "key": "probe_type" },
+    { "label": "Cable Length", "key": "cable_length" },
+    { "label": "Calibration Required", "key": "calibration_required" }
+  ],
+  "Quality Sensor": [
+    { "label": "Sensor Type", "key": "sensor_type" },
+    { "label": "Measured Parameter", "key": "measured_parameter" },
+    { "label": "Measuring Range", "key": "measuring_range" },
+    { "label": "Accuracy", "key": "accuracy" },
+    { "label": "Output Signal", "key": "output_signal" },
+    { "label": "Communication Protocol", "key": "communication_protocol" },
+    { "label": "Fluid Compatibility", "key": "fluid_compatibility" },
+    { "label": "Calibration Required", "key": "calibration_required" },
+    { "label": "Calibration Data", "key": "calibration_data" }
+  ],
+  "Pressure Sensor": [
+    { "label": "Pressure Range", "key": "pressure_range" },
+    { "label": "Pressure Type", "key": "pressure_type" },
+    { "label": "Output Signal", "key": "output_signal" },
+    { "label": "Accuracy", "key": "accuracy" },
+    { "label": "Thread Size", "key": "thread_size" },
+    { "label": "Overload Pressure", "key": "overload_pressure" },
+    { "label": "Burst Pressure", "key": "burst_pressure" },
+    { "label": "Medium Compatibility", "key": "medium_compatibility" },
+    { "label": "Operating Voltage", "key": "operating_voltage" }
+  ],
+  "EMI-EMC Filter": [
+    { "label": "Filter Type", "key": "filter_type" },
+    { "label": "Frequency Range", "key": "frequency_range" },
+    { "label": "Leakage Current", "key": "leakage_current" },
+    { "label": "Filter Stage", "key": "filter_stage" },
+    { "label": "Certification", "key": "certification" },
+    { "label": "Application", "key": "application" }
+  ],
+  "DC Meter": [
+    { "label": "Meter Type", "key": "meter_type" },
+    { "label": "Voltage Range", "key": "voltage_range" },
+    { "label": "Current Range", "key": "current_range" },
+    { "label": "Display Type", "key": "display_type" },
+    { "label": "Accuracy Class", "key": "accuracy_class" },
+    { "label": "Shunt Required", "key": "shunt_required" },
+    { "label": "Communication Interface", "key": "communication_interface" },
+    { "label": "Protocol", "key": "protocol" },
+    { "label": "Power Supply", "key": "power_supply" }
+  ]
+};
+
+const buildFileUrl = (filePath) => {
+  if (!filePath || filePath === "#") return "#";
 
   if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
-    try {
-      const parsedUrl = new URL(filePath);
-
-      if (parsedUrl.hostname === "localhost" || parsedUrl.hostname === "127.0.0.1") {
-        return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
-      }
-
-      return filePath;
-    } catch {
-      return filePath;
-    }
+    return filePath;
   }
 
-  return filePath.startsWith("/") ? filePath : `/${filePath}`;
+  const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
+  return `${baseUrl}/${filePath.startsWith('/') ? filePath.slice(1) : filePath}`;
 };
 
   const [items, setItems] = useState([]);
@@ -139,6 +259,10 @@ const ElectronicsPartsPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalTab, setModalTab] = useState('general');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [pendingImages, setPendingImages] = useState([]);
+  const [previews, setPreviews] = useState([]);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [viewMode, setViewMode] = useState('grid');
 
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
@@ -149,6 +273,48 @@ const ElectronicsPartsPage = () => {
   useEffect(() => {
       setSelectedCategory(watchCategory || '');
   }, [watchCategory]);
+
+  useEffect(() => {
+    if (pendingImages.length === 0) {
+      setPreviews([]);
+      return;
+    }
+
+    const newPreviews = pendingImages.map(file => {
+      try {
+        return {
+          id: Math.random().toString(36).substr(2, 9),
+          url: URL.createObjectURL(file),
+          name: file.name
+        };
+      } catch (err) {
+        console.error("Preview generation failed", err);
+        return null;
+      }
+    }).filter(p => p !== null);
+
+    setPreviews(newPreviews);
+
+    // Cleanup function
+    return () => {
+      newPreviews.forEach(p => URL.revokeObjectURL(p.url));
+    };
+  }, [pendingImages]);
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setPendingImages(prev => [...prev, ...files]);
+    }
+  };
+
+  const removePendingImage = (index) => {
+    setPendingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const clearPendingImages = () => {
+    setPendingImages([]);
+  };
 
   const fetchItems = async () => {
     setLoading(true);
@@ -219,8 +385,8 @@ const ElectronicsPartsPage = () => {
         }
       });
 
-      if (data.part_images && data.part_images.length > 0) {
-        Array.from(data.part_images).forEach(file => {
+      if (pendingImages.length > 0) {
+        pendingImages.forEach(file => {
           formData.append('part_images', file);
         });
       }
@@ -248,6 +414,7 @@ const ElectronicsPartsPage = () => {
     setSelectedItem(null);
     setModalTab('general');
     setSelectedCategory('');
+    setPendingImages([]);
     reset({
         status: 'Active'
     });
@@ -272,6 +439,7 @@ const ElectronicsPartsPage = () => {
   }
 
   const loadPartDetails = async (id, mode) => {
+      setSelectedItem(null); // Clear old state to prevent seeing stale data
       try {
         const res = await getElectronicsPartById(id);
         const fullData = res.data.data;
@@ -286,6 +454,8 @@ const ElectronicsPartsPage = () => {
   const handleView = async (item) => {
     setModalMode('view');
     setIsModalOpen(true);
+    setPendingImages([]);
+    setActiveImageIdx(0);
     await loadPartDetails(item.part_id);
   };
 
@@ -293,6 +463,7 @@ const ElectronicsPartsPage = () => {
     setModalMode('edit');
     setModalTab('general');
     setIsModalOpen(true);
+    setPendingImages([]);
     await loadPartDetails(item.part_id);
   };
 
@@ -509,6 +680,21 @@ const ElectronicsPartsPage = () => {
   );
 
   const columns = [
+    { 
+      key: 'image_url', 
+      label: 'Image', 
+      render: (row) => (
+        <div className="w-12 h-12 rounded-lg border border-[var(--border-color)] overflow-hidden bg-[var(--bg-workspace)]">
+          {row.image_url ? (
+            <img src={buildFileUrl(row.image_url)} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)]">
+              <ImageIcon size={16} />
+            </div>
+          )}
+        </div>
+      )
+    },
     { key: 'part_name', label: 'Part Name' },
     { key: 'part_number', label: 'Part Number/Model' },
     { key: 'part_category', label: 'Category' },
@@ -678,17 +864,39 @@ const ElectronicsPartsPage = () => {
   // Display fields for view mode
   const renderViewCategorySpecs = () => {
       if (!selectedItem?.categorySpec?.spec_data) return null;
+      const catName = selectedItem.categorySpec.category_name;
+      const fields = ELECTRONICS_SPEC_FIELDS[catName];
+      
       let specData = selectedItem.categorySpec.spec_data;
       if (typeof specData === 'string') {
           try { specData = JSON.parse(specData); } catch (e) {}
       }
+
+      if (!fields) {
+          // Fallback if category not in config (safety)
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {Object.keys(specData)
+                  .filter(k => !['id', 'created_at', 'updated_at', 'file_datasheet', 'file_warranty', 'part_images_gallery', 'spec_id', 'tech_id', 'part_id', 'datasheet_file', 'warranty_document', 'is_active', 'category_name', 'rated_voltage', 'rated_current', 'power_rating', 'input_type', 'output_type', 'connector_type', 'communication_iface', 'mounting_type', 'operating_temp', 'protection_rating', 'dimensions', 'weight'].includes(k))
+                  .map(k => (
+                    <DataSheetEntry key={k} label={k.replace(/_/g, ' ')} value={(specData[k] !== null && specData[k] !== undefined && specData[k] !== '') ? specData[k] : 'Not Defined'} icon={Settings} />
+                ))}
+            </div>
+          );
+      }
+
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {Object.keys(specData).map(k => (
-                <DataSheetEntry key={k} label={k.replace(/_/g, ' ')} value={specData[k]} icon={Settings} />
+            {fields.map(f => (
+                <DataSheetEntry 
+                    key={f.key} 
+                    label={f.label} 
+                    value={(specData[f.key] !== null && specData[f.key] !== undefined && specData[f.key] !== '') ? specData[f.key] : 'Not Defined'} 
+                    icon={Settings} 
+                />
             ))}
         </div>
-      )
+      );
   }
 
   return (
@@ -730,21 +938,97 @@ const ElectronicsPartsPage = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-12 pr-32 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
             />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40 pointer-events-none hidden sm:block">
+              {pagination.total} Records Found
+            </div>
+          </div>
+          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner">
+            <button 
+              onClick={() => setViewMode('grid')} 
+              className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'grid' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
+              title="Grid View"
+            >
+              <LayoutGrid size={18} />
+            </button>
+            <button 
+              onClick={() => setViewMode('table')} 
+              className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'table' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
+              title="Table View"
+            >
+              <List size={18} />
+            </button>
           </div>
         </div>
 
         <div className="animate-in fade-in duration-700 delay-300">
-          <DataTable 
-            columns={columns}
-            data={items}
-            loading={loading}
-            totalCount={pagination.total}
-            currentPage={pagination.page}
-            totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
-            onView={handleView}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          {viewMode === 'table' ? (
+            <DataTable 
+              columns={columns}
+              data={items}
+              loading={loading}
+              totalCount={pagination.total}
+              currentPage={pagination.page}
+              totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
+              onView={handleView}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {items.map((item) => (
+                <div key={item.part_id} className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl">
+                  <div onClick={() => handleView(item)} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] block cursor-zoom-in group/img">
+                    {(item.part_images?.[0] || item.image_url) ? (
+                      <img 
+                          src={buildFileUrl(item.part_images?.[0] || item.image_url)} 
+                          alt={item.part_name} 
+                          className="w-full h-full object-contain p-6 group-hover/img:scale-110 transition-transform duration-700 ease-out" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] opacity-20"><Box size={64} strokeWidth={1} /></div>
+                    )}
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+                      <button onClick={(e) => { e.stopPropagation(); handleView(item); }} className="w-12 h-12 bg-[var(--accent)] rounded-2xl shadow-xl flex items-center justify-center text-white hover:scale-110 transition-all transform translate-y-4 group-hover:translate-y-0" title="View Details">
+                        <Eye size={22} />
+                      </button>
+                    </div>
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-[var(--bg-card)]/90 backdrop-blur-md border border-[var(--border-color)] text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg text-[var(--accent)] shadow-sm">
+                        {item.part_number || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">{item.part_category}</span>
+                      </div>
+                      <h3 className="text-[17px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
+                        {item.part_name}
+                      </h3>
+                      <p className="text-[13px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-3 opacity-70">
+                        {item.part_description || 'No detailed technical specifications provided for this inventory record.'}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-5 mt-5 border-t border-[var(--border-color)]">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
+                        <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                         <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"><Settings size={14} /></button>
+                         <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -771,51 +1055,129 @@ const ElectronicsPartsPage = () => {
       >
         {modalMode === 'view' ? (
           /* View Mode (Data Sheet) */
-          <div className="space-y-10 pb-10 max-h-[82vh] overflow-y-auto custom-scrollbar pr-4">
-             {/* Header */}
-             <div className="bg-[var(--bg-card)] p-8 rounded-[32px] border border-[var(--border-color)] relative overflow-hidden shadow-md">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                   <div className="space-y-5">
+          <div className="space-y-12 pb-10 max-h-[82vh] overflow-y-auto custom-scrollbar pr-4">
+             {/* Premium Header Layout */}
+             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                {/* Visual Reference Side */}
+                <div className="lg:col-span-5 space-y-6">
+                  {(() => {
+                      const allImages = selectedItem?.part_images && selectedItem.part_images.length > 0 
+                          ? selectedItem.part_images 
+                          : (selectedItem?.image_url ? [selectedItem.image_url] : []);
+                      const currentUrl = allImages[activeImageIdx] || allImages[0];
+                      
+                      return (
+                          <>
+                              <div className="aspect-square bg-[var(--bg-workspace)] rounded-[40px] border-2 border-[var(--border-color)] overflow-hidden group relative flex items-center justify-center shadow-inner hover:border-[var(--accent)]/30 transition-all duration-500">
+                                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 opacity-40" />
+                                  {currentUrl ? (
+                                      <img 
+                                          src={buildFileUrl(currentUrl)} 
+                                          className="w-full h-full object-contain p-10 animate-in fade-in zoom-in-95 duration-700" 
+                                          alt="Technical Asset" 
+                                      />
+                                  ) : (
+                                      <div className="flex flex-col items-center gap-4 opacity-10">
+                                          <Box size={100} strokeWidth={1} />
+                                          <p className="text-[10px] font-black uppercase tracking-[0.3em]">No Visual Data</p>
+                                      </div>
+                                  )}
+                                  {allImages.length > 1 && (
+                                      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2.5 z-10 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                                          {allImages.map((_, i) => (
+                                              <button 
+                                                  key={i} 
+                                                  onClick={() => setActiveImageIdx(i)} 
+                                                  className={`h-1.5 rounded-full transition-all duration-500 ${i === activeImageIdx ? 'bg-[var(--accent)] w-8 shadow-[0_0_10px_var(--accent)]' : 'bg-white/40 w-1.5 hover:bg-white/80'}`} 
+                                              />
+                                          ))}
+                                      </div>
+                                  )}
+                              </div>
+                              {allImages.length > 1 && (
+                                  <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
+                                      {allImages.map((url, idx) => (
+                                          <button 
+                                              key={idx} 
+                                              onClick={() => setActiveImageIdx(idx)} 
+                                              className={`w-24 h-24 flex-shrink-0 rounded-[20px] border-2 transition-all duration-300 overflow-hidden bg-[var(--bg-workspace)] shadow-md ${idx === activeImageIdx ? 'border-[var(--accent)] scale-105 shadow-xl ring-4 ring-[var(--accent)]/10' : 'border-transparent opacity-50 hover:opacity-100 hover:scale-105'}`}
+                                          >
+                                              <img src={buildFileUrl(url)} className="w-full h-full object-contain p-2.5" />
+                                          </button>
+                                      ))}
+                                  </div>
+                              )}
+                          </>
+                      );
+                  })()}
+                </div>
+
+                {/* Technical Information Side */}
+                <div className="lg:col-span-7 space-y-8">
+                   <div className="space-y-6">
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2.5 text-[12px] font-black text-[var(--text-dim)] uppercase tracking-widest">
-                            <Tag size={14} className="text-[var(--accent)]" />
-                            {selectedItem?.part_category || 'Uncategorized'}
-                        </div>
+                        <span className="bg-[var(--nav-hover)] text-[var(--accent)] font-black text-[11px] uppercase tracking-[0.2em] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
+                            {selectedItem?.part_category || 'Electronics Part'}
+                        </span>
                         <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedItem?.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
                             {selectedItem?.status}
                         </div>
+                        <span className="text-[var(--text-muted)] font-black text-[11px] uppercase tracking-widest opacity-40">REF: {selectedItem?.part_id || 'INTERNAL-ID'}</span>
                       </div>
-                      <h2 className="text-3xl font-black text-[var(--text-main)] tracking-tighter uppercase leading-none">{selectedItem?.part_name}</h2>
-                      <div className="flex flex-wrap items-center gap-5 text-[12px] font-bold text-[var(--text-muted)]">
-                        <div className="flex items-center gap-3 bg-[var(--bg-workspace)] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
-                           <Fingerprint size={14} className="text-[var(--accent)]" />
-                           <span className="uppercase text-[10px] opacity-60 font-black">Part No/Model:</span>
-                           <span className="text-[var(--text-main)] font-mono text-[14px]">{selectedItem?.part_number}</span>
+                      
+                      <div>
+                          <h2 className="text-4xl font-black text-[var(--text-main)] tracking-tighter uppercase leading-[1.1]">
+                              {selectedItem?.part_name}
+                          </h2>
+                          <p className="text-[14px] font-bold text-[var(--accent)] uppercase tracking-[0.25em] mt-3 opacity-80">{selectedItem?.manufacturer || 'LIPL INTERNAL LOGISTICS'}</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-8 py-8 border-y border-[var(--border-color)]">
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Part Number / Model</p>
+                           <div className="flex items-center gap-3">
+                              <Fingerprint size={18} className="text-[var(--accent)]" />
+                              <span className="text-[17px] font-black text-[var(--text-main)] font-mono">{selectedItem?.part_number || 'N/A-RECORD'}</span>
+                           </div>
                         </div>
-                        <div className="flex items-center gap-3 bg-[var(--bg-workspace)] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
-                           <Box size={14} className="text-[var(--accent)]" />
-                           <span className="uppercase text-[10px] opacity-60 font-black">Internal SKU:</span>
-                           <span className="text-[var(--text-main)] text-[14px]">{selectedItem?.internal_sku}</span>
-                        </div>
-                        <div className="flex items-center gap-3 bg-[var(--bg-workspace)] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
-                           <Calendar size={14} className="text-[var(--accent)]" />
-                           <span className="uppercase text-[10px] opacity-60 font-black">Registered:</span>
-                           <span className="text-[var(--text-main)] text-[14px]">{new Date(selectedItem?.created_at).toLocaleDateString()}</span>
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Registration Date</p>
+                           <div className="flex items-center gap-3">
+                              <Calendar size={18} className="text-[var(--accent)]" />
+                              <span className="text-[17px] font-black text-[var(--text-main)]">{new Date(selectedItem?.created_at).toLocaleDateString()}</span>
+                           </div>
                         </div>
                       </div>
-                   </div>
-                   
-                   <div className="lg:max-w-[450px] w-full p-6 bg-[var(--bg-workspace)] rounded-2xl border border-[var(--border-color)] shadow-inner relative">
-                      <div className="absolute -top-3 left-6 bg-[var(--bg-workspace)] px-3 py-1 border border-[var(--border-color)] rounded-lg">
-                        <p className="text-[9px] font-black text-[var(--accent)] uppercase tracking-widest flex items-center gap-2">
-                           PART OVERVIEW
-                        </p>
+
+                      <div className="flex items-center gap-4 py-2">
+                         <button 
+                             onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedItem), 100); }} 
+                             className="btn-primary flex-1 py-4 px-6 shadow-lg uppercase tracking-widest text-[11px]" 
+                             style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+                         >
+                             Edit Specifications
+                         </button>
+                         <button 
+                             onClick={() => handleDelete(selectedItem)} 
+                             className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                         >
+                             <Trash2 size={18} />
+                         </button>
                       </div>
-                      <p className="text-[14px] text-[var(--text-main)] leading-relaxed font-bold opacity-90 mt-2">
-                        {selectedItem?.part_description || 'No detailed description provided.'}
-                      </p>
-                      <div className="mt-4 pt-4 border-t border-[var(--border-color)]">
-                          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Used In Product: <span className="text-[var(--text-main)] ml-1">{selectedItem?.used_in_product || 'N/A'}</span></p>
+
+                      <div className="p-8 bg-[var(--bg-workspace)]/50 rounded-[32px] border border-[var(--border-color)] shadow-inner relative">
+                         <div className="absolute -top-3 left-6 bg-[var(--bg-workspace)] px-3 py-1 border border-[var(--border-color)] rounded-lg">
+                           <p className="text-[9px] font-black text-[var(--accent)] uppercase tracking-widest flex items-center gap-2">
+                              PART OVERVIEW
+                           </p>
+                         </div>
+                         <p className="text-[15px] text-[var(--text-main)] leading-relaxed font-bold opacity-90 italic mt-2">
+                           "{selectedItem?.part_description || 'No detailed technical description provided.'}"
+                         </p>
+                         <div className="mt-6 pt-4 border-t border-[var(--border-color)] flex items-center justify-between">
+                             <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Target Application: <span className="text-[var(--text-main)] ml-1">{selectedItem?.used_in_product || 'N/A'}</span></p>
+                             <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Internal SKU: <span className="text-[var(--text-main)] ml-1">{selectedItem?.internal_sku || 'N/A'}</span></p>
+                         </div>
                       </div>
                    </div>
                 </div>
@@ -1082,18 +1444,82 @@ const ElectronicsPartsPage = () => {
                                 </>
                             )}
                             
-                            <div className="md:col-span-2">
+                             <div className="md:col-span-2">
                             <div className="space-y-3 p-6 bg-[var(--nav-hover)]/30 border border-dashed border-[var(--border-color)] rounded-[24px]">
-                                <div className="flex items-center gap-3 mb-2">
-                                <ImageIcon size={18} className="text-[var(--accent)]" />
-                                <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">Part Images Gallery</h4>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                        <ImageIcon size={18} className="text-[var(--accent)]" />
+                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">Part Images Gallery</h4>
+                                    </div>
+                                    {previews.length > 0 && (
+                                        <button 
+                                            type="button" 
+                                            onClick={clearPendingImages}
+                                            className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline"
+                                        >
+                                            Clear All Pending
+                                        </button>
+                                    )}
                                 </div>
+
+                                {/* Existing Images Display in Edit Mode */}
+                                {modalMode === 'edit' && selectedItem?.part_images && selectedItem.part_images.length > 0 && (
+                                    <div className="space-y-3 mb-6">
+                                        <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Existing Images</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                            {selectedItem.part_images.map((img, idx) => (
+                                                <div key={idx} className="relative aspect-square rounded-xl border border-[var(--border-color)] overflow-hidden group">
+                                                    <img src={buildFileUrl(img)} alt="Part" className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                                        <a href={buildFileUrl(img)} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
+                                                        {/* Delete functionality for existing images can be added here if needed */}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Pending Images Previews */}
+                                {previews.length > 0 && (
+                                    <div className="space-y-3 mb-6">
+                                        <p className="text-[9px] font-black text-[var(--accent)] uppercase tracking-widest ml-1">Pending Uploads ({previews.length})</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                            {previews.map((preview, idx) => (
+                                                <div key={preview.id} className="relative aspect-square rounded-xl border-2 border-[var(--accent)] border-dashed overflow-hidden group bg-[var(--bg-workspace)]">
+                                                    <img src={preview.url} alt="Preview" className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => removePendingImage(idx)}
+                                                            className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
+                                                        <p className="text-[8px] text-white truncate">{preview.name}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="relative group">
-                                <input type="file" multiple {...register('part_images')} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                <div className="w-full bg-[var(--bg-workspace)]/50 border border-dashed border-[var(--text-dim)] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all">
-                                    <div className="p-4 bg-[var(--bg-workspace)] rounded-2xl text-[var(--accent)] shadow-sm"><Plus size={24} /></div>
-                                    <p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Upload Multiple Part Photos</p>
-                                </div>
+                                    <input 
+                                        type="file" 
+                                        multiple 
+                                        onChange={handleImageChange}
+                                        accept="image/*" 
+                                        className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                                    />
+                                    <div className="w-full bg-[var(--bg-workspace)]/50 border border-dashed border-[var(--text-dim)] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all">
+                                        <div className="p-4 bg-[var(--bg-workspace)] rounded-2xl text-[var(--accent)] shadow-sm"><Plus size={24} /></div>
+                                        <p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest text-center">
+                                            {pendingImages.length > 0 ? 'Add More Part Photos' : 'Upload Multiple Part Photos'}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                             </div>

@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { getAdminStats } from '../../api/admin';
-import { getPCBs, createPCB, getPCBById, deletePCB, updatePCB, deletePCBImage, deletePCBFile } from '../../api/inventory';
+import { 
+  getPCBs, createPCB, getPCBById, deletePCB, updatePCB, deletePCBImage, deletePCBFile,
+  getElectronicsParts, getElectricalParts, deleteElectronicsPart, deleteElectricalPart
+} from '../../api/inventory';
 import { 
   Search, 
   Plus, 
@@ -43,24 +46,15 @@ import toast from 'react-hot-toast';
 const InventoryListPage = ({ type = '' }) => {
   const navigate = useNavigate();
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
-  const buildFileUrl = (filePath) => {
-  if (!filePath) return "#";
+const buildFileUrl = (filePath) => {
+  if (!filePath || filePath === "#") return "#";
 
   if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
-    try {
-      const parsedUrl = new URL(filePath);
-
-      if (parsedUrl.hostname === "localhost" || parsedUrl.hostname === "127.0.0.1") {
-        return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
-      }
-
-      return filePath;
-    } catch {
-      return filePath;
-    }
+    return filePath;
   }
 
-  return filePath.startsWith("/") ? filePath : `/${filePath}`;
+  const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
+  return `${baseUrl}/${filePath.startsWith('/') ? filePath.slice(1) : filePath}`;
 };
 
   const [items, setItems] = useState([]);
@@ -74,6 +68,19 @@ const InventoryListPage = ({ type = '' }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalTab, setModalTab] = useState('general');
+  const [pendingImages, setPendingImages] = useState([]);
+  const [previews, setPreviews] = useState([]);
+
+  const [viewMode, setViewMode] = useState('grid');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+
+  const getFullUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
+    return `${baseUrl}/${path.startsWith('/') ? path.slice(1) : path}`;
+  };
 
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
@@ -91,30 +98,111 @@ const InventoryListPage = ({ type = '' }) => {
   };
 
   const fetchItems = async () => {
-    if (!type) return;
     setLoading(true);
     try {
-      if (type === 'PCB') {
+      let allItems = [];
+      let totalCount = 0;
+
+      if (!type) {
+        // Fetch all categories for Overview
+        const [pcbRes, elecRes, electRes] = await Promise.all([
+          getPCBs({ limit: 20, search: searchTerm }),
+          getElectronicsParts({ limit: 20, search: searchTerm }),
+          getElectricalParts({ limit: 20, search: searchTerm })
+        ]);
+        
+        let pcbs = (pcbRes.data.data || []).map(i => ({ ...i, category: 'PCB', pcb_name: i.pcb_name, pcb_id: i.pcb_id }));
+        let electronics = (elecRes.data.data || []).map(i => ({ ...i, category: 'Electronic Part', pcb_name: i.part_name, pcb_id: i.part_id }));
+        let electrical = (electRes.data.data || []).map(i => ({ ...i, category: 'Electrical Part', pcb_name: i.part_name, pcb_id: i.part_id }));
+        
+        allItems = [...pcbs, ...electronics, ...electrical];
+
+        if (selectedCategory) {
+            allItems = allItems.filter(item => item.category === selectedCategory);
+        }
+
+        totalCount = allItems.length;
+      } else if (type === 'PCB') {
         const res = await getPCBs({
           page: pagination.page,
           limit: pagination.limit,
           search: searchTerm
         });
-        setItems(res.data.data);
-        setPagination(prev => ({ ...prev, total: res.data.meta.total }));
-      } else {
-          setItems([]);
+        allItems = res.data.data;
+        totalCount = res.data.meta.total;
+      } else if (type === 'Electronic Part') {
+        const res = await getElectronicsParts({
+          page: pagination.page,
+          limit: pagination.limit,
+          search: searchTerm
+        });
+        allItems = (res.data.data || []).map(i => ({ ...i, pcb_name: i.part_name, pcb_id: i.part_id }));
+        totalCount = res.data.meta.total;
+      } else if (type === 'Electrical Part') {
+        const res = await getElectricalParts({
+          page: pagination.page,
+          limit: pagination.limit,
+          search: searchTerm
+        });
+        allItems = (res.data.data || []).map(i => ({ ...i, pcb_name: i.part_name, pcb_id: i.part_id }));
+        totalCount = res.data.meta.total;
       }
+
+      setItems(allItems);
+      setPagination(prev => ({ ...prev, total: totalCount }));
     } catch (error) {
-      toast.error(`Failed to fetch ${type} records`);
+      toast.error(`Failed to fetch records`);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (pendingImages.length === 0) {
+      setPreviews([]);
+      return;
+    }
+
+    const newPreviews = pendingImages.map(file => {
+      try {
+        return {
+          id: Math.random().toString(36).substr(2, 9),
+          url: URL.createObjectURL(file),
+          name: file.name
+        };
+      } catch (err) {
+        console.error("Preview generation failed", err);
+        return null;
+      }
+    }).filter(p => p !== null);
+
+    setPreviews(newPreviews);
+
+    // Cleanup function
+    return () => {
+      newPreviews.forEach(p => URL.revokeObjectURL(p.url));
+    };
+  }, [pendingImages]);
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setPendingImages(prev => [...prev, ...files]);
+    }
+  };
+
+  const removePendingImage = (index) => {
+    setPendingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const clearPendingImages = () => {
+    setPendingImages([]);
+  };
+
+  useEffect(() => {
     fetchStats();
-  }, [type]);
+    fetchItems();
+  }, [type, searchTerm, pagination.page, selectedCategory]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -144,8 +232,8 @@ const InventoryListPage = ({ type = '' }) => {
         }
       });
 
-      if (data.pcb_images && data.pcb_images.length > 0) {
-        Array.from(data.pcb_images).forEach(file => {
+      if (pendingImages.length > 0) {
+        pendingImages.forEach(file => {
           formData.append('pcb_images', file);
         });
       }
@@ -175,6 +263,7 @@ const InventoryListPage = ({ type = '' }) => {
     setModalMode('create');
     setSelectedItem(null);
     setModalTab('general');
+    setPendingImages([]);
     reset({
         pcb_name: '', part_number: '', pcb_description: '', pcb_type: '', pcb_type_desc: '',
         processor_type: '', processor_part_no: '', processor_count: 0, processor_desc: '',
@@ -196,27 +285,53 @@ const InventoryListPage = ({ type = '' }) => {
   };
 
   const handleView = async (item) => {
+    setSelectedItem(item);
     setModalMode('view');
+    setModalTab('general');
+    setActiveImageIdx(0);
     setIsModalOpen(true);
-    await loadPCBDetails(item.pcb_id);
+    setPendingImages([]);
+    if (item.pcb_id) {
+      await loadPCBDetails(item.pcb_id);
+    }
   };
 
   const handleEdit = async (item) => {
+    const itemType = item.category || 'PCB';
+    
+    // If it's not a PCB, navigate to the specialized module
+    if (itemType !== 'PCB' && itemType !== 'Structural Component') {
+        const path = itemType === 'Electronic Part' ? '/admin/inventory/electronics' : '/admin/inventory/electrical';
+        navigate(path);
+        toast.success(`Redirecting to ${itemType} module...`);
+        return;
+    }
+
     setModalMode('edit');
     setModalTab('general');
     setIsModalOpen(true);
-    await loadPCBDetails(item.pcb_id);
+    setPendingImages([]);
+    if (item.pcb_id) {
+      await loadPCBDetails(item.pcb_id);
+    }
   };
 
   const handleDelete = async (item) => {
-    if (window.confirm(`Are you sure you want to delete PCB: ${item.pcb_name}?`)) {
+    const itemType = item.category || 'PCB';
+    if (window.confirm(`Are you sure you want to delete ${itemType}: ${item.pcb_name}?`)) {
       try {
-        await deletePCB(item.pcb_id);
-        toast.success('PCB deleted successfully');
+        if (itemType === 'PCB') {
+            await deletePCB(item.pcb_id);
+        } else if (itemType === 'Electronic Part') {
+            await deleteElectronicsPart(item.pcb_id); // Note: pcb_id is used as alias for part_id in Overview
+        } else if (itemType === 'Electrical Part') {
+            await deleteElectricalPart(item.pcb_id);
+        }
+        toast.success(`${itemType} deleted successfully`);
         fetchItems();
         fetchStats();
       } catch (error) {
-        toast.error('Failed to delete PCB');
+        toast.error(`Failed to delete ${itemType}`);
       }
     }
   };
@@ -446,7 +561,37 @@ const InventoryListPage = ({ type = '' }) => {
     </div>
   );
 
+  const combinedColumns = [
+    { 
+      key: 'image', label: 'Asset',
+      render: (row) => {
+        const imgUrl = row.pcb_images?.[0] || row.part_images?.[0] || row.image_url;
+        return (
+          <div className="w-10 h-10 rounded-xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-workspace)] flex items-center justify-center shadow-sm">
+            {imgUrl ? (
+              <img src={getFullUrl(imgUrl)} alt="Asset" className="w-full h-full object-cover" />
+            ) : ( <Box size={18} className="text-[var(--text-dim)] opacity-30" /> )}
+          </div>
+        );
+      }
+    },
+    { key: 'pcb_name', label: 'Item Name' },
+    { key: 'part_no', label: 'Part ID' },
+    { key: 'category', label: 'Category' },
+    { key: 'created_at', label: 'Registered On', render: (row) => new Date(row.created_at).toLocaleDateString() }
+  ];
+
   const pcbColumns = [
+    { 
+      key: 'image', label: 'Preview',
+      render: (row) => (
+        <div className="w-10 h-10 rounded-xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-workspace)] flex items-center justify-center shadow-sm">
+          {row.pcb_images?.[0] || row.image_url ? (
+            <img src={getFullUrl(row.pcb_images?.[0] || row.image_url)} alt="PCB" className="w-full h-full object-cover" />
+          ) : ( <CircuitBoard size={18} className="text-[var(--text-dim)] opacity-30" /> )}
+        </div>
+      )
+    },
     { key: 'pcb_name', label: 'PCB Name' },
     { key: 'part_no', label: 'Part Number' },
     { key: 'processor_count', label: 'Processors' },
@@ -454,7 +599,7 @@ const InventoryListPage = ({ type = '' }) => {
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-10">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-10 px-2">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
@@ -463,21 +608,21 @@ const InventoryListPage = ({ type = '' }) => {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">
-              {type ? `${type}s` : 'Inventory Overview'}
+              {type ? `${type} Inventory` : 'Inventory Overview'}
             </h1>
             <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
-              {type ? `${type} Inventory & Stock Management` : 'Central Hardware & Components Registry'}
+              {type ? `Central ${type} Registry & Specification Management` : 'Central Hardware & Components Registry'}
             </p>
           </div>
         </div>
         {type && (
           <button 
             onClick={handleOpenCreate}
-            className="btn-primary shadow-lg px-8 py-3 group"
+            className="btn-primary shadow-lg px-8 py-3 group hover-scale-md"
             style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
           >
             <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-            <span className="text-[12px] md:text-[14px]">Add New {type}</span>
+            <span className="text-[12px] md:text-[14px]">Register New {type}</span>
           </button>
         )}
       </div>
@@ -485,10 +630,10 @@ const InventoryListPage = ({ type = '' }) => {
       {/* Overview Stats */}
       {!type && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard title="PCB Units" count={stats.pcb} icon={Cpu} to="/admin/inventory/pcb" colorAccent="var(--accent)" />
-          <StatCard title="Electronic Parts" count={stats.electronics} icon={CircuitBoard} to="/admin/inventory/electronics" colorAccent="#3b82f6" />
+          <StatCard title="PCB Units" count={stats.pcb} icon={CircuitBoard} to="/admin/inventory/pcb" colorAccent="#3b82f6" />
+          <StatCard title="Electronic Parts" count={stats.electronics} icon={Cpu} to="/admin/inventory/electronics" colorAccent="#10b981" />
           <StatCard title="Electrical Parts" count={stats.electrical} icon={Plug} to="/admin/inventory/electrical" colorAccent="#f59e0b" />
-          <StatCard title="Structural Parts" count={stats.structural} icon={Layers} to="/admin/inventory/structural" colorAccent="#10b981" />
+          <StatCard title="Structural Parts" count={stats.structural} icon={Layers} to="/admin/inventory/structural" colorAccent="#ec4899" />
         </div>
       )}
 
@@ -496,7 +641,7 @@ const InventoryListPage = ({ type = '' }) => {
       <div className="space-y-6">
         <div className="workspace-card p-4 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)]">
           <div className="relative flex-1 group w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
             <input 
               type="text" 
               placeholder={type ? `Search ${type}s...` : "Search across all inventory categories..."}
@@ -504,12 +649,68 @@ const InventoryListPage = ({ type = '' }) => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-12 pr-32 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
             />
+            {items.length > 0 && (
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40 pointer-events-none hidden sm:block">
+                {pagination.total} Records Found
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            {!type && (
+                <div className="relative group min-w-[180px] flex-1 md:flex-none">
+                    <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={16} />
+                    <select 
+                        value={selectedCategory} 
+                        onChange={(e) => setSelectedCategory(e.target.value)} 
+                        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-11 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[13px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+                    >
+                        <option value="">All Categories</option>
+                        <option value="PCB">PCB Units</option>
+                        <option value="Electronic Part">Electronic Parts</option>
+                        <option value="Electrical Part">Electrical Parts</option>
+                        <option value="Structural Part">Structural Parts</option>
+                    </select>
+                </div>
+            )}
+            
+            <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner">
+                <button 
+                onClick={() => setViewMode('grid')} 
+                className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'grid' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
+                title="Grid View"
+                >
+                <ImageIcon size={18} />
+                </button>
+                <button 
+                onClick={() => setViewMode('table')} 
+                className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'table' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
+                title="Table View"
+                >
+                <Layers size={18} />
+                </button>
+            </div>
           </div>
         </div>
 
-        {type ? (
+        {!type && items.length === 0 ? (
+          <div className="p-20 text-center bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] border-dashed relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="w-20 h-20 bg-[var(--nav-hover)] rounded-3xl flex items-center justify-center mx-auto mb-6 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-all group-hover:scale-110 group-hover:rotate-6 shadow-inner">
+              <Box size={40} strokeWidth={1.5} />
+            </div>
+            <h3 className="text-xl font-black text-[var(--text-main)] uppercase tracking-tight mb-2">Centralized Inventory System</h3>
+            <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] max-w-sm mx-auto opacity-60">Select a specialized category above to deep-dive into detailed technical records and management</p>
+          </div>
+        ) : loading ? (
+          <div className="p-20 text-center">
+            <Loader2 size={40} className="animate-spin text-[var(--accent)] mx-auto mb-4 opacity-40" />
+            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Fetching records...</p>
+          </div>
+        ) : viewMode === 'table' ? (
           <DataTable 
-            columns={type === 'PCB' ? pcbColumns : []}
+            columns={!type ? combinedColumns : (type === 'PCB' ? pcbColumns : combinedColumns)}
             data={items}
             loading={loading}
             totalCount={pagination.total}
@@ -520,284 +721,420 @@ const InventoryListPage = ({ type = '' }) => {
             onDelete={handleDelete}
           />
         ) : (
-          <div className="p-12 text-center bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] border-dashed">
-            <div className="w-16 h-16 bg-[var(--nav-hover)] rounded-2xl flex items-center justify-center mx-auto mb-4 text-[var(--text-dim)] opacity-40">
-              <Box size={32} />
-            </div>
-            <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">Select a category above to view detailed records</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {items.map((item) => (
+              <div key={item.pcb_id || item.id} className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl">
+                <div onClick={() => handleView(item)} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] block cursor-zoom-in group/img">
+                  {(item.pcb_images?.[0] || item.part_images?.[0] || item.image_url) ? (
+                    <img 
+                        src={getFullUrl(item.pcb_images?.[0] || item.part_images?.[0] || item.image_url)} 
+                        alt={item.pcb_name || item.name} 
+                        className="w-full h-full object-contain p-6 group-hover/img:scale-110 transition-transform duration-700 ease-out" 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] opacity-20"><Box size={64} strokeWidth={1} /></div>
+                  )}
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+                    <button onClick={(e) => { e.stopPropagation(); handleView(item); }} className="w-12 h-12 bg-[var(--accent)] rounded-2xl shadow-xl flex items-center justify-center text-white hover:scale-110 transition-all transform translate-y-4 group-hover:translate-y-0" title="View Details">
+                      <Eye size={22} />
+                    </button>
+                  </div>
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-[var(--bg-card)]/90 backdrop-blur-md border border-[var(--border-color)] text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg text-[var(--accent)] shadow-sm">
+                      {item.part_no || item.part_number || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">{item.category || type}</span>
+                    </div>
+                    <h3 className="text-[17px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
+                      {item.pcb_name || item.name}
+                    </h3>
+                    <p className="text-[13px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-3 opacity-70">
+                      {item.description || item.pcb_description || 'No detailed technical specifications provided for this inventory record.'}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-5 mt-5 border-t border-[var(--border-color)]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
+                      <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                       <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"><Settings size={14} /></button>
+                       <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"><Trash2 size={14} /></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* PCB Management Modal */}
-      <Modal 
-        isOpen={isModalOpen && type === 'PCB'} 
-        onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'create' ? "Register New PCB Architecture" : modalMode === 'edit' ? "Edit PCB Specifications" : "Technical Data Sheet"}
-        maxWidth="max-w-6xl"
-        headerActions={
-          <div className="flex items-center gap-3">
-             {modalMode !== 'view' && (
-                <button
-                    onClick={handleSubmit(onSubmit)}
-                    disabled={isSubmitting}
-                    className="btn-primary py-2.5 px-8 shadow-md flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
-                    style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
-                >
-                    {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save' : 'Update Specs')}
-                </button>
-             )}
-          </div>
-        }
-      >
-        {modalMode === 'view' ? (
-          /* Unified View Mode (Data Sheet) */
-          <div className="space-y-10 pb-10 max-h-[82vh] overflow-y-auto custom-scrollbar pr-4">
-             {/* Master Header - REFINED COMPACT DESIGN */}
-             <div className="bg-[var(--bg-card)] p-8 rounded-[32px] border border-[var(--border-color)] relative overflow-hidden shadow-md">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                   <div className="space-y-5">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2.5 text-[12px] font-black text-[var(--text-dim)] uppercase tracking-widest">
-                            <Layers size={14} className="text-[var(--accent)]" />
-                            {selectedItem?.pcb_type || 'Main PCB'}
-                        </div>
-                      </div>
-                      <h2 className="text-3xl font-black text-[var(--text-main)] tracking-tighter uppercase leading-none">{selectedItem?.pcb_name}</h2>
-                      <div className="flex flex-wrap items-center gap-5 text-[12px] font-bold text-[var(--text-muted)]">
-                        <div className="flex items-center gap-3 bg-[var(--bg-workspace)] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
-                           <Fingerprint size={14} className="text-[var(--accent)]" />
-                           <span className="uppercase text-[10px] opacity-60 font-black">Part ID:</span>
-                           <span className="text-[var(--text-main)] font-mono text-[14px]">{selectedItem?.part_no}</span>
-                        </div>
-                        <div className="flex items-center gap-3 bg-[var(--bg-workspace)] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
-                           <ProcessorIcon size={14} className="text-[var(--accent)]" />
-                           <span className="uppercase text-[10px] opacity-60 font-black">Processors:</span>
-                           <span className="text-[var(--text-main)] text-[14px]">{selectedItem?.processor_count}</span>
-                        </div>
-                        <div className="flex items-center gap-3 bg-[var(--bg-workspace)] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
-                           <Calendar size={14} className="text-[var(--accent)]" />
-                           <span className="uppercase text-[10px] opacity-60 font-black">Registered:</span>
-                           <span className="text-[var(--text-main)] text-[14px]">{new Date(selectedItem?.created_at).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                   </div>
-                   
-                   {/* Compact Description In Header */}
-                   <div className="lg:max-w-[450px] w-full p-6 bg-[var(--bg-workspace)] rounded-2xl border border-[var(--border-color)] shadow-inner relative">
-                      <div className="absolute -top-3 left-6 bg-[var(--bg-workspace)] px-3 py-1 border border-[var(--border-color)] rounded-lg">
-                        <p className="text-[9px] font-black text-[var(--accent)] uppercase tracking-widest flex items-center gap-2">
-                           PCB OVERVIEW
-                        </p>
-                      </div>
-                      <p className="text-[14px] text-[var(--text-main)] leading-relaxed font-bold opacity-90 mt-2">
-                        {selectedItem?.description || 'No detailed technical description provided for this architecture.'}
-                      </p>
-                   </div>
-                </div>
-             </div>
-
-             {/* Technical Specs Grid */}
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Processor Specifications */}
-                <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
-                   <div className="flex items-center gap-4 mb-7">
-                      <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><ProcessorIcon size={22} /></div>
-                      <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Hardware Profile</h3>
-                   </div>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <DataSheetEntry label="Core Architecture" value={selectedItem?.processor_type} icon={Cpu} />
-                      <DataSheetEntry label="Component Part No" value={selectedItem?.processor_part_no} icon={HardDrive} />
-                      <div className="sm:col-span-2">
-                        <DataSheetEntry label="Technical Notes" value={selectedItem?.processor_desc} icon={Info} />
-                      </div>
-                   </div>
-                </div>
-
-                {/* Firmware Profile */}
-                <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
-                   <div className="flex items-center gap-4 mb-7">
-                      <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Binary size={22} /></div>
-                      <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Firmware Build</h3>
-                   </div>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <DataSheetEntry label="Active Branch" value={selectedItem?.firmware_branch} icon={Code} />
-                      <DataSheetEntry label="Version Spec" value={selectedItem?.firmware_version} icon={CheckCircle2} />
-                      <DataSheetEntry label="Primary Feature" value={selectedItem?.firmware_feature} icon={Zap} />
-                      <DataSheetEntry label="Release Context" value={selectedItem?.firmware_feature_desc} icon={Info} />
-                   </div>
-                </div>
-             </div>
-
-             {/* Documentation Library */}
-             <div className="space-y-6">
-                <div className="flex items-center gap-4 ml-4">
-                   <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-sm"><FileUp size={20} /></div>
-                   <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Documentation Library</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                   <FileCard label="Gerber File" url={selectedItem?.files?.processor_file_url} />
-                   <FileCard label="Board File" url={selectedItem?.files?.brd_file_url} />
-                   <FileCard label="Schematics" url={selectedItem?.files?.sch_file_url} />
-                   <FileCard label="BOM File" url={selectedItem?.files?.bom_file_url} />
-                   <FileCard label="Stencil Data" url={selectedItem?.files?.stencil_file_url} />
-                   <FileCard label="Panel Gerber" url={selectedItem?.files?.panel_gerber_file_url} />
-                   <FileCard label="Layer Stacking" url={selectedItem?.files?.layer_stacking_file_url} />
-                   <FileCard label="Production Note" url={selectedItem?.files?.production_instruction_url} />
-                </div>
-             </div>
-
-             {/* Image Gallery */}
-             {selectedItem?.pcb_images && selectedItem.pcb_images.length > 0 && (
-                <div className="space-y-6">
-                    <div className="flex items-center gap-4 ml-4">
-                        <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-sm"><ImageIcon size={20} /></div>
-                        <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Architecture Visuals</h3>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                        {selectedItem.pcb_images.map((img, idx) => (
-                           <div key={idx} className="aspect-square rounded-[24px] border-2 border-[var(--border-color)] overflow-hidden bg-[var(--bg-workspace)] group relative cursor-pointer shadow-md">
-                                <img src={buildFileUrl(img)} alt="PCB Visual" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                                    <a href={buildFileUrl(img)} target="_blank" rel="noreferrer" title="View Image" className="p-3 bg-white/10 backdrop-blur-xl rounded-full text-white hover:bg-[var(--accent)] hover:scale-110 transition-all border border-white/20 shadow-lg"><Eye size={22} /></a>
-                                    <button onClick={() => handleDownload(img)} title="Download Image" className="p-3 bg-white/10 backdrop-blur-xl rounded-full text-white hover:bg-[var(--accent)] hover:scale-110 transition-all border border-white/20 shadow-lg"><Download size={22} /></button>
-                                </div>
-                           </div>
-                        ))}
-                    </div>
-                </div>
-             )}
-          </div>
-        ) : (
-          /* Create / Edit Mode (Tabs) */
-          <div className="flex flex-col h-full max-h-[85vh]">
-            {/* Tab Navigation */}
-            <div className="flex bg-[var(--bg-workspace)]/50 p-1.5 rounded-2xl mb-8 border border-[var(--border-color)]">
-                {[
-                { id: 'general', label: 'General', icon: Info },
-                { id: 'processor', label: 'Processor', icon: Settings },
-                { id: 'firmware', label: 'Firmware', icon: Code },
-                { id: 'files', label: 'PCB Files', icon: FileUp }
-                ].map((tab) => (
-                <button
-                    key={tab.id}
-                    onClick={() => setModalTab(tab.id)}
-                    className={`flex-1 flex items-center justify-center gap-3 py-3 rounded-xl transition-all duration-300 font-black text-[10px] uppercase tracking-widest ${modalTab === tab.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--nav-hover)] hover:text-[var(--text-main)]'}`}
-                >
-                    <tab.icon size={14} strokeWidth={3} />
-                    <span>{tab.label}</span>
-                </button>
-                ))}
-            </div>
-
-            {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 pb-4">
-                <form id="pcb-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                
-                {modalTab === 'general' && (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                    <div className="grid grid-cols-2 gap-8">
-                        <FormField label="PCB Name" name="pcb_name" placeholder="e.g. Main Control Board V2" required />
-                        <FormField label="Part Number" name="part_number" placeholder="e.g. PCB-MCB-001" required />
-                    </div>
-                    <div className="grid grid-cols-2 gap-8">
-                        <FormField label="PCB Type" name="pcb_type" placeholder="e.g. 4-Layer FR4" />
-                        <FormField label="PCB Type Description" name="pcb_type_desc" placeholder="Details about construction..." />
-                    </div>
-                    <TextAreaField label="PCB Description" name="pcb_description" placeholder="Technical overview and purpose of this board..." />
-                    </div>
-                )}
-
-                {modalTab === 'processor' && (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                    <div className="grid grid-cols-2 gap-8">
-                        <FormField label="Processor Type" name="processor_type" placeholder="e.g. ARM Cortex-M4" />
-                        <FormField label="Processor Part Number" name="processor_part_no" placeholder="e.g. STM32F405RGT6" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-8">
-                        <FormField label="Processor Count" name="processor_count" type="number" placeholder="e.g. 1" />
-                        <FormField label="Processor Description" name="processor_desc" placeholder="Package type, clock speed, etc..." />
-                    </div>
-                    </div>
-                )}
-
-                {modalTab === 'firmware' && (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                    <div className="grid grid-cols-2 gap-8">
-                        <FormField label="Firmware Branch Name" name="firmware_branch" placeholder="e.g. main / production-v1" />
-                        <FormField label="Firmware Version Number" name="firmware_version" placeholder="e.g. v2.1.0-stable" />
-                    </div>
-                    <div className="grid grid-cols-1 gap-8">
-                        <FormField label="Firmware Feature Name" name="firmware_feature" placeholder="e.g. CAN-FD Support" />
-                        <TextAreaField label="Firmware Feature Description" name="firmware_feature_desc" placeholder="Describe the capabilities of this firmware build..." />
-                    </div>
-                    </div>
-                )}
-
-                {modalTab === 'files' && (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                        <FileInput label="Individual Gerber File" name="file_gerber" existingUrl={selectedItem?.files?.processor_file_url} />
-                        <FileInput label="Board File (.brd/.pcb)" name="file_board" existingUrl={selectedItem?.files?.brd_file_url} />
-                        <FileInput label="Schematic File (.sch/.pdf)" name="file_schematic" existingUrl={selectedItem?.files?.sch_file_url} />
-                        <FileInput label="BOM File (.csv/.xlsx)" name="file_bom" existingUrl={selectedItem?.files?.bom_file_url} />
-                        <FileInput label="Stencile File" name="file_stencile" existingUrl={selectedItem?.files?.stencil_file_url} />
-                        <FileInput label="Panel Gerber File" name="file_panel_gerber" existingUrl={selectedItem?.files?.panel_gerber_file_url} />
-                        <FileInput label="Layer Stacking File" name="file_layer_stack" existingUrl={selectedItem?.files?.layer_stacking_file_url} />
-                        <FileInput label="Production Instruction File" name="file_production_note" existingUrl={selectedItem?.files?.production_instruction_url} />
-                        <div className="md:col-span-2">
-                        <div className="space-y-3 p-6 bg-[var(--nav-hover)]/30 border border-dashed border-[var(--border-color)] rounded-[24px]">
-                            <div className="flex items-center gap-3 mb-4">
-                                <ImageIcon size={18} className="text-[var(--accent)]" />
-                                <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">PCB Images Gallery</h4>
-                            </div>
-
-                            {modalMode === 'edit' && selectedItem?.pcb_images && selectedItem.pcb_images.length > 0 && (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 mb-6">
-                                    {selectedItem.pcb_images.map((img, idx) => (
-                                        <div key={idx} className="relative aspect-square rounded-xl border border-[var(--border-color)] overflow-hidden group">
-                                            <img src={buildFileUrl(img)} alt="Part" className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                                                <a href={buildFileUrl(img)} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
-                                                <button type="button" onClick={() => handleRemoveImage(img)} className="text-rose-500 hover:text-white"><Trash2 size={16} /></button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            <div className="relative group">
-                            <input type="file" multiple {...register('pcb_images')} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                            <div className="w-full bg-[var(--bg-workspace)]/50 border border-dashed border-[var(--text-dim)] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all">
-                                <div className="p-4 bg-[var(--bg-workspace)] rounded-2xl text-[var(--accent)] shadow-sm"><Plus size={24} /></div>
-                                <p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Upload Multiple Board Photos</p>
-                            </div>
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-                    </div>
-                )}
-
-                </form>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Generic Modal for other types */}
-      {isModalOpen && type !== 'PCB' && (
+      {/* Universal Management Modal */}
+      {isModalOpen && (
         <Modal 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)}
-          title={modalMode === 'create' ? `Add ${type}` : modalMode === 'edit' ? `Update ${type}` : `${type} Details`}
-          maxWidth="max-w-2xl"
+          title={modalMode === 'view' ? "Technical Data Sheet" : (modalMode === 'create' ? `Register New ${type || 'Item'}` : `Update ${type || 'Item'} Specifications`)}
+          maxWidth="max-w-6xl"
+          headerActions={
+            <div className="flex items-center gap-3">
+               {modalMode !== 'view' && type === 'PCB' && (
+                  <button
+                      onClick={handleSubmit(onSubmit)}
+                      disabled={isSubmitting}
+                      className="btn-primary py-2.5 px-8 shadow-md flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                      style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
+                  >
+                      {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save' : 'Update Specs')}
+                  </button>
+               )}
+            </div>
+          }
         >
-          <div className="p-10 text-center">
-            <Activity size={48} className="mx-auto text-[var(--accent)] mb-4 animate-pulse" />
-            <h3 className="text-lg font-black text-[var(--text-main)] uppercase tracking-tight mb-2">Interface Under Development</h3>
-            <p className="text-[12px] text-[var(--text-muted)] font-bold tracking-widest uppercase opacity-60">Database integration and form schemas are pending initialization.</p>
-          </div>
+          {modalMode === 'view' ? (
+            /* Universal View Mode */
+            <div className="space-y-10 pb-10 max-h-[82vh] overflow-y-auto custom-scrollbar pr-4">
+               {/* Premium Header Layout */}
+               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                  {/* Visual Reference Side */}
+                  <div className="lg:col-span-5 space-y-6">
+                    {(() => {
+                        const allImages = selectedItem?.pcb_images && selectedItem.pcb_images.length > 0 
+                            ? selectedItem.pcb_images 
+                            : (selectedItem?.part_images && selectedItem.part_images.length > 0 ? selectedItem.part_images : (selectedItem?.image_url ? [selectedItem.image_url] : []));
+                        const currentUrl = allImages[activeImageIdx] || allImages[0];
+                        
+                        return (
+                            <>
+                                <div className="aspect-square bg-[var(--bg-workspace)] rounded-[40px] border-2 border-[var(--border-color)] overflow-hidden group relative flex items-center justify-center shadow-inner hover:border-[var(--accent)]/30 transition-all duration-500">
+                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 opacity-40" />
+                                    {currentUrl ? (
+                                        <img 
+                                            src={getFullUrl(currentUrl)} 
+                                            className="w-full h-full object-contain p-10 animate-in fade-in zoom-in-95 duration-700" 
+                                            alt="Technical Asset" 
+                                        />
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-4 opacity-10">
+                                            <Box size={100} strokeWidth={1} />
+                                            <p className="text-[10px] font-black uppercase tracking-[0.3em]">No Visual Data</p>
+                                        </div>
+                                    )}
+                                    {allImages.length > 1 && (
+                                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2.5 z-10 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                                            {allImages.map((_, i) => (
+                                                <button 
+                                                    key={i} 
+                                                    onClick={() => setActiveImageIdx(i)} 
+                                                    className={`h-1.5 rounded-full transition-all duration-500 ${i === activeImageIdx ? 'bg-[var(--accent)] w-8 shadow-[0_0_10px_var(--accent)]' : 'bg-white/40 w-1.5 hover:bg-white/80'}`} 
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                {allImages.length > 1 && (
+                                    <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
+                                        {allImages.map((url, idx) => (
+                                            <button 
+                                                key={idx} 
+                                                onClick={() => setActiveImageIdx(idx)} 
+                                                className={`w-24 h-24 flex-shrink-0 rounded-[20px] border-2 transition-all duration-300 overflow-hidden bg-[var(--bg-workspace)] shadow-md ${idx === activeImageIdx ? 'border-[var(--accent)] scale-105 shadow-xl ring-4 ring-[var(--accent)]/10' : 'border-transparent opacity-50 hover:opacity-100 hover:scale-105'}`}
+                                            >
+                                                <img src={getFullUrl(url)} className="w-full h-full object-contain p-2.5" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
+                  </div>
+
+                  {/* Technical Information Side */}
+                  <div className="lg:col-span-7 space-y-8">
+                     <div className="space-y-6">
+                        <div className="flex items-center gap-4">
+                          <span className="bg-[var(--nav-hover)] text-[var(--accent)] font-black text-[11px] uppercase tracking-[0.2em] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
+                              {selectedItem?.category || selectedItem?.type || type || 'General Inventory'}
+                          </span>
+                          <span className="text-[var(--text-muted)] font-black text-[11px] uppercase tracking-widest opacity-40">REF: {selectedItem?.pcb_id || selectedItem?.part_id || 'INTERNAL-ID'}</span>
+                        </div>
+                        
+                        <div>
+                            <h2 className="text-4xl font-black text-[var(--text-main)] tracking-tighter uppercase leading-[1.1]">
+                                {selectedItem?.pcb_name || selectedItem?.part_name || selectedItem?.name}
+                            </h2>
+                            <p className="text-[14px] font-bold text-[var(--accent)] uppercase tracking-[0.25em] mt-3 opacity-80">{selectedItem?.manufacturer || 'LIPL INTERNAL LOGISTICS'}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-8 py-8 border-y border-[var(--border-color)]">
+                          <div className="space-y-2">
+                             <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Master Part ID</p>
+                             <div className="flex items-center gap-3">
+                                <Fingerprint size={18} className="text-[var(--accent)]" />
+                                <span className="text-[17px] font-black text-[var(--text-main)] font-mono">{selectedItem?.part_no || selectedItem?.part_number || 'N/A-RECORD'}</span>
+                             </div>
+                          </div>
+                          <div className="space-y-2">
+                             <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Registration Date</p>
+                             <div className="flex items-center gap-3">
+                                <Calendar size={18} className="text-[var(--accent)]" />
+                                <span className="text-[17px] font-black text-[var(--text-main)]">{new Date(selectedItem?.created_at).toLocaleDateString()}</span>
+                             </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 py-2">
+                           <button 
+                               onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedItem), 100); }} 
+                               className="btn-primary flex-1 py-4 px-6 shadow-lg uppercase tracking-widest text-[11px]" 
+                               style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+                           >
+                               Edit Specifications
+                           </button>
+                           <button 
+                               onClick={() => handleDelete(selectedItem)} 
+                               className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                           >
+                               <Trash2 size={18} />
+                           </button>
+                        </div>
+
+                        <div className="p-8 bg-[var(--bg-workspace)]/50 rounded-[32px] border border-[var(--border-color)] shadow-inner">
+                           <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.25em] mb-4 flex items-center gap-3">
+                              <Info size={14} /> Technical Abstract
+                           </h4>
+                           <p className="text-[15px] text-[var(--text-main)] leading-relaxed font-bold opacity-90 italic">
+                             "{selectedItem?.description || selectedItem?.pcb_description || selectedItem?.part_description || 'Detailed technical specifications for this hardware asset are available in the attached documentation library.'}"
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Technical Specs Grid */}
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                  {/* Hardware Profile */}
+                  <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
+                     <div className="flex items-center gap-4 mb-7">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Cpu size={22} /></div>
+                        <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Hardware Profile</h3>
+                     </div>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <DataSheetEntry label="Core Architecture" value={selectedItem?.processor_type} icon={Cpu} />
+                        <DataSheetEntry label="Component Part No" value={selectedItem?.processor_part_no} icon={HardDrive} />
+                        <div className="sm:col-span-2">
+                          <DataSheetEntry label="Technical Notes" value={selectedItem?.processor_desc} icon={Info} />
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Firmware Profile */}
+                  <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
+                     <div className="flex items-center gap-4 mb-7">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Binary size={22} /></div>
+                        <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Firmware Build</h3>
+                     </div>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <DataSheetEntry label="Active Branch" value={selectedItem?.firmware_branch} icon={Code} />
+                        <DataSheetEntry label="Version Spec" value={selectedItem?.firmware_version} icon={CheckCircle2} />
+                        <DataSheetEntry label="Primary Feature" value={selectedItem?.firmware_feature} icon={Zap} />
+                        <DataSheetEntry label="Release Context" value={selectedItem?.firmware_feature_desc} icon={Info} />
+                     </div>
+                  </div>
+               </div>
+
+               {/* Documentation Library */}
+               <div className="space-y-6">
+                  <div className="flex items-center gap-4 ml-4">
+                     <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-sm"><FileUp size={20} /></div>
+                     <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Documentation Library</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                     <FileCard label="Gerber File" url={selectedItem?.files?.processor_file_url} />
+                     <FileCard label="Board File" url={selectedItem?.files?.brd_file_url} />
+                     <FileCard label="Schematics" url={selectedItem?.files?.sch_file_url} />
+                     <FileCard label="BOM File" url={selectedItem?.files?.bom_file_url} />
+                     <FileCard label="Stencil Data" url={selectedItem?.files?.stencil_file_url} />
+                     <FileCard label="Panel Gerber" url={selectedItem?.files?.panel_gerber_file_url} />
+                     <FileCard label="Layer Stacking" url={selectedItem?.files?.layer_stacking_file_url} />
+                     <FileCard label="Production Note" url={selectedItem?.files?.production_instruction_url} />
+                  </div>
+               </div>
+            </div>
+          ) : (
+            /* Create / Edit Mode (Tabs) */
+            <div className="flex flex-col h-full max-h-[85vh]">
+              {/* Tab Navigation */}
+              <div className="flex bg-[var(--bg-workspace)]/50 p-1.5 rounded-2xl mb-8 border border-[var(--border-color)]">
+                  {[
+                  { id: 'general', label: 'General', icon: Info },
+                  { id: 'processor', label: 'Processor', icon: Settings },
+                  { id: 'firmware', label: 'Firmware', icon: Code },
+                  { id: 'files', label: 'PCB Files', icon: FileUp }
+                  ].map((tab) => (
+                  <button
+                      key={tab.id}
+                      onClick={() => setModalTab(tab.id)}
+                      className={`flex-1 flex items-center justify-center gap-3 py-3 rounded-xl transition-all duration-300 font-black text-[10px] uppercase tracking-widest ${modalTab === tab.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--nav-hover)] hover:text-[var(--text-main)]'}`}
+                  >
+                      <tab.icon size={14} strokeWidth={3} />
+                      <span>{tab.label}</span>
+                  </button>
+                  ))}
+              </div>
+
+              {/* Tab Content */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 pb-4">
+                  <form id="pcb-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                  
+                  {modalTab === 'general' && (
+                      <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
+                      <div className="grid grid-cols-2 gap-8">
+                          <FormField label="PCB Name" name="pcb_name" placeholder="e.g. Main Control Board V2" required />
+                          <FormField label="Part Number" name="part_number" placeholder="e.g. PCB-MCB-001" required />
+                      </div>
+                      <div className="grid grid-cols-2 gap-8">
+                          <FormField label="PCB Type" name="pcb_type" placeholder="e.g. 4-Layer FR4" />
+                          <FormField label="PCB Type Description" name="pcb_type_desc" placeholder="Details about construction..." />
+                      </div>
+                      <TextAreaField label="PCB Description" name="pcb_description" placeholder="Technical overview and purpose of this board..." />
+                      </div>
+                  )}
+
+                  {modalTab === 'processor' && (
+                      <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
+                      <div className="grid grid-cols-2 gap-8">
+                          <FormField label="Processor Type" name="processor_type" placeholder="e.g. ARM Cortex-M4" />
+                          <FormField label="Processor Part Number" name="processor_part_no" placeholder="e.g. STM32F405RGT6" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-8">
+                          <FormField label="Processor Count" name="processor_count" type="number" placeholder="e.g. 1" />
+                          <FormField label="Processor Description" name="processor_desc" placeholder="Package type, clock speed, etc..." />
+                      </div>
+                      </div>
+                  )}
+
+                  {modalTab === 'firmware' && (
+                      <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
+                      <div className="grid grid-cols-2 gap-8">
+                          <FormField label="Firmware Branch Name" name="firmware_branch" placeholder="e.g. main / production-v1" />
+                          <FormField label="Firmware Version Number" name="firmware_version" placeholder="e.g. v2.1.0-stable" />
+                      </div>
+                      <div className="grid grid-cols-1 gap-8">
+                          <FormField label="Firmware Feature Name" name="firmware_feature" placeholder="e.g. CAN-FD Support" />
+                          <TextAreaField label="Firmware Feature Description" name="firmware_feature_desc" placeholder="Describe the capabilities of this firmware build..." />
+                      </div>
+                      </div>
+                  )}
+
+                  {modalTab === 'files' && (
+                      <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <FileInput label="Individual Gerber File" name="file_gerber" existingUrl={selectedItem?.files?.processor_file_url} />
+                          <FileInput label="Board File (.brd/.pcb)" name="file_board" existingUrl={selectedItem?.files?.brd_file_url} />
+                          <FileInput label="Schematic File (.sch/.pdf)" name="file_schematic" existingUrl={selectedItem?.files?.sch_file_url} />
+                          <FileInput label="BOM File (.csv/.xlsx)" name="file_bom" existingUrl={selectedItem?.files?.bom_file_url} />
+                          <FileInput label="Stencile File" name="file_stencile" existingUrl={selectedItem?.files?.stencil_file_url} />
+                          <FileInput label="Panel Gerber File" name="file_panel_gerber" existingUrl={selectedItem?.files?.panel_gerber_file_url} />
+                          <FileInput label="Layer Stacking File" name="file_layer_stack" existingUrl={selectedItem?.files?.layer_stacking_file_url} />
+                          <FileInput label="Production Instruction File" name="file_production_note" existingUrl={selectedItem?.files?.production_instruction_url} />
+                          <div className="md:col-span-2">
+                          <div className="space-y-3 p-6 bg-[var(--nav-hover)]/30 border border-dashed border-[var(--border-color)] rounded-[24px]">
+                              <div className="flex items-center justify-between mb-4">
+                                  <div className="flex items-center gap-3">
+                                      <ImageIcon size={18} className="text-[var(--accent)]" />
+                                      <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">PCB Images Gallery</h4>
+                                  </div>
+                                  {previews.length > 0 && (
+                                      <button 
+                                          type="button" 
+                                          onClick={clearPendingImages}
+                                          className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline"
+                                      >
+                                          Clear All Pending
+                                      </button>
+                                  )}
+                              </div>
+
+                              {/* Existing Images Display in Edit Mode */}
+                              {modalMode === 'edit' && selectedItem?.pcb_images && selectedItem.pcb_images.length > 0 && (
+                                  <div className="space-y-3 mb-6">
+                                      <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Existing Images</p>
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                          {selectedItem.pcb_images.map((img, idx) => (
+                                              <div key={idx} className="relative aspect-square rounded-xl border border-[var(--border-color)] overflow-hidden group">
+                                                  <img src={buildFileUrl(img)} alt="Part" className="w-full h-full object-cover" />
+                                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                                      <a href={buildFileUrl(img)} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
+                                                      <button type="button" onClick={() => handleRemoveImage(img)} className="text-rose-500 hover:text-white"><Trash2 size={16} /></button>
+                                                  </div>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  </div>
+                              )}
+
+                              {/* Pending Images Previews */}
+                              {previews.length > 0 && (
+                                  <div className="space-y-3 mb-6">
+                                      <p className="text-[9px] font-black text-[var(--accent)] uppercase tracking-widest ml-1">Pending Uploads ({previews.length})</p>
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                          {previews.map((preview, idx) => (
+                                              <div key={preview.id} className="relative aspect-square rounded-xl border-2 border-[var(--accent)] border-dashed overflow-hidden group bg-[var(--bg-workspace)]">
+                                                  <img src={preview.url} alt="Preview" className="w-full h-full object-cover" />
+                                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                      <button 
+                                                          type="button" 
+                                                          onClick={() => removePendingImage(idx)}
+                                                          className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"
+                                                      >
+                                                          <Trash2 size={16} />
+                                                      </button>
+                                                  </div>
+                                                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
+                                                      <p className="text-[8px] text-white truncate">{preview.name}</p>
+                                                  </div>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  </div>
+                              )}
+
+                              <div className="relative group">
+                              <input 
+                                  type="file" 
+                                  multiple 
+                                  onChange={handleImageChange}
+                                  accept="image/*" 
+                                  className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                              />
+                              <div className="w-full bg-[var(--bg-workspace)]/50 border border-dashed border-[var(--text-dim)] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all">
+                                  <div className="p-4 bg-[var(--bg-workspace)] rounded-2xl text-[var(--accent)] shadow-sm"><Plus size={24} /></div>
+                                  <p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest text-center">
+                                      {pendingImages.length > 0 ? 'Add More Board Photos' : 'Upload Multiple Board Photos'}
+                                  </p>
+                              </div>
+                              </div>
+                          </div>
+                          </div>
+                      </div>
+                      </div>
+                  )}
+
+                  </form>
+              </div>
+            </div>
+          )}
         </Modal>
       )}
     </div>

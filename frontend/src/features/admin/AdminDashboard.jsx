@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getAdminStats } from '../../api/admin';
-import { 
-  Users, 
-  Zap, 
-  ShoppingBag, 
-  Wrench, 
-  ArrowUpRight, 
-  Activity, 
+import {
+  Users,
+  Zap,
+  ShoppingBag,
+  Wrench,
+  ArrowUpRight,
+  Activity,
   Layers,
   LayoutDashboard,
   Clock,
@@ -42,13 +42,13 @@ const AdminDashboard = () => {
   }, []);
 
   const StatCard = ({ title, value, icon: Icon, color, path }) => (
-    <div 
+    <div
       onClick={() => navigate(path)}
       className="workspace-card p-6 border border-[var(--border-color)] bg-[var(--bg-card)] group cursor-pointer hover:border-[var(--accent)] transition-all duration-500"
     >
       <div className="flex items-start justify-between">
         <div className={`p-4 rounded-2xl bg-${color}-500/10 text-${color}-500 group-hover:scale-110 transition-transform duration-500`}
-             style={{ backgroundColor: `${color}10`, color: color }}>
+          style={{ backgroundColor: `${color}10`, color: color }}>
           <Icon size={28} strokeWidth={2.5} />
         </div>
         <div className="text-right">
@@ -82,142 +82,107 @@ const AdminDashboard = () => {
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-10">
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
-        <div className="flex items-center gap-5">
-          <div className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
-            <LayoutDashboard size={28} className="text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-4 px-2">
+      {/* Header - PREMIUM COMPACT */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-entrance-down">
+        <div className="flex items-center gap-4">
+          <div className="p-3.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[20px] shadow-lg shadow-[var(--accent)]/5 group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <LayoutDashboard size={26} className="text-[var(--accent)] group-hover:scale-110 transition-transform duration-500 relative z-10" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">Dashboard</h1>
-            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Inventory Overview & Business Analytics</p>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase flex items-center gap-3">
+              Dashboard
+              {/* <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" title="System Live" /> */}
+            </h1>
+            <p className="text-[10px] text-[var(--text-muted)] font-black mt-2 uppercase tracking-[0.3em] opacity-60">Inventory Overview & Business Analytics</p>
           </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Products" 
-          value={stats?.products || 0} 
-          icon={Zap} 
-          color="#3b82f6" 
-          path="/admin/products"
-        />
-        <StatCard 
-          title="Customers" 
-          value={stats?.customers || 0} 
-          icon={Users} 
-          color="#10b981" 
-          path="/admin/customers"
-        />
-        <StatCard 
-          title="Teams" 
-          value={stats?.teams || 0} 
-          icon={Layers} 
-          color="#f59e0b" 
-          path="/admin/teams"
-        />
-        <StatCard 
-          title="Maintenance" 
-          value={stats?.maintenance || 0} 
-          icon={Wrench} 
-          color="#ec4899" 
-          path="/admin/maintenance"
-        />
+      {/* Stats Grid - PREMIUM GLASS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <StatCard title="Products" value={stats?.products || 0} icon={Zap} color="blue" path="/admin/products" />
+        <StatCard title="Customers" value={stats?.customers || 0} icon={Users} color="emerald" path="/admin/customers" />
+        <StatCard title="Teams" value={stats?.teams || 0} icon={Layers} color="amber" path="/admin/teams" />
+        <StatCard title="Maintenance" value={stats?.maintenance || 0} icon={Wrench} color="rose" path="/admin/maintenance" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Quick Actions */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="workspace-card p-8 border border-[var(--border-color)] bg-[var(--bg-card)]">
-            <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-              <Activity size={14} className="text-[var(--accent)]" /> Quick Actions
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* Column 1: Quick Actions (3/12) */}
+        <div className="lg:col-span-3">
+          <div className="workspace-card p-6 border border-[var(--border-color)] bg-[var(--bg-card)] h-full relative overflow-hidden flex flex-col">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-full blur-3xl -mr-16 -mt-16" />
+            <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.25em] mb-6 flex items-center gap-2 relative z-10">
+              <Zap size={14} className="text-[var(--accent)]" /> Actions
             </h3>
-            <div className="space-y-4">
-              <QuickLink 
-                title="New Product" 
-                description="Register a new inventory item" 
-                icon={Plus} 
-                path="/admin/products" 
-              />
-              <QuickLink 
-                title="New Customer" 
-                description="Onboard a new business client" 
-                icon={Users} 
-                path="/admin/customers" 
-              />
-              <QuickLink 
-                title="Manage Teams" 
-                description="Assign personnel to departments" 
-                icon={Layers} 
-                path="/admin/teams" 
-              />
+            <div className="space-y-3.5 flex-1 relative z-10">
+              <QuickLink title="New Product" description="Add inventory" icon={Plus} path="/admin/products" />
+              <QuickLink title="New Client" description="Onboard business" icon={Users} path="/admin/customers" />
+              <QuickLink title="Manage Teams" description="Assign staff" icon={Layers} path="/admin/teams" />
             </div>
           </div>
         </div>
 
-        {/* Right Column: System Status / Personnel Summary */}
-        <div className="lg:col-span-8 space-y-6">
-          <div className="workspace-card p-8 border border-[var(--border-color)] bg-[var(--bg-card)] h-full">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] flex items-center gap-2">
-                <Clock size={14} className="text-[var(--accent)]" /> Personnel Breakdown
-              </h3>
+        {/* Column 2: Personnel Breakdown (4/12) */}
+        <div className="lg:col-span-4">
+          <div className="workspace-card p-6 border border-[var(--border-color)] bg-[var(--bg-card)] h-full flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
+            <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.25em] mb-6 flex items-center gap-2 relative z-10">
+              <Clock size={14} className="text-[var(--accent)]" /> Personnel
+            </h3>
+            <div className="grid grid-cols-1 gap-3.5 flex-1 relative z-10">
+              {[
+                { label: 'Designers', val: stats?.designers, sub: 'Active Creative', icon: Cpu, color: 'text-blue-500' },
+                { label: 'Sales', val: stats?.sales, sub: 'Field Officers', icon: Building2, color: 'text-emerald-500' },
+                { label: 'Service', val: stats?.maintenance, sub: 'Tech Staff', icon: Wrench, color: 'text-rose-500' }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-workspace)]/40 border border-[var(--border-color)] hover:border-[var(--accent)]/30 transition-all group">
+                  <div className={`p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm ${item.color} group-hover:scale-110 transition-transform`}>
+                    <item.icon size={18} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">{item.sub}</p>
+                    <h4 className="text-[13px] font-bold text-[var(--text-main)] uppercase tracking-tight">{item.label}</h4>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-[var(--text-main)] tracking-tighter">{item.val || 0}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center">
-                <p className="text-[32px] font-black text-[var(--text-main)] mb-1">{stats?.designers || 0}</p>
-                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Active Designers</p>
-              </div>
-              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center">
-                <p className="text-[32px] font-black text-[var(--text-main)] mb-1">{stats?.sales || 0}</p>
-                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Sales Officers</p>
-              </div>
-              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center">
-                <p className="text-[32px] font-black text-[var(--text-main)] mb-1">{stats?.maintenance || 0}</p>
-                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Service Staff</p>
-              </div>
-            </div>
+          </div>
+        </div>
 
-            <div className="flex items-center justify-between mb-8 mt-12">
-              <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] flex items-center gap-2">
-                <Box size={14} className="text-[var(--accent)]" /> Inventory Breakdown
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center group cursor-pointer hover:border-[var(--accent)] transition-all" onClick={() => navigate('/admin/inventory/pcb')}>
-                <p className="text-[28px] font-black text-[var(--text-main)] mb-1 group-hover:text-[var(--accent)] transition-colors">{stats?.inventory?.pcb || 0}</p>
-                <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">PCB Units</p>
-              </div>
-              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center group cursor-pointer hover:border-[var(--accent)] transition-all" onClick={() => navigate('/admin/inventory/electronics')}>
-                <p className="text-[28px] font-black text-[var(--text-main)] mb-1 group-hover:text-[var(--accent)] transition-colors">{stats?.inventory?.electronics || 0}</p>
-                <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Electronic Parts</p>
-              </div>
-              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center group cursor-pointer hover:border-[var(--accent)] transition-all" onClick={() => navigate('/admin/inventory/electrical')}>
-                <p className="text-[28px] font-black text-[var(--text-main)] mb-1 group-hover:text-[var(--accent)] transition-colors">{stats?.inventory?.electrical || 0}</p>
-                <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Electrical Parts</p>
-              </div>
-              <div className="p-6 rounded-3xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] text-center group cursor-pointer hover:border-[var(--accent)] transition-all" onClick={() => navigate('/admin/inventory/structural')}>
-                <p className="text-[28px] font-black text-[var(--text-main)] mb-1 group-hover:text-[var(--accent)] transition-colors">{stats?.inventory?.structural || 0}</p>
-                <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Structural Parts</p>
-              </div>
-            </div>
-
-            <div className="mt-10 p-8 rounded-[32px] bg-gradient-to-br from-[var(--nav-active)] to-[var(--bg-card)] border border-[var(--border-color)] relative overflow-hidden group">
-               <div className="absolute -right-10 -bottom-10 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <LayoutDashboard size={200} strokeWidth={1} />
-               </div>
-               <div className="relative z-10">
-                  <h4 className="text-xl font-black text-[var(--text-main)] uppercase tracking-tight mb-2">Workspace Insight</h4>
-                  <p className="text-[13px] text-[var(--text-muted)] font-medium leading-relaxed max-w-md">
-                    Total system volume is currently at <span className="text-[var(--accent)] font-bold">{(stats?.products || 0) + (stats?.customers || 0)}</span> active records across all departments. Use the side navigation to deep-dive into specific modules.
-                  </p>
-               </div>
+        {/* Column 3: Inventory Breakdown (5/12) */}
+        <div className="lg:col-span-5">
+          <div className="workspace-card p-6 border border-[var(--border-color)] bg-[var(--bg-card)] h-full flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
+            <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.25em] mb-6 flex items-center gap-2 relative z-10">
+              <Box size={14} className="text-[var(--accent)]" /> Inventory
+            </h3>
+            <div className="grid grid-cols-2 gap-4 flex-1 relative z-10">
+              {[
+                { label: 'PCB Units', val: stats?.inventory?.pcb, path: '/admin/inventory/pcb', icon: CircuitBoard, bg: 'bg-blue-500/5' },
+                { label: 'Electronics', val: stats?.inventory?.electronics, path: '/admin/inventory/electronics', icon: Cpu, bg: 'bg-emerald-500/5' },
+                { label: 'Electrical', val: stats?.inventory?.electrical, path: '/admin/inventory/electrical', icon: Plug, bg: 'bg-amber-500/5' },
+                { label: 'Structural', val: stats?.inventory?.structural, path: '/admin/inventory/structural', icon: Building2, bg: 'bg-rose-500/5' }
+              ].map((item, idx) => (
+                <div key={idx}
+                  onClick={() => navigate(item.path)}
+                  className={`p-5 rounded-3xl border border-[var(--border-color)] flex flex-col justify-between group cursor-pointer hover:border-[var(--accent)] transition-all ${item.bg}`}>
+                  <div className="flex items-start justify-between">
+                    <div className="p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--accent)] group-hover:bg-[var(--accent)] group-hover:text-white transition-all">
+                      <item.icon size={18} />
+                    </div>
+                    <ArrowUpRight size={14} className="text-[var(--text-dim)] opacity-0 group-hover:opacity-100 transition-all" />
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-3xl font-black text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors leading-none">{item.val || 0}</p>
+                    <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mt-2">{item.label}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

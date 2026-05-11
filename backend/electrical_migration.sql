@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS electrical_tech_spec (
     protection_rating VARCHAR(100),
     operating_temperature VARCHAR(100),
     dimensions VARCHAR(100),
-    weight VARCHAR(100)
+    weight VARCHAR(100),
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 3. Inventory Tab Fields

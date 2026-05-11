@@ -8,7 +8,18 @@ const getElectricalParts = async (req, res, next) => {
   
     try {
       let queryText = `
-        SELECT p.*, COUNT(*) OVER() as total_count 
+        SELECT p.*, 
+        CASE 
+          WHEN p.part_category = 'Pump' THEN (SELECT part_images_gallery->>0 FROM pump_specs WHERE part_id = p.part_id)
+          WHEN p.part_category = 'Nozzle' THEN (SELECT part_images_gallery->>0 FROM nozzle_specs WHERE part_id = p.part_id)
+          WHEN p.part_category = 'Solenoid Valve' THEN (SELECT part_images_gallery->>0 FROM solenoid_valve_specs WHERE part_id = p.part_id)
+          WHEN p.part_category = 'Relay Box' THEN (SELECT part_images_gallery->>0 FROM relay_box_specs WHERE part_id = p.part_id)
+          WHEN p.part_category = 'Transformer' THEN (SELECT part_images_gallery->>0 FROM transformer_specs WHERE part_id = p.part_id)
+          WHEN p.part_category = 'RCCB' THEN (SELECT part_images_gallery->>0 FROM rccb_specs WHERE part_id = p.part_id)
+          WHEN p.part_category = 'SPD(Surge Protection Device)' THEN (SELECT part_images_gallery->>0 FROM spd_specs WHERE part_id = p.part_id)
+          ELSE NULL
+        END as image_url,
+        COUNT(*) OVER() as total_count 
         FROM electrical_part_master p
         WHERE p.is_active = TRUE
       `;
@@ -159,14 +170,21 @@ const updateElectricalPart = async (req, res, next) => {
             [body.part_category, body.part_name, body.part_number, body.manufacturer, body.part_type, body.description, body.used_in_product, body.material, body.status, id]
         );
 
-        // 2. Update Tech Specs
+        // 4. Update Tech Specs
         await db.query(
-            `UPDATE electrical_tech_spec
-             SET rated_voltage=$1, rated_current=$2, power_rating=$3, phase_type=$4, frequency=$5, input_type=$6, output_type=$7, connector_type=$8, mounting_type=$9, protection_rating=$10, operating_temperature=$11, dimensions=$12, weight=$13
-             WHERE part_id=$14`,
+            `UPDATE electrical_tech_spec SET
+            rated_voltage = $1, rated_current = $2, power_rating = $3, phase_type = $4, frequency = $5, input_type = $6, output_type = $7, connector_type = $8, mounting_type = $9, protection_rating = $10, operating_temperature = $11, dimensions = $12, weight = $13, updated_at = NOW()
+            WHERE part_id = $14`,
             [body.rated_voltage, body.rated_current, body.power_rating, body.phase_type, body.frequency, body.input_type, body.output_type, body.connector_type, body.mounting_type, body.protection_rating, body.operating_temperature, body.dimensions, body.weight, id]
         );
 
+        // 4.5 Update Category name in electrical_category_spec if provided
+        if (body.category_name) {
+            await db.query(
+                `UPDATE electrical_category_spec SET category_name = $1 WHERE part_id = $2`,
+                [body.category_name, id]
+            );
+        }
 
         // 5. Update Category specialized table
         if (body.category_name && tableMap[body.category_name]) {

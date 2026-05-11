@@ -52,6 +52,8 @@ const ProductListPage = () => {
   const [specRows, setSpecRows] = useState([]);
   const [faqRows, setFaqRows] = useState([]);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [pendingImages, setPendingImages] = useState([]);
+  const [previews, setPreviews] = useState([]);
 
   useEffect(() => {
     if (modalMode !== 'view') return;
@@ -64,6 +66,48 @@ const ProductListPage = () => {
     }, 3500);
     return () => clearInterval(timer);
   }, [modalMode, selectedProduct, activeImageIdx]);
+
+  useEffect(() => {
+    if (pendingImages.length === 0) {
+      setPreviews([]);
+      return;
+    }
+
+    const newPreviews = pendingImages.map(file => {
+      try {
+        return {
+          id: Math.random().toString(36).substr(2, 9),
+          url: URL.createObjectURL(file),
+          name: file.name
+        };
+      } catch (err) {
+        console.error("Preview generation failed", err);
+        return null;
+      }
+    }).filter(p => p !== null);
+
+    setPreviews(newPreviews);
+
+    // Cleanup function
+    return () => {
+      newPreviews.forEach(p => URL.revokeObjectURL(p.url));
+    };
+  }, [pendingImages]);
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setPendingImages(prev => [...prev, ...files]);
+    }
+  };
+
+  const removePendingImage = (index) => {
+    setPendingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const clearPendingImages = () => {
+    setPendingImages([]);
+  };
 
   const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm();
 
@@ -241,7 +285,11 @@ const ProductListPage = () => {
       });
 
       // Append files last
-      if (data.image && data.image[0]) formData.append('image', data.image[0]);
+      if (pendingImages.length > 0) {
+        pendingImages.forEach(file => {
+          formData.append('image', file);
+        });
+      }
       if (data.document && data.document[0]) formData.append('document', data.document[0]);
 
       const validFaqs = faqRows.filter(f => f.question.trim() !== '');
@@ -285,6 +333,7 @@ const ProductListPage = () => {
       feature: '',
       faqs: '[]'
     });
+    setPendingImages([]);
     setIsModalOpen(true);
   };
 
@@ -297,6 +346,7 @@ const ProductListPage = () => {
     setActiveImageIdx(0);
     const resetData = { ...product, fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', dispenser_type: hardware?.dispenser_type || '', specification: hardware ? hardware.original_spec : product.specification };
     reset(resetData);
+    setPendingImages([]);
     setIsModalOpen(true);
   };
 
@@ -308,6 +358,7 @@ const ProductListPage = () => {
     setFaqRows(product.faqs || []);
     const resetData = { product_name: product.product_name, company_name: product.company_name || '', sub_company: product.sub_company || '', description: product.description || '', category: product.category || '', sub_category: product.sub_category || '', feature: product.feature || '', fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', dispenser_type: hardware?.dispenser_type || '', specification: hardware ? hardware.original_spec : product.specification };
     reset(resetData);
+    setPendingImages([]);
     setIsModalOpen(true);
   };
 
@@ -376,26 +427,26 @@ const ProductListPage = () => {
         <div className="relative group">
           <input 
             type="file" 
-            {...register(name)} 
+            {...(name === 'image' ? { multiple: true, onChange: handleImageChange } : register(name))} 
             accept={accept} 
             className="absolute inset-0 opacity-0 cursor-pointer z-10" 
           />
           <div className={`w-full bg-[var(--input-bg)] border border-dashed rounded-2xl p-6 flex flex-col items-center justify-center gap-3 transition-all duration-300 ${
-            hasFile 
+            (name === 'image' ? pendingImages.length > 0 : hasFile) 
               ? 'border-[var(--accent)] bg-[var(--accent)]/5 shadow-[0_0_20px_rgba(59,130,246,0.1)]' 
               : 'border-[var(--text-dim)] group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5'
           }`}>
             <div className={`p-3 rounded-xl transition-all duration-300 ${
-              hasFile ? 'bg-[var(--accent)] text-white scale-110' : 'bg-[var(--bg-workspace)] text-[var(--accent)] shadow-sm'
+              (name === 'image' ? pendingImages.length > 0 : hasFile) ? 'bg-[var(--accent)] text-white scale-110' : 'bg-[var(--bg-workspace)] text-[var(--accent)] shadow-sm'
             }`}>
-              {hasFile ? <CheckCircle size={24} /> : <Icon size={24} />}
+              {(name === 'image' ? pendingImages.length > 0 : hasFile) ? <CheckCircle size={24} /> : <Icon size={24} />}
             </div>
             <div className="text-center">
-              <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${hasFile ? 'text-[var(--accent)]' : 'text-[var(--text-dim)]'}`}>
-                {hasFile ? 'File Attached' : label.replace('Upload New ', '')}
+              <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${(name === 'image' ? pendingImages.length > 0 : hasFile) ? 'text-[var(--accent)]' : 'text-[var(--text-dim)]'}`}>
+                {(name === 'image' ? pendingImages.length > 0 : hasFile) ? (name === 'image' ? `${pendingImages.length} Files Selected` : 'File Attached') : label.replace('Upload New ', '')}
               </p>
-              <p className={`text-[12px] font-bold truncate max-w-[200px] px-4 ${hasFile ? 'text-[var(--text-main)]' : 'text-[var(--text-dim)] opacity-40'}`}>
-                {fileName}
+              <p className={`text-[12px] font-bold truncate max-w-[200px] px-4 ${(name === 'image' ? pendingImages.length > 0 : hasFile) ? 'text-[var(--text-main)]' : 'text-[var(--text-dim)] opacity-40'}`}>
+                {name === 'image' && pendingImages.length > 0 ? 'Click to add more...' : fileName}
               </p>
             </div>
           </div>
@@ -675,7 +726,7 @@ const ProductListPage = () => {
                     </div>
                   )}
                   {activeTab === 'documents' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {(selectedProduct?.documents || [selectedProduct?.document_url]).filter(Boolean).map((docUrl, idx) => (
                         <div key={idx} className="flex items-center gap-4 p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-workspace)]/30 hover:border-[var(--accent)] transition-all group">
                           <div className="p-3 bg-[var(--nav-hover)] rounded-xl text-[var(--accent)]"><FileText size={22} /></div>
@@ -701,6 +752,30 @@ const ProductListPage = () => {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {activeTab === 'faqs' && (
+                    <div className="space-y-8 py-2">
+                      {selectedProduct?.faqs && selectedProduct.faqs.length > 0 ? (
+                        <div className="divide-y divide-[var(--border-color)]/60">
+                          {selectedProduct.faqs.map((faq, idx) => (
+                            <div key={idx} className="py-6 first:pt-0 last:pb-0 space-y-3">
+                              <h4 className="text-[15px] font-bold text-[var(--text-main)] flex items-start gap-3">
+                                <span className="text-[var(--accent)] font-black">Q.</span>
+                                {faq.question}
+                              </h4>
+                              <div className="pl-8 flex items-start gap-3">
+                                <span className="text-emerald-500 font-black text-[13px]">A.</span>
+                                <p className="text-[14px] text-[var(--text-muted)] font-medium leading-relaxed">{faq.answer}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12 bg-[var(--bg-workspace)]/10 rounded-2xl border border-dashed border-[var(--border-color)]">
+                          <p className="text-[var(--text-dim)] font-black uppercase tracking-widest text-[10px] opacity-40">No technical FAQs available</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -796,6 +871,27 @@ const ProductListPage = () => {
                             </div>
                           </div>
                         )}
+
+                        {/* Pending Images Previews */}
+                        {previews.length > 0 && (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-[11px] font-black text-[var(--accent)] uppercase tracking-[0.2em] ml-1">Pending Photos ({previews.length})</label>
+                                    <button type="button" onClick={clearPendingImages} className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline">Clear All</button>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    {previews.map((preview, idx) => (
+                                        <div key={preview.id} className="relative aspect-square rounded-xl border-2 border-[var(--accent)] border-dashed overflow-hidden group bg-[var(--bg-workspace)]">
+                                            <img src={preview.url} alt="Preview" className="w-full h-full object-contain p-2" />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                                <button type="button" onClick={() => removePendingImage(idx)} className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"><Trash2 size={16} /></button>
+                                            </div>
+                                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1"><p className="text-[8px] text-white truncate">{preview.name}</p></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         {((selectedProduct?.documents && selectedProduct.documents.length > 0) || selectedProduct?.document_url) && (
                           <div className="space-y-3">
                             <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Documents</label>
@@ -840,16 +936,30 @@ const ProductListPage = () => {
 
                   <div className="p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-[32px]">
                     <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><div className="w-2 h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-lg font-black text-[var(--text-main)] uppercase tracking-widest">FAQs</h3></div></div>
-                    <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                    <div className="space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar pr-2">
                       {faqRows.map((faq, idx) => (
-                        <div key={idx} className="p-5 rounded-2xl bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] space-y-4 group">
-                          <div className="flex items-center justify-between"><span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">Question {idx + 1}</span><button type="button" onClick={() => setFaqRows(faqRows.filter((_, i) => i !== idx))} disabled={faqRows.length === 1} className="text-[var(--text-dim)] hover:text-rose-500 disabled:opacity-10 transition-colors"><Trash2 size={16} /></button></div>
-                          <input type="text" value={faq.question} onChange={(e) => { const updated = [...faqRows]; updated[idx].question = e.target.value; setFaqRows(updated); }} placeholder="Enter question here..." className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" />
-                          <textarea value={faq.answer} onChange={(e) => { const updated = [...faqRows]; updated[idx].answer = e.target.value; setFaqRows(updated); }} placeholder="Enter answer here..." rows={2} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-muted)] outline-none focus:border-[var(--accent)] transition-all resize-none font-medium" />
+                        <div key={idx} className="p-4 rounded-xl bg-[var(--bg-workspace)] border border-[var(--border-color)] space-y-3 relative group">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest">Item {idx + 1}</span>
+                            <button type="button" onClick={() => setFaqRows(faqRows.filter((_, i) => i !== idx))} disabled={faqRows.length === 1} className="text-[var(--text-dim)] hover:text-rose-500 disabled:opacity-10 transition-colors">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          <div className="space-y-2">
+                            <input type="text" value={faq.question} onChange={(e) => { const updated = [...faqRows]; updated[idx].question = e.target.value; setFaqRows(updated); }} placeholder="Enter Question..." className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] font-bold" />
+                            <textarea value={faq.answer} onChange={(e) => { const updated = [...faqRows]; updated[idx].answer = e.target.value; setFaqRows(updated); }} placeholder="Enter Answer..." rows={1} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[13px] text-[var(--text-muted)] outline-none focus:border-[var(--accent)] resize-none font-medium" />
+                          </div>
                         </div>
                       ))}
                     </div>
-                    <button type="button" onClick={() => setFaqRows([...faqRows, { question: '', answer: '' }])} className="flex items-center gap-2 text-[var(--accent)] text-[11px] font-black uppercase tracking-[0.2em] hover:opacity-80 transition-all ml-1"><Plus size={16} strokeWidth={3} /><span>Add New FAQ Item</span></button>
+                    <button 
+                      type="button" 
+                      onClick={() => setFaqRows([...faqRows, { question: '', answer: '' }])} 
+                      className="w-full py-3 rounded-xl border border-dashed border-[var(--border-color)] text-[var(--accent)] flex items-center justify-center gap-2 hover:bg-[var(--accent)]/5 hover:border-[var(--accent)]/50 transition-all group mt-2"
+                    >
+                      <Plus size={14} strokeWidth={3} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Add FAQ Row</span>
+                    </button>
                   </div>
                 </div>
 

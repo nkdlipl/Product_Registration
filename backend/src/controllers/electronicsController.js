@@ -8,7 +8,9 @@ const getElectronicsParts = async (req, res, next) => {
 
   try {
     let queryText = `
-      SELECT p.*, COUNT(*) OVER() as total_count 
+      SELECT p.*, 
+      (SELECT image_url FROM ELECTRONICS_IMAGES WHERE part_id = p.part_id LIMIT 1) as image_url,
+      COUNT(*) OVER() as total_count 
       FROM ELECTRONICS_PART_MASTER p
       WHERE p.is_active = TRUE
     `;
@@ -128,11 +130,11 @@ const createElectronicsPart = async (req, res, next) => {
 
             // Mapping definitions for specialized tables
             const mapping = {
-                'Battery': { table: 'battery_specs', columns: ['chemistry', 'cycle_life', 'nominal_voltage', 'capacity', 'internal_resistance', 'charge_temp', 'discharge_temp'] },
-                'Flow Meter': { table: 'flow_meter_specs', columns: ['flow_range', 'pipe_diameter', 'pulse_rate', 'max_pressure', 'fluid_type', 'output_protocol'] },
-                'SMPS': { table: 'smps_specs', columns: ['input_voltage', 'output_voltage', 'output_current', 'efficiency', 'ripple_noise', 'cooling_method'] },
-                'Printer': { table: 'printer_specs', columns: ['print_method', 'print_speed', 'paper_size', 'interface', 'resolution'] },
-                'Speaker': { table: 'speaker_specs', columns: ['speaker_type', 'impedance', 'power_output', 'frequency_response', 'sensitivity', 'dimensions'] },
+                'Battery': { table: 'battery_specs', columns: ['battery_chemistry', 'battery_voltage', 'battery_capacity', 'cell_count', 'rechargeable', 'charging_voltage', 'max_charging_current', 'max_discharge_current', 'backup_time', 'battery_connector_type', 'cycle_life', 'bms_available'] },
+                'Flow Meter': { table: 'flow_meter_specs', columns: ['flow_meter_type', 'flow_range', 'accuracy', 'pulse_output', 'pulses_per_liter', 'k_factor', 'fluid_compatibility', 'inlet_size', 'outlet_size', 'max_pressure', 'calibration_required', 'calibration_cert_no'] },
+                'SMPS': { table: 'smps_specs', columns: ['input_voltage_range', 'output_voltage', 'output_current', 'output_power', 'efficiency', 'num_outputs', 'protection', 'cooling_type', 'smps_type', 'ripple_noise'] },
+                'Printer': { table: 'printer_specs', columns: ['printer_type', 'printer_model', 'print_width', 'paper_roll_size', 'print_speed', 'interface', 'baud_rate', 'cutter_available', 'paper_sensor_available', 'operating_voltage', 'supported_language'] },
+                'Speaker': { table: 'speaker_specs', columns: ['speaker_type', 'power_rating', 'impedance', 'frequency_range', 'sound_level', 'operating_voltage', 'connector_type', 'mounting_type'] },
                 'Amplifier': { table: 'amplifier_specs', columns: ['amplifier_type', 'ic_chipset', 'input_voltage', 'output_power', 'channel_type', 'speaker_impedance_support', 'input_signal_type', 'volume_control', 'protection'] },
                 'Temperature Sensor': { table: 'temperature_sensor_specs', columns: ['sensor_type', 'sensor_model', 'temperature_range', 'accuracy', 'output_signal', 'interface', 'probe_type', 'cable_length', 'calibration_required'] },
                 'Quality Sensor': { table: 'quality_sensor_specs', columns: ['sensor_type', 'measured_parameter', 'measuring_range', 'accuracy', 'output_signal', 'communication_protocol', 'fluid_compatibility', 'calibration_required', 'calibration_data'] },
@@ -254,11 +256,11 @@ const updateElectronicsPart = async (req, res, next) => {
 
             // Mapping definitions for specialized tables
             const mapping = {
-                'Battery': { table: 'battery_specs', columns: ['chemistry', 'cycle_life', 'nominal_voltage', 'capacity', 'internal_resistance', 'charge_temp', 'discharge_temp'] },
-                'Flow Meter': { table: 'flow_meter_specs', columns: ['flow_range', 'pipe_diameter', 'pulse_rate', 'max_pressure', 'fluid_type', 'output_protocol'] },
-                'SMPS': { table: 'smps_specs', columns: ['input_voltage', 'output_voltage', 'output_current', 'efficiency', 'ripple_noise', 'cooling_method'] },
-                'Printer': { table: 'printer_specs', columns: ['print_method', 'print_speed', 'paper_size', 'interface', 'resolution'] },
-                'Speaker': { table: 'speaker_specs', columns: ['speaker_type', 'impedance', 'power_output', 'frequency_response', 'sensitivity', 'dimensions'] },
+                'Battery': { table: 'battery_specs', columns: ['battery_chemistry', 'battery_voltage', 'battery_capacity', 'cell_count', 'rechargeable', 'charging_voltage', 'max_charging_current', 'max_discharge_current', 'backup_time', 'battery_connector_type', 'cycle_life', 'bms_available'] },
+                'Flow Meter': { table: 'flow_meter_specs', columns: ['flow_meter_type', 'flow_range', 'accuracy', 'pulse_output', 'pulses_per_liter', 'k_factor', 'fluid_compatibility', 'inlet_size', 'outlet_size', 'max_pressure', 'calibration_required', 'calibration_cert_no'] },
+                'SMPS': { table: 'smps_specs', columns: ['input_voltage_range', 'output_voltage', 'output_current', 'output_power', 'efficiency', 'num_outputs', 'protection', 'cooling_type', 'smps_type', 'ripple_noise'] },
+                'Printer': { table: 'printer_specs', columns: ['printer_type', 'printer_model', 'print_width', 'paper_roll_size', 'print_speed', 'interface', 'baud_rate', 'cutter_available', 'paper_sensor_available', 'operating_voltage', 'supported_language'] },
+                'Speaker': { table: 'speaker_specs', columns: ['speaker_type', 'power_rating', 'impedance', 'frequency_range', 'sound_level', 'operating_voltage', 'connector_type', 'mounting_type'] },
                 'Amplifier': { table: 'amplifier_specs', columns: ['amplifier_type', 'ic_chipset', 'input_voltage', 'output_power', 'channel_type', 'speaker_impedance_support', 'input_signal_type', 'volume_control', 'protection'] },
                 'Temperature Sensor': { table: 'temperature_sensor_specs', columns: ['sensor_type', 'sensor_model', 'temperature_range', 'accuracy', 'output_signal', 'interface', 'probe_type', 'cable_length', 'calibration_required'] },
                 'Quality Sensor': { table: 'quality_sensor_specs', columns: ['sensor_type', 'measured_parameter', 'measuring_range', 'accuracy', 'output_signal', 'communication_protocol', 'fluid_compatibility', 'calibration_required', 'calibration_data'] },
