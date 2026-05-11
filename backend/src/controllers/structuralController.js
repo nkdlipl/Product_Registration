@@ -152,6 +152,7 @@ const getStructuralPartById = async (req, res, next) => {
 
 const createStructuralPart = async (req, res, next) => {
     const body = req.body;
+    let partId;
     const { category_name, spec_data, ...masterData } = body;
 
     try {
@@ -172,7 +173,7 @@ const createStructuralPart = async (req, res, next) => {
                 `INSERT INTO STRUCTURAL_PART_MASTER (${masterFields.join(', ')}) VALUES (${masterPlaceholders}) RETURNING part_id`,
                 masterValues
             );
-            const partId = masterResult.rows[0].part_id;
+            partId = masterResult.rows[0].part_id;
 
             // 2. Insert Tech Spec
             const techFields = ['material_type', 'material_grade', 'sheet_thickness', 'surface_finish', 'paint_coating_color', 'coating_thickness', 'corrosion_protection', 'rust_proof_treatment', 'welding_required', 'bending_required', 'laser_cutting_required', 'cnc_cutting_required', 'edge_finish', 'waterproof_sealing_required', 'rubber_gasket_required', 'length', 'width', 'height', 'thickness', 'weight', 'tolerance', 'hole_count', 'hole_diameter', 'cutout_available', 'cutout_type', 'cutout_size', 'bend_angle', 'bend_count', 'mounting_hole_pattern'];
