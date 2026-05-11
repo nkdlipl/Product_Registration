@@ -1,0 +1,1001 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DataTable from '../../components/shared/DataTable';
+import Modal from '../../components/shared/Modal';
+import {
+  getStructuralParts, createStructuralPart, getStructuralPartById, deleteStructuralPart, updateStructuralPart, deleteStructuralFile
+} from '../../api/inventory';
+import { getProducts } from '../../api/products';
+import {
+  Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers, LayoutGrid, List,
+  Plug, Factory, ShieldAlert, BatteryCharging, Wrench, Package, Shield, Scale, Banknote, ShoppingCart, CheckCircle2,
+  Maximize2, Move, BoxSelect, Frame, DoorOpen, Layout, Container
+} from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
+
+const CATEGORY_CONFIG = {
+  'Cabinet Body': { icon: Container, color: '#3b82f6' },
+  'Front Door': { icon: DoorOpen, color: '#10b981' },
+  'Side Panel': { icon: Layout, color: '#f59e0b' },
+  'Top Cover': { icon: Layers, color: '#ec4899' },
+  'Base Frame': { icon: Frame, color: '#8b5cf6' },
+  'Internal Mounting Plate': { icon: BoxSelect, color: '#06b6d4' },
+  'Nozzle Holder': { icon: Move, color: '#ef4444' },
+  'Hose Entry Plate': { icon: Maximize2, color: '#f97316' },
+  'Display': { icon: Radio, color: '#0ea5e9' },
+  'Lock': { icon: Shield, color: '#64748b' }
+};
+
+const categoriesList = Object.keys(CATEGORY_CONFIG);
+
+const STRUCTURAL_SPEC_FIELDS = {
+  "Cabinet Body": [
+    { label: "Cabinet Type", key: "cabinet_type" },
+    { label: "Cabinet Material", key: "cabinet_material" },
+    { label: "Cabinet Height", key: "cabinet_height" },
+    { label: "Cabinet Width", key: "cabinet_width" },
+    { label: "Cabinet Depth", key: "cabinet_depth" },
+    { label: "Door Opening Side", key: "door_opening_side" },
+    { label: "Ventilation Available", key: "ventilation_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Number of Vents", key: "number_of_vents", type: 'number' },
+    { label: "IP Protection Target", key: "ip_protection_target" },
+    { label: "Internal Mounting Plate Available", key: "internal_mounting_plate_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Base Stand Available", key: "base_stand_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Locking Arrangement", key: "locking_arrangement" },
+    { label: "Cable Entry Holes", key: "cable_entry_holes", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Hose Entry Hole", key: "hose_entry_hole", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Earthing Point Available", key: "earthing_point_available", isSelect: true, options: ['Yes', 'No'] }
+  ],
+  "Front Door": [
+    { label: "Door Type", key: "door_type" },
+    { label: "Door Material", key: "door_material" },
+    { label: "Door Opening Direction", key: "door_opening_direction" },
+    { label: "Lock Type", key: "lock_type" },
+    { label: "Lock Count", key: "look_count", type: 'number' },
+    { label: "Hinge Type", key: "hinge_type" },
+    { label: "Hinge Count", key: "hinge_count", type: 'number' },
+    { label: "Rubber Gasket Available", key: "rubber_gasket_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Display Cutout Available", key: "display_cutout_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Printer Cutout Available", key: "printer_cutout_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Keypad Cutout Available", key: "keypad_cutout_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Sticker Area Available", key: "sticker_area_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Door Stopper Available", key: "door_stopper_available", isSelect: true, options: ['Yes', 'No'] }
+  ],
+  "Side Panel": [
+    { label: "Panel Side", key: "panel_side", isSelect: true, options: ['Left', 'Right'] },
+    { label: "Panel Type", key: "panel_type", isSelect: true, options: ['Fixed', 'Removable'] },
+    { label: "Ventilation Slot Available", key: "ventilation_slot_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Number of Vent Slots", key: "number_of_vent_slots", type: 'number' },
+    { label: "Access Opening Available", key: "access_opening_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Hose Pipe Opening Available", key: "hose_pipe_opening_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Nozzle Holder Mounting Available", key: "nozzle_holder_mounting_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Fastner Type", key: "fastner_type", isSelect: true, options: ['Screw', 'Rivet', 'Welded'] },
+    { label: "Panel Reinforcement Available", key: "panel_reinforcement_available", isSelect: true, options: ['Yes', 'No'] }
+  ],
+  "Top Cover": [
+    { label: "Cover Type", key: "cover_type", isSelect: true, options: ['Flat', 'Sloped', 'Removable'] },
+    { label: "Rain Protection Design", key: "rain_protection_design", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Overhang Available", key: "overhang_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Mounting Type", key: "mounting_type", isSelect: true, options: ['Screw Mounted', 'Welded'] },
+    { label: "Sealing Gasket Available", key: "sealing_gasket_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Cable Entry Available", key: "cable_entry_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Ventilation Available", key: "ventilation_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Branding Area Available", key: "branding_area_available", isSelect: true, options: ['Yes', 'No'] }
+  ],
+  "Base Frame": [
+    { label: "Base Type", key: "base_type", isSelect: true, options: ['Fixed Stand', 'Skid Base', 'Cabinet Base'] },
+    { label: "Base Material", key: "base_material", isSelect: true, options: ['MS Channel', 'MS Sheet', 'SS'] },
+    { label: "Load Capacity", key: "load_capacity" },
+    { label: "Foot Stand Count", key: "foot_stand_count", type: 'number' },
+    { label: "Floor Mounting Hole Available", key: "floor_mounting_hole_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Anchor Bolt Size", key: "anchor_bolt_size" },
+    { label: "Anti-vibration Pad Available", key: "anti_vibration_pad_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Leveling Foot Available", key: "leveling_foot_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Bottom Clearance", key: "bottom_clearance" },
+    { label: "Drain Hole Available", key: "drain_hole_available", isSelect: true, options: ['Yes', 'No'] }
+  ],
+  "Internal Mounting Plate": [
+    { label: "Plate Usage", key: "plate_usage", isSelect: true, options: ['PCB Mounting', 'Relay Box', 'SMPS', 'Wiring'] },
+    { label: "Plate Material", key: "plate_material", isSelect: true, options: ['MS', 'Aluminum', 'Acrylic'] },
+    { label: "Mounting Hole Pattern", key: "mounting_hole_pattern", isSelect: true, options: ['Custom', 'M4', 'M6'] },
+    { label: "Component Mounting Slots", key: "component_mounting_slots", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Cable Routing Holes", key: "cable_routing_holes", isSelect: true, options: ['Yes', 'No'] },
+    { label: "DIN Rail Mounting Available", key: "din_rail_mounting_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Earthing Stud Available", key: "earthing_stud_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Removable Plate", key: "removable_plate", isSelect: true, options: ['Yes', 'No'] }
+  ],
+  "Nozzle Holder": [
+    { label: "Holder Type", key: "holder_type", isSelect: true, options: ['External Holder', 'Recessed Pocket'] },
+    { label: "Nozzle Compatibility", key: "nozzle_compatibility", isSelect: true, options: ['Manual', 'Auto Nozzle'] },
+    { label: "Holder Material", key: "holder_material", isSelect: true, options: ['Plastic', 'MS', 'Aluminum'] },
+    { label: "Mounting Side", key: "mounting_side", isSelect: true, options: ['Left', 'Right', 'Front'] },
+    { label: "Nozzle Sensor Mount Available", key: "nozzle_sensor_mount_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Drain Hole Available", key: "drain_hole_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Locking Support Available", key: "locking_support_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Rubber Padding Available", key: "rubber_padding_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Cutout Size", key: "cutout_size" }
+  ],
+  "Hose Entry Plate": [
+    { label: "Hose Entry Type", key: "hose_entry_type", isSelect: true, options: ['Side Entry', 'Bottom Entry', 'Front Entry'] },
+    { label: "Hose Diameter Support", key: "hose_diameter_support", isSelect: true, options: ['3/4 inch', '1 inch'] },
+    { label: "Grommet Available", key: "grommet_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Pipe Clamp Mount Available", key: "pipe_clamp_mount_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Swivel Mount Support", key: "swivel_mount_support", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Hole Diameter", key: "hole_diameter" },
+    { label: "Reinforcement Plate Available", key: "reinforcement_plate_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Leak Drain Path Available", key: "leak_drain_path_available", isSelect: true, options: ['Yes', 'No'] }
+  ],
+  "Display": [
+    { label: "Panel Usage", key: "panel_usage", isSelect: true, options: ['Display', 'Keypad', 'Printer', 'Indicator'] },
+    { label: "Display Cutout Size", key: "display_cutout_size" },
+    { label: "Keypad Cutout Available", key: "keypad_cutout_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Printer Cutout Available", key: "printer_cutout_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Acrylic Window Available", key: "acrylic_window_available", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Window Material", key: "window_material", isSelect: true, options: ['Acrylic', 'Polycarbonate', 'Glass'] },
+    { label: "Window Thickness", key: "window_thickness", isSelect: true, options: ['2 mm', '3 mm'] },
+    { label: "Sticker / Branding Area", key: "sticker_branding_area", isSelect: true, options: ['Yes', 'No'] },
+    { label: "Button Hole Count", key: "button_hole_count", type: 'number' },
+    { label: "Indicator Hole Count", key: "indicator_hole_count", type: 'number' }
+  ],
+  "Lock": [
+    { label: "Hardware Type", key: "hardware_type", isSelect: true, options: ['Lock', 'Hinge', 'Handle', 'Bracket'] },
+    { label: "Material", key: "material", isSelect: true, options: ['SS', 'MS', 'Zinc Alloy'] },
+    { label: "Size", key: "size", isSelect: true, options: ['50 mm', '100 mm'] },
+    { label: "Load Capacity", key: "load_capacity", isSelect: true, options: ['20 kg'] },
+    { label: "Opening Angle", key: "opening_angle", isSelect: true, options: ['90°', '120°', '180°'] },
+    { label: "Fastener Size", key: "fastener_size", isSelect: true, options: ['M4', 'M5', 'M6'] },
+    { label: "Finish", key: "finish", isSelect: true, options: ['Chrome', 'Black', 'Powder Coated'] },
+    { label: "Quantity Per Dispenser", key: "quantity_per_dispenser", type: 'number' },
+    { label: "Replacement Required", key: "replacement_required", isSelect: true, options: ['Yes', 'No'] }
+  ]
+};
+
+const StructuralPartsPage = () => {
+  const navigate = useNavigate();
+  const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
+
+  const buildFileUrl = (filePath) => {
+    if (!filePath || filePath === "#") return "#";
+    if (filePath.startsWith("http://") || filePath.startsWith("https://")) return filePath;
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
+    return `${baseUrl}/${filePath.startsWith('/') ? filePath.slice(1) : filePath}`;
+  };
+
+  const [items, setItems] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('create');
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalTab, setModalTab] = useState('general');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [pendingImages, setPendingImages] = useState([]);
+  const [previews, setPreviews] = useState([]);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [viewMode, setViewMode] = useState('grid');
+
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
+    mode: 'onChange'
+  });
+
+  const watchCategory = watch('category_name');
+
+  useEffect(() => {
+    setSelectedCategory(watchCategory || '');
+  }, [watchCategory]);
+
+  useEffect(() => {
+    if (pendingImages.length === 0) {
+      setPreviews([]);
+      return;
+    }
+    const newPreviews = pendingImages.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      url: URL.createObjectURL(file),
+      name: file.name
+    }));
+    setPreviews(newPreviews);
+    return () => newPreviews.forEach(p => URL.revokeObjectURL(p.url));
+  }, [pendingImages]);
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) setPendingImages(prev => [...prev, ...files]);
+  };
+
+  const removePendingImage = (index) => {
+    setPendingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const fetchItems = async () => {
+    setLoading(true);
+    try {
+      const res = await getStructuralParts({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchTerm
+      });
+      setItems(res.data.data);
+      setPagination(prev => ({ ...prev, total: res.data.meta.total }));
+    } catch (error) {
+      toast.error('Failed to fetch Structural records');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const res = await getProducts({ limit: 1000 });
+      setProducts(res.data.data || []);
+    } catch (err) { console.error(err); }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchItems(), 300);
+    return () => clearTimeout(timer);
+  }, [pagination.page, searchTerm]);
+
+  const onSubmit = async (data) => {
+    if (modalMode === 'view') return;
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      Object.keys(data).forEach(key => {
+        if (!key.startsWith('file_') && key !== 'part_images' && key !== 'spec_data') {
+          formData.append(key, data[key]);
+        }
+      });
+
+      if (data.category_name) {
+        const specFields = Object.keys(data).filter(k => k.startsWith('spec_'));
+        const specDataObj = {};
+        specFields.forEach(k => { specDataObj[k.replace('spec_', '')] = data[k]; });
+        formData.append('spec_data', JSON.stringify(specDataObj));
+      }
+
+      const fileFields = [
+        'file_2d_drawing', 'file_3d_model', 'file_fabrication_drawing', 'file_assembly_drawing',
+        'file_cutting'
+      ];
+      fileFields.forEach(field => {
+        if (data[field] && data[field][0]) formData.append(field, data[field][0]);
+      });
+
+      if (pendingImages.length > 0) {
+        pendingImages.forEach(file => formData.append('part_images', file));
+      }
+
+      if (modalMode === 'create') {
+        await createStructuralPart(formData);
+        toast.success('Structural Part registered successfully!');
+      } else if (modalMode === 'edit') {
+        await updateStructuralPart(selectedItem.part_id, formData);
+        toast.success('Structural Part updated!');
+      }
+
+      setIsModalOpen(false);
+      reset();
+      fetchItems();
+    } catch (error) {
+      toast.error(error.response?.data?.error?.message || 'Operation failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenCreate = () => {
+    setModalMode('create');
+    setSelectedItem(null);
+    setModalTab('general');
+    setSelectedCategory('');
+    setPendingImages([]);
+    reset({ status: 'Active' });
+    setIsModalOpen(true);
+  };
+
+  const loadPartDetails = async (id, mode) => {
+    try {
+      const res = await getStructuralPartById(id);
+      const fullData = res.data.data;
+      setSelectedItem(fullData);
+
+      let formData = { ...fullData, ...fullData.techSpec };
+      if (fullData.categorySpec) {
+        formData.category_name = fullData.categorySpec.category_name;
+        setSelectedCategory(fullData.categorySpec.category_name);
+        const specData = fullData.categoryData || {};
+        Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
+      }
+      reset(formData);
+      if (mode) setModalMode(mode);
+    } catch (error) { toast.error('Failed to load details'); }
+  }
+
+  const handleView = async (item) => {
+    setModalMode('view');
+    setIsModalOpen(true);
+    setPendingImages([]);
+    setActiveImageIdx(0);
+    await loadPartDetails(item.part_id);
+  };
+
+  const handleEdit = async (item) => {
+    setModalMode('edit');
+    setModalTab('general');
+    setIsModalOpen(true);
+    setPendingImages([]);
+    await loadPartDetails(item.part_id);
+  };
+
+  const handleDelete = async (item) => {
+    if (window.confirm(`Are you sure you want to delete Part: ${item.part_name}?`)) {
+      try {
+        await deleteStructuralPart(item.part_id);
+        toast.success('Part deleted successfully');
+        fetchItems();
+      } catch (error) { toast.error('Failed to delete'); }
+    }
+  };
+
+  const handleDownload = async (url, filename) => {
+    try {
+      const fullUrl = buildFileUrl(url);
+      const response = await fetch(fullUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename || url.split(/[\\/]/).pop();
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      toast.error('Download failed. Opening in new tab instead.');
+      window.open(buildFileUrl(url), '_blank');
+    }
+  };
+
+  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
+    const selectedFile = watch(name);
+    const hasNewFile = selectedFile && selectedFile.length > 0;
+    const fileName = hasNewFile ? selectedFile[0].name : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+        <div className="relative group">
+          <input type="file" {...register(name)} accept={accept} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
+              <FileUp size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>{fileName}</p>
+              <div className="flex items-center gap-3 mt-1">
+                {existingUrl && !hasNewFile && (
+                  <button type="button" onClick={() => window.open(buildFileUrl(existingUrl), '_blank')} className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20">
+                    <Download size={10} /> View Current
+                  </button>
+                )}
+                {hasNewFile && (
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setValue(name, null); }} className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20">
+                    <X size={10} /> Clear Selection
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label} {required && <span className="text-rose-500">*</span>}</label>
+      <input type={type} {...register(name, { required: required ? `${label} is required` : false })} placeholder={placeholder} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all font-bold" />
+    </div>
+  );
+
+  const TextAreaField = ({ label, name, placeholder }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+      <textarea
+        {...register(name)}
+        placeholder={placeholder}
+        rows={3}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dim)] font-bold resize-none"
+      />
+    </div>
+  );
+
+  const SelectField = ({ label, name, options, required = false }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label} {required && <span className="text-rose-500">*</span>}</label>
+      <select {...register(name, { required: required ? `${label} is required` : false })} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all font-bold appearance-none cursor-pointer">
+        <option value="">Select {label}</option>
+        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+      </select>
+    </div>
+  );
+
+  const DataSheetEntry = ({ label, value, icon: Icon }) => (
+    <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">
+      <div className="flex items-center gap-3 mb-1.5">
+        {Icon && <Icon size={14} className="text-[var(--accent)]" />}
+        <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em]">{label}</p>
+      </div>
+      <p className="text-[15px] font-black text-[var(--text-main)] tracking-tight leading-snug">
+        {value !== undefined && value !== null && value !== '' ? value : 'Not Defined'}
+      </p>
+    </div>
+  );
+
+  const FileCard = ({ label, url }) => (
+    <div className="flex items-center justify-between p-4.5 bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] rounded-2xl group hover:border-[var(--accent)] transition-all relative overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="p-3 bg-[var(--nav-hover)] rounded-xl text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors">
+          <FileText size={20} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{label}</p>
+          <p className="text-[13px] font-bold text-[var(--text-main)] truncate max-w-[140px]">{url ? url.split(/[\\/]/).pop() : 'Not Available'}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2.5">
+        {url && (
+          <>
+            <a
+              href={buildFileUrl(url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="View File"
+              className="p-3 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
+            >
+              <Eye size={16} />
+            </a>
+            <button
+              onClick={() => handleDownload(url)}
+              title="Download File"
+              className="p-3 bg-[var(--accent)] text-white rounded-xl shadow-md hover:scale-105 transition-transform"
+            >
+              <Download size={16} />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  const columns = [
+    {
+      key: 'image_url',
+      label: 'Image',
+      render: (row) => (
+        <div className="w-12 h-12 rounded-lg border border-[var(--border-color)] overflow-hidden bg-[var(--bg-workspace)]">
+          {row.image_url ? (
+            <img src={buildFileUrl(row.image_url)} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)]">
+              <ImageIcon size={16} />
+            </div>
+          )}
+        </div>
+      )
+    },
+    { key: 'part_name', label: 'Part Name' },
+    { key: 'part_number', label: 'Part Number/Model' },
+    { key: 'part_category', label: 'Category' },
+    { key: 'status', label: 'Status' },
+    { key: 'created_at', label: 'Registered On', render: (row) => new Date(row.created_at).toLocaleDateString() }
+  ];
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-10">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
+        <div className="flex items-center gap-5">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <Layers size={24} className="text-[var(--accent)]" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">
+              Structural Parts
+            </h1>
+            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+              Enclosure & Fabrication Management
+            </p>
+          </div>
+        </div>
+
+        <button 
+          onClick={handleOpenCreate} 
+          className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
+          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+        >
+          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+          <span className="text-[12px] md:text-[14px]">Add Structural Part</span>
+        </button>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="space-y-6 animate-entrance-up" style={{ animationDelay: '200ms' }}>
+        <div className="workspace-card p-4 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] hover-scale-sm transition-all duration-500">
+          <div className="relative flex-1 group w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
+            <input
+              type="text"
+              placeholder="Search by name, part number, or category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-12 pr-32 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40 pointer-events-none hidden sm:block">
+              {pagination.total} Records Found
+            </div>
+          </div>
+          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner">
+            <button 
+              onClick={() => setViewMode('grid')} 
+              className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'grid' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
+              title="Grid View"
+            >
+              <LayoutGrid size={18} />
+            </button>
+            <button 
+              onClick={() => setViewMode('table')} 
+              className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'table' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
+              title="Table View"
+            >
+              <List size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="animate-in fade-in duration-700 delay-300">
+        {
+    loading ? (
+      <div className="flex flex-col items-center justify-center py-32 space-y-4">
+        <div className="w-12 h-12 border-4 border-[var(--accent)]/20 border-t-[var(--accent)] rounded-full animate-spin" />
+        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] animate-pulse">Syncing Inventory Data...</p>
+      </div>
+    ) : viewMode === 'grid' ? (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        {items.map(item => (
+          <div key={item.part_id} className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl">
+            <div onClick={() => handleView(item)} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] block cursor-zoom-in group/img">
+              {item.image_url ? (
+                <img 
+                  src={buildFileUrl(item.image_url)} 
+                  alt={item.part_name} 
+                  className="w-full h-full object-contain p-6 group-hover/img:scale-110 transition-transform duration-700 ease-out" 
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] opacity-20">
+                  <Box size={64} strokeWidth={1} />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleView(item); }} 
+                  className="w-12 h-12 bg-[var(--accent)] rounded-2xl shadow-xl flex items-center justify-center text-white hover:scale-110 transition-all transform translate-y-4 group-hover:translate-y-0" 
+                  title="View Details"
+                >
+                  <Eye size={22} />
+                </button>
+              </div>
+              <div className="absolute top-4 left-4">
+                <span className="bg-[var(--bg-card)]/90 backdrop-blur-md border border-[var(--border-color)] text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg text-[var(--accent)] shadow-sm">
+                  {item.part_number || 'N/A'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="p-6 flex-1 flex flex-col">
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">{item.part_category}</span>
+                </div>
+                <h3 className="text-[17px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
+                  {item.part_name}
+                </h3>
+                <p className="text-[13px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-3 opacity-70">
+                  {item.part_description || 'No detailed technical specifications provided for this inventory record.'}
+                </p>
+              </div>
+              
+              <div className="flex items-center justify-between pt-5 mt-5 border-t border-[var(--border-color)]">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
+                  <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" title="Edit"><Settings size={14} /></button>
+                  <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all" title="Delete"><Trash2 size={14} /></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div className="workspace-card overflow-hidden border border-[var(--border-color)]">
+        <DataTable columns={columns} data={items} onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
+      </div>
+        )
+      }
+    </div>
+
+  {/* Management Modal */ }
+  {
+    isModalOpen && (
+      <Modal
+        isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
+        title={modalMode === 'view' ? "Technical Data Sheet" : (modalMode === 'create' ? "Register Structural Part" : "Update Specifications")}
+        maxWidth={!selectedCategory && modalMode === 'create' ? 'max-w-2xl' : 'max-w-6xl'}
+        headerActions={
+          modalMode !== 'view' && (
+            <button onClick={handleSubmit(onSubmit)} disabled={isSubmitting} className="btn-primary py-2.5 px-8 shadow-md flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
+              {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save' : 'Update Specs')}
+            </button>
+          )
+        }
+      >
+        {modalMode === 'view' ? (
+          <div className="space-y-10 pb-10 max-h-[85vh] overflow-y-auto custom-scrollbar pr-4">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+              <div className="lg:col-span-5 space-y-6">
+                <div className="aspect-square bg-[var(--bg-workspace)] rounded-[40px] overflow-hidden border border-[var(--border-color)] shadow-inner flex items-center justify-center relative group">
+                  {selectedItem?.images?.length > 0 ? (
+                    <img src={buildFileUrl(selectedItem.images[activeImageIdx])} alt="" className="w-full h-full object-contain p-8 group-hover:scale-105 transition-transform duration-700" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-4 opacity-20">
+                      <ImageIcon size={80} strokeWidth={1} />
+                      <p className="text-[10px] font-black uppercase tracking-widest">No Image Available</p>
+                    </div>
+                  )}
+                  <div className="absolute top-6 left-6">
+                    <div className="bg-black/60 backdrop-blur-md text-white text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-[0.2em] border border-white/10 shadow-xl">
+                      {selectedItem?.part_category}
+                    </div>
+                  </div>
+                </div>
+                {selectedItem?.images?.length > 1 && (
+                  <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                    {selectedItem.images.map((img, idx) => (
+                      <button key={idx} onClick={() => setActiveImageIdx(idx)} className={`w-24 h-24 flex-shrink-0 rounded-2xl border-2 transition-all duration-300 overflow-hidden bg-[var(--bg-workspace)] shadow-md ${idx === activeImageIdx ? 'border-[var(--accent)] scale-105 shadow-xl ring-4 ring-[var(--accent)]/10' : 'border-transparent opacity-50 hover:opacity-100 hover:scale-105'}`}>
+                        <img src={buildFileUrl(img)} alt="" className="w-full h-full object-contain p-2.5" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="lg:col-span-7 space-y-8">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <span className="bg-[var(--nav-hover)] text-[var(--accent)] font-black text-[11px] uppercase tracking-[0.2em] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
+                      {selectedItem?.part_category || 'Structural Part'}
+                    </span>
+                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedItem?.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                      {selectedItem?.status}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h2 className="text-4xl font-black text-[var(--text-main)] tracking-tighter uppercase leading-[1.1] mb-2">{selectedItem?.part_name}</h2>
+                    <p className="text-[14px] font-bold text-[var(--accent)] uppercase tracking-[0.25em] opacity-80">{selectedItem?.manufacturer_fabricator || 'LIPL INTERNAL FABRICATION'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-8 py-8 border-y border-[var(--border-color)]">
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Part Number / Model</p>
+                      <div className="flex items-center gap-3">
+                        <Fingerprint size={18} className="text-[var(--accent)]" />
+                        <span className="text-[17px] font-black text-[var(--text-main)] font-mono">{selectedItem?.part_number || 'N/A-RECORD'}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Internal Part Code</p>
+                      <div className="flex items-center gap-3">
+                        <Box size={18} className="text-[var(--accent)]" />
+                        <span className="text-[17px] font-black text-[var(--text-main)] font-mono">{selectedItem?.internal_part_code || '---'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 py-2">
+                    <button onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedItem), 100); }} className="btn-primary flex-1 py-4 px-6 shadow-lg shadow-[var(--accent)]/20 uppercase tracking-widest text-[11px]">Edit Specifications</button>
+                    <button onClick={() => handleDelete(selectedItem)} className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"><Trash2 size={18} /></button>
+                  </div>
+
+                  <div className="p-8 bg-[var(--bg-workspace)]/50 rounded-[32px] border border-[var(--border-color)] shadow-inner relative">
+                    <div className="absolute -top-3 left-6 bg-[var(--bg-workspace)] px-3 py-1 border border-[var(--border-color)] rounded-lg">
+                      <p className="text-[9px] font-black text-[var(--accent)] uppercase tracking-widest flex items-center gap-2">PART OVERVIEW</p>
+                    </div>
+                    <p className="text-[15px] text-[var(--text-main)] leading-relaxed font-bold opacity-90 italic mt-2">
+                      "{selectedItem?.part_description || 'No detailed technical description provided for this component.'}"
+                    </p>
+                    <div className="mt-6 pt-4 border-t border-[var(--border-color)] flex items-center justify-between">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Assembly Group: <span className="text-[var(--text-main)] ml-1">{selectedItem?.assembly_group || 'N/A'}</span></p>
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Position: <span className="text-[var(--text-main)] ml-1">{selectedItem?.part_position || 'N/A'}</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
+              <div className="flex items-center gap-4 mb-7">
+                <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Settings size={22} /></div>
+                <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Technical Specifications</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <DataSheetEntry label="Material Type" value={selectedItem?.techSpec?.material_type} icon={Info} />
+                <DataSheetEntry label="Sheet Thickness" value={selectedItem?.techSpec?.sheet_thickness} icon={Ruler} />
+                <DataSheetEntry label="Dimensions (L×W×H)" value={`${selectedItem?.techSpec?.length || '0'}×${selectedItem?.techSpec?.width || '0'}×${selectedItem?.techSpec?.height || '0'}`} icon={Maximize2} />
+                <DataSheetEntry label="Surface Finish" value={selectedItem?.techSpec?.surface_finish} icon={FlaskConical} />
+                {selectedCategory && STRUCTURAL_SPEC_FIELDS[selectedCategory]?.map(field => (
+                  <DataSheetEntry key={field.key} label={field.label} value={selectedItem?.categoryData?.[field.key]} icon={Activity} />
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-center gap-4 ml-4">
+                <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-sm"><FileUp size={20} /></div>
+                <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Fabrication & Documents</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                <FileCard label="2D Drawing (DXF/PDF)" url={selectedItem?.categoryData?.file_2d_drawing} />
+                <FileCard label="3D Model (STEP/STL)" url={selectedItem?.categoryData?.file_3d_model} />
+                <FileCard label="Fabrication Drawing" url={selectedItem?.categoryData?.file_fabrication_drawing} />
+                <FileCard label="Assembly Drawing" url={selectedItem?.categoryData?.file_assembly_drawing} />
+                <FileCard label="Cutting File" url={selectedItem?.categoryData?.file_cutting} />
+              </div>
+            </div>
+          </div>
+        ) : !selectedCategory && modalMode === 'create' ? (
+          /* Category Selection Landing Page */
+          <div className="flex flex-col h-full items-center justify-start py-2 px-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="max-w-4xl w-full">
+              <div className="text-center mb-6 relative">
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-[var(--accent)]/10 rounded-full blur-3xl animate-pulse" />
+                <div className="w-12 h-12 bg-gradient-to-br from-[var(--bg-card)] to-[var(--nav-hover)] border-2 border-[var(--accent)]/20 rounded-[20px] flex items-center justify-center mx-auto mb-4 shadow-xl shadow-[var(--accent)]/10 relative z-10 rotate-3 hover:rotate-0 transition-transform duration-500">
+                  <Layers size={24} className="text-[var(--accent)]" />
+                </div>
+                <h3 className="text-2xl font-black text-[var(--text-main)] uppercase tracking-tighter mb-1">
+                  Select <span className="text-[var(--accent)]">Part Category</span>
+                </h3>
+                <p className="text-[11px] font-bold text-[var(--text-muted)] opacity-80 uppercase tracking-[0.3em]">
+                  Classification Required
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
+                {categoriesList.map((cat, idx) => {
+                  const Icon = CATEGORY_CONFIG[cat]?.icon || Layers;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setValue('category_name', cat, { shouldValidate: true });
+                        setSelectedCategory(cat);
+                        setModalTab('general');
+                      }}
+                      style={{ animationDelay: `${idx * 40}ms` }}
+                      className="p-4 bg-white/40 backdrop-blur-md border border-white/20 rounded-[28px] hover:border-[var(--accent)] hover:bg-white/60 transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-4"
+                    >
+                      <div className="w-12 h-12 bg-gradient-to-br from-white to-[var(--nav-hover)] rounded-[16px] flex items-center justify-center shadow-sm group-hover:shadow-[var(--accent)]/20 transition-all duration-500 group-hover:scale-110 relative z-10">
+                        <Icon size={24} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors duration-500" />
+                      </div>
+                      <span className="text-[11px] font-black uppercase tracking-wider text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors duration-500 text-center relative z-10">{cat}</span>
+                      
+                      {/* Decorative background element */}
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-[var(--accent)]/5 rounded-full -mr-8 -mt-8 transition-transform duration-700 group-hover:scale-[3]" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="max-h-[80vh] overflow-y-auto custom-scrollbar pr-4">
+            {modalMode === 'create' && (
+              <div className="flex justify-between items-center mb-4 bg-[var(--bg-workspace)]/50 p-2.5 rounded-2xl border border-[var(--border-color)] animate-in fade-in duration-500">
+                <div className="flex items-center gap-3 pl-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Selected Category:</span>
+                  <span className="text-[11px] font-black text-[var(--accent)] bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-3 py-1 rounded-full flex items-center gap-1.5"><Layers size={12}/> {selectedCategory}</span>
+                </div>
+                <button
+                  onClick={() => { setValue('category_name', ''); setSelectedCategory(''); }}
+                  className="text-[10px] font-black uppercase tracking-widest text-[var(--text-main)] hover:text-white flex items-center gap-1.5 bg-[var(--bg-card)] hover:bg-[var(--accent)] px-4 py-2 rounded-xl border border-[var(--border-color)] hover:border-[var(--accent)] shadow-sm transition-all"
+                >
+                  <ArrowLeft size={12} /> Change Category
+                </button>
+              </div>
+            )}
+            {/* Tab Navigation */}
+            <div className="flex bg-[var(--bg-workspace)]/50 p-1.5 rounded-2xl mb-4 border border-[var(--border-color)] flex-wrap gap-1">
+              {[
+                { id: 'general', label: 'General Information', icon: Info },
+                { id: 'tech', label: 'Technical Spec', icon: Settings },
+                { id: 'files', label: 'Files', icon: FileUp }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setModalTab(tab.id)}
+                  className={`flex-1 min-w-[120px] flex items-center justify-center gap-3 py-3 rounded-xl transition-all duration-300 font-black text-[10px] uppercase tracking-widest ${modalTab === tab.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--nav-hover)] hover:text-[var(--text-main)]'}`}
+                >
+                  <tab.icon size={14} strokeWidth={3} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="pb-10">
+              {modalTab === 'general' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
+                  <input type="hidden" {...register('category_name')} value={selectedCategory} />
+                  <FormField label="Part Name" name="part_name" placeholder="e.g. Front Door Assembly" required />
+                  <FormField label="Part Number / Model Number" name="part_number" placeholder="STR-FD-001" />
+                  <FormField label="Internal Part Code / SKU" name="internal_part_code" placeholder="STR-CAB-001" />
+                  <FormField label="Compatible Dispenser Model" name="compatible_dispenser_model" placeholder="NITRO / MIN / DEF" />
+                  <FormField label="Assembly Group" name="assembly_group" placeholder="Outer Body / Door Assembly" />
+                  <FormField label="Part Position" name="part_position" placeholder="Front / Back / Internal" />
+                  <FormField label="Manufacturer / Fabricator" name="manufacturer_fabricator" />
+                  <FormField label="Brand" name="brand" />
+                  <SelectField label="Status" name="status" options={['Active', 'Inactive', 'Damaged', 'Discontinued']} />
+                  <div className="md:col-span-2">
+                    <TextAreaField label="Part Description" name="part_description" />
+                  </div>
+                </div>
+              )}
+
+              {modalTab === 'tech' && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-3 border-b border-[var(--border-color)] pb-2 mb-2">
+                      <h4 className="text-[11px] font-black text-[var(--accent)] uppercase tracking-[0.2em]">Material & Construction</h4>
+                    </div>
+                    <FormField label="Material Type" name="material_type" placeholder="MS Sheet / SS Sheet" />
+                    <FormField label="Material Grade" name="material_grade" placeholder="SS304 / CRCA" />
+                    <FormField label="Sheet Thickness" name="sheet_thickness" placeholder="1.2 mm / 1.6 mm" />
+                    <FormField label="Surface Finish" name="surface_finish" placeholder="Powder Coated" />
+                    <FormField label="Paint / Coating Color" name="paint_coating_color" />
+                    <FormField label="Coating Thickness" name="coating_thickness" />
+                    <SelectField label="Corrosion Protection" name="corrosion_protection" options={['Yes', 'No']} />
+                    <FormField label="Rust-proof Treatment" name="rust_proof_treatment" />
+                    <SelectField label="Welding Required" name="welding_required" options={['Yes', 'No']} />
+                    <SelectField label="Bending Required" name="bending_required" options={['Yes', 'No']} />
+                    <SelectField label="Laser Cutting Required" name="laser_cutting_required" options={['Yes', 'No']} />
+                    <SelectField label="CNC Cutting Required" name="cnc_cutting_required" options={['Yes', 'No']} />
+                    <FormField label="Edge Finish" name="edge_finish" placeholder="Smooth / Folded" />
+                    <SelectField label="Waterproof Sealing" name="waterproof_sealing_required" options={['Yes', 'No']} />
+                    <SelectField label="Rubber Gasket Required" name="rubber_gasket_required" options={['Yes', 'No']} />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-3 border-b border-[var(--border-color)] pb-2 mb-2">
+                      <h4 className="text-[11px] font-black text-[var(--accent)] uppercase tracking-[0.2em]">Dimension Fields</h4>
+                    </div>
+                    <FormField label="Length (mm)" name="length" />
+                    <FormField label="Width (mm)" name="width" />
+                    <FormField label="Height (mm)" name="height" />
+                    <FormField label="Total Thickness" name="thickness" />
+                    <FormField label="Weight (kg)" name="weight" />
+                    <FormField label="Tolerance" name="tolerance" placeholder="±1 mm" />
+                    <FormField label="Hole Count" name="hole_count" type="number" />
+                    <FormField label="Hole Diameter" name="hole_diameter" />
+                    <SelectField label="Cutout Available" name="cutout_available" options={['Yes', 'No']} />
+                    <FormField label="Cutout Type" name="cutout_type" placeholder="Display / Nozzle" />
+                    <FormField label="Cutout Size" name="cutout_size" />
+                    <FormField label="Bend Angle" name="bend_angle" />
+                    <FormField label="Bend Count" name="bend_count" type="number" />
+                    <FormField label="Mounting Hole Pattern" name="mounting_hole_pattern" placeholder="M6 / M8" />
+                  </div>
+
+                  {selectedCategory && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="md:col-span-3 border-b border-[var(--border-color)] pb-2 mb-2 pt-4">
+                        <h4 className="text-[11px] font-black text-[var(--accent)] uppercase tracking-[0.2em]">Specialized {selectedCategory} Parameters</h4>
+                      </div>
+                      {STRUCTURAL_SPEC_FIELDS[selectedCategory]?.map(field => (
+                        field.isSelect ? (
+                          <SelectField key={field.key} label={field.label} name={`spec_${field.key}`} options={field.options} />
+                        ) : (
+                          <FormField key={field.key} label={field.label} name={`spec_${field.key}`} type={field.type} />
+                        )
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {modalTab === 'files' && (
+                <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                    <FileInput label="2D Drawing File (DXF/PDF)" name="file_2d_drawing" existingUrl={selectedItem?.categoryData?.file_2d_drawing} />
+                    <FileInput label="3D Model File (STEP/STL)" name="file_3d_model" existingUrl={selectedItem?.categoryData?.file_3d_model} />
+                    <FileInput label="Fabrication Drawing" name="file_fabrication_drawing" existingUrl={selectedItem?.categoryData?.file_fabrication_drawing} />
+                    <FileInput label="Assembly Drawing" name="file_assembly_drawing" existingUrl={selectedItem?.categoryData?.file_assembly_drawing} />
+                    <FileInput label="Cutting File" name="file_cutting" existingUrl={selectedItem?.categoryData?.file_cutting} />
+                  </div>
+
+                  <div className="space-y-4 p-6 bg-[var(--nav-hover)]/30 border border-dashed border-[var(--border-color)] rounded-[24px]">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <ImageIcon size={18} className="text-[var(--accent)]" />
+                        <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">Part Images Gallery</h4>
+                      </div>
+                      {previews.length > 0 && (
+                        <button type="button" onClick={() => setPendingImages([])} className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline">Clear All Pending</button>
+                      )}
+                    </div>
+
+                    {/* Existing Images */}
+                    {modalMode === 'edit' && selectedItem?.images && selectedItem.images.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 mb-6">
+                        {selectedItem.images.map((url, idx) => (
+                          <div key={idx} className="relative aspect-square rounded-xl border border-[var(--border-color)] overflow-hidden group">
+                            <img src={buildFileUrl(url)} alt="Part" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <a href={buildFileUrl(url)} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="relative group">
+                      <input type="file" multiple accept="image/*" onChange={handleImageChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                      <div className="w-full bg-[var(--bg-workspace)]/50 border border-dashed border-[var(--text-dim)] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all">
+                        <div className="p-4 bg-[var(--bg-workspace)] rounded-2xl text-[var(--accent)] shadow-sm"><Plus size={24} /></div>
+                        <p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest text-center">
+                          {previews.length > 0 ? 'Add More Part Photos' : 'Upload Multiple Part Photos'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {previews.length > 0 && (
+                      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                        {previews.map((preview, idx) => (
+                          <div key={preview.id} className="relative aspect-square rounded-xl border-2 border-[var(--accent)] border-dashed overflow-hidden group bg-[var(--bg-workspace)]">
+                            <img src={preview.url} alt="Preview" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <button type="button" onClick={() => removePendingImage(idx)} className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"><Trash2 size={16} /></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+    )
+  }
+    </div >
+  );
+};
+
+export default StructuralPartsPage;

@@ -7,6 +7,7 @@ import CategoryModal from '../../components/shared/CategoryModal';
 import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download, X, Zap, Building2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { useDebounce } from '../../hooks/useDebounce';
 import { getCategories } from '../../api/categories';
 import { getCompanies } from '../../api/companies';
 import CompanyModal from '../../components/shared/CompanyModal';
@@ -18,6 +19,7 @@ const ProductListPage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -251,9 +253,8 @@ const ProductListPage = () => {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => { fetchProducts(); }, 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm, selectedCategory, selectedCompany, pagination.page]);
+    fetchProducts();
+  }, [debouncedSearchTerm, selectedCategory, selectedCompany, pagination.page]);
 
   const onSubmit = async (data) => {
     if (modalMode === 'view') return;

@@ -71,7 +71,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
           : 'hover:bg-[var(--nav-hover)]'
       } ${isSubItem ? 'pl-10 pr-4 py-2.5' : ''}`}
       style={{
-        color: location.pathname === to ? 'var(--primary)' : 'var(--text-muted)',
+        color: location.pathname === to ? 'var(--accent)' : 'var(--text-muted)',
         background: location.pathname === to ? 'var(--nav-active)' : undefined,
       }}
     >
@@ -191,140 +191,131 @@ const Sidebar = ({ role, isOpen, onClose }) => {
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">
         {isAdmin && (
-          <div className="mb-6 animate-entrance-right" style={{ animationDelay: '100ms' }}>
-            <NavItem to="/admin/dashboard" label="Dashboard" icon={LayoutDashboard} />
-          </div>
-        )}
-
-        {isAdmin && (
-          <div className="mt-4 animate-entrance-right" style={{ animationDelay: '200ms' }}>
-            <p
-              className="px-8 mb-2 uppercase font-bold"
-              style={{ color: 'var(--text-muted)', fontSize: '11px', letterSpacing: '0.1em' }}
-            >
-              Management
-            </p>
-
-            {/* Users / Personnel row */}
-            <div
-              className="flex items-center justify-between px-8 py-3.5 transition-all duration-300 group cursor-pointer"
-              style={{
-                color: isUserSection ? 'var(--primary)' : 'var(--text-muted)',
-                background: isUserSection ? 'var(--nav-active)' : undefined,
-                borderLeft: isUserSection ? '3px solid var(--accent)' : '3px solid transparent',
-              }}
-              onMouseEnter={e => {
-                if (!isUserSection) {
-                  e.currentTarget.style.background = 'var(--nav-hover)';
-                  e.currentTarget.style.color = 'var(--text-main)';
-                }
-              }}
-              onMouseLeave={e => {
-                if (!isUserSection) {
-                  e.currentTarget.style.background = '';
-                  e.currentTarget.style.color = 'var(--text-muted)';
-                }
-              }}
-            >
-              <div
-                onClick={() => navigate('/admin/users')}
-                className="flex items-center gap-4 cursor-pointer flex-1"
-              >
-                <div className="w-6 flex justify-center relative z-10">
-                  <UserCog
-                    size={20}
-                    strokeWidth={2.5}
-                    style={{ color: isUserSection ? 'var(--accent)' : 'var(--text-dim)' }}
-                    className="group-hover:text-[var(--accent)] transition-colors duration-300"
-                  />
-                </div>
-                <span
-                  className="text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
-                >
-                  Users
-                </span>
-              </div>
-              <div
-                onClick={(e) => { e.stopPropagation(); toggleMenu('users'); }}
-                className="cursor-pointer p-1.5 rounded-lg transition-all"
-              >
-                <ChevronDown
-                  size={16}
-                  className="transition-transform duration-500"
-                  style={{
-                    transform: openMenus.users ? 'rotate(180deg)' : 'rotate(0deg)',
-                    color: openMenus.users ? 'var(--accent)' : 'var(--text-dim)',
-                  }}
-                  strokeWidth={3}
-                />
-              </div>
+          <div className="space-y-1">
+            <div className="mb-2 animate-entrance-right" style={{ animationDelay: '100ms' }}>
+              <NavItem to="/admin/dashboard" label="Dashboard" icon={LayoutDashboard} />
             </div>
 
-            <SubMenu isOpen={openMenus.users}>
-              <div className="space-y-0.5 py-1">
-
-                {/* Designers row */}
+            <div className="animate-entrance-right" style={{ animationDelay: '200ms' }}>
+              {/* Users / Personnel row */}
+              <div
+                className="flex items-center justify-between px-8 py-3.5 transition-all duration-300 group cursor-pointer"
+                style={{
+                  color: isUserSection ? 'var(--accent)' : 'var(--text-muted)',
+                  background: isUserSection ? 'var(--nav-active)' : undefined,
+                  borderLeft: isUserSection ? '3px solid var(--accent)' : '3px solid transparent',
+                }}
+                onMouseEnter={e => {
+                  if (!isUserSection) {
+                    e.currentTarget.style.background = 'var(--nav-hover)';
+                    e.currentTarget.style.color = 'var(--text-main)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isUserSection) {
+                    e.currentTarget.style.background = '';
+                    e.currentTarget.style.color = 'var(--text-muted)';
+                  }
+                }}
+              >
                 <div
-                  className="flex items-center justify-between pl-10 pr-4 py-2.5 transition-all duration-300 relative group cursor-pointer"
-                  style={{
-                    color: (location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams')) ? 'var(--accent)' : 'var(--text-muted)',
-                    background: (location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams')) ? 'var(--nav-active)' : undefined,
-                    borderLeft: location.pathname === '/admin/designers' ? '3px solid var(--accent)' : '3px solid transparent',
-                  }}
-                  onMouseEnter={e => {
-                    if (location.pathname !== '/admin/designers') {
-                      e.currentTarget.style.background = 'var(--nav-hover)';
-                      e.currentTarget.style.color = 'var(--text-main)';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    const isActive = location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams');
-                    e.currentTarget.style.background = isActive ? 'var(--nav-active)' : '';
-                    e.currentTarget.style.color = isActive ? 'var(--accent)' : 'var(--text-muted)';
-                  }}
+                  onClick={() => navigate('/admin/users')}
+                  className="flex items-center gap-4 cursor-pointer flex-1"
                 >
-                  <div
-                    onClick={() => navigate('/admin/designers')}
-                    className="flex items-center gap-4 cursor-pointer flex-1"
-                  >
-                    <div className="w-6 flex justify-center">
-                      <PenTool
-                        size={18}
-                        className="transition-colors duration-300 group-hover:text-[var(--accent)]"
-                        style={{ color: location.pathname === '/admin/designers' ? 'var(--accent)' : 'var(--text-dim)' }}
-                      />
-                    </div>
-                    <span className="text-[12px] font-black tracking-[0.1em] uppercase transition-all duration-300 group-hover:text-[var(--text-main)] group-hover:translate-x-1">
-                      Designers
-                    </span>
-                  </div>
-                  <div
-                    onClick={(e) => { e.stopPropagation(); toggleMenu('designers'); }}
-                    className="cursor-pointer p-1 rounded-lg transition-all"
-                  >
-                    <ChevronDown
-                      size={12}
-                      className="transition-transform duration-500"
-                      style={{
-                        transform: openMenus.designers ? 'rotate(180deg)' : 'rotate(0deg)',
-                        color: openMenus.designers ? 'var(--accent)' : 'var(--text-dim)',
-                      }}
-                      strokeWidth={3}
+                  <div className="w-6 flex justify-center relative z-10">
+                    <UserCog
+                      size={20}
+                      strokeWidth={2.5}
+                      style={{ color: isUserSection ? 'var(--accent)' : 'var(--text-dim)' }}
+                      className="group-hover:text-[var(--accent)] transition-colors duration-300"
                     />
                   </div>
+                  <span
+                    className="text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
+                  >
+                    Users
+                  </span>
                 </div>
-
-                <SubMenu isOpen={openMenus.designers}>
-                  <div className="space-y-0.5 mb-2">
-                    <NavItem to="/admin/teams?role=Designer" label="Teams" isSubItem />
-                  </div>
-                </SubMenu>
-
-                <NavItem to="/admin/maintenance" label="Maintenance" icon={Wrench} isSubItem />
-                <NavItem to="/admin/sales" label="Sales" icon={ShoppingBag} isSubItem />
-
+                <div
+                  onClick={(e) => { e.stopPropagation(); toggleMenu('users'); }}
+                  className="cursor-pointer p-1.5 rounded-lg transition-all"
+                >
+                  <ChevronDown
+                    size={16}
+                    className="transition-transform duration-500"
+                    style={{
+                      transform: openMenus.users ? 'rotate(180deg)' : 'rotate(0deg)',
+                      color: openMenus.users ? 'var(--accent)' : 'var(--text-dim)',
+                    }}
+                    strokeWidth={3}
+                  />
+                </div>
               </div>
-            </SubMenu>
+
+              <SubMenu isOpen={openMenus.users}>
+                <div className="space-y-0.5 py-1">
+                  {/* Designers row */}
+                  <div
+                    className="flex items-center justify-between pl-10 pr-4 py-2.5 transition-all duration-300 relative group cursor-pointer"
+                    style={{
+                      color: (location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams')) ? 'var(--accent)' : 'var(--text-muted)',
+                      background: (location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams')) ? 'var(--nav-active)' : undefined,
+                      borderLeft: location.pathname === '/admin/designers' ? '3px solid var(--accent)' : '3px solid transparent',
+                    }}
+                    onMouseEnter={e => {
+                      if (location.pathname !== '/admin/designers') {
+                        e.currentTarget.style.background = 'var(--nav-hover)';
+                        e.currentTarget.style.color = 'var(--text-main)';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      const isActive = location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams');
+                      e.currentTarget.style.background = isActive ? 'var(--nav-active)' : '';
+                      e.currentTarget.style.color = isActive ? 'var(--accent)' : 'var(--text-muted)';
+                    }}
+                  >
+                    <div
+                      onClick={() => navigate('/admin/designers')}
+                      className="flex items-center gap-4 cursor-pointer flex-1"
+                    >
+                      <div className="w-6 flex justify-center">
+                        <PenTool
+                          size={18}
+                          className="transition-colors duration-300 group-hover:text-[var(--accent)]"
+                          style={{ color: location.pathname === '/admin/designers' ? 'var(--accent)' : 'var(--text-dim)' }}
+                        />
+                      </div>
+                      <span className="text-[12px] font-black tracking-[0.1em] uppercase transition-all duration-300 group-hover:text-[var(--text-main)] group-hover:translate-x-1">
+                        Designers
+                      </span>
+                    </div>
+                    <div
+                      onClick={(e) => { e.stopPropagation(); toggleMenu('designers'); }}
+                      className="cursor-pointer p-1 rounded-lg transition-all"
+                    >
+                      <ChevronDown
+                        size={12}
+                        className="transition-transform duration-500"
+                        style={{
+                          transform: openMenus.designers ? 'rotate(180deg)' : 'rotate(0deg)',
+                          color: openMenus.designers ? 'var(--accent)' : 'var(--text-dim)',
+                        }}
+                        strokeWidth={3}
+                      />
+                    </div>
+                  </div>
+
+                  <SubMenu isOpen={openMenus.designers}>
+                    <div className="space-y-0.5 mb-2">
+                      <NavItem to="/admin/teams?role=Designer" label="Teams" isSubItem />
+                    </div>
+                  </SubMenu>
+
+                  <NavItem to="/admin/maintenance" label="Maintenance" icon={Wrench} isSubItem />
+                  <NavItem to="/admin/sales" label="Sales" icon={ShoppingBag} isSubItem />
+                </div>
+              </SubMenu>
+            </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '300ms' }}>
               <NavItem to="/admin/products" label="Products" icon={Zap} />
@@ -332,72 +323,77 @@ const Sidebar = ({ role, isOpen, onClose }) => {
             <div className="animate-entrance-right" style={{ animationDelay: '400ms' }}>
               <NavItem to="/admin/customers" label="Customers" icon={Users} />
             </div>
-            
+
             {/* Inventory row */}
             <div
-              className="flex items-center justify-between px-8 py-3.5 transition-all duration-300 group cursor-pointer"
-              style={{
-                color: isInventorySection ? 'var(--primary)' : 'var(--text-muted)',
-                background: isInventorySection ? 'var(--nav-active)' : undefined,
-                borderLeft: isInventorySection ? '3px solid var(--accent)' : '3px solid transparent',
-              }}
-              onMouseEnter={e => {
-                if (!isInventorySection) {
-                  e.currentTarget.style.background = 'var(--nav-hover)';
-                  e.currentTarget.style.color = 'var(--text-main)';
-                }
-              }}
-              onMouseLeave={e => {
-                if (!isInventorySection) {
-                  e.currentTarget.style.background = '';
-                  e.currentTarget.style.color = 'var(--text-muted)';
-                }
-              }}
+              className="animate-entrance-right"
+              style={{ animationDelay: '500ms' }}
             >
               <div
-                onClick={() => navigate('/admin/inventory')}
-                className="flex items-center gap-4 cursor-pointer flex-1"
+                className="flex items-center justify-between px-8 py-3.5 transition-all duration-300 group cursor-pointer"
+                style={{
+                  color: isInventorySection ? 'var(--accent)' : 'var(--text-muted)',
+                  background: isInventorySection ? 'var(--nav-active)' : undefined,
+                  borderLeft: isInventorySection ? '3px solid var(--accent)' : '3px solid transparent',
+                }}
+                onMouseEnter={e => {
+                  if (!isInventorySection) {
+                    e.currentTarget.style.background = 'var(--nav-hover)';
+                    e.currentTarget.style.color = 'var(--text-main)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isInventorySection) {
+                    e.currentTarget.style.background = '';
+                    e.currentTarget.style.color = 'var(--text-muted)';
+                  }
+                }}
               >
-                <div className="w-6 flex justify-center relative z-10">
-                  <Box
-                    size={20}
-                    strokeWidth={2.5}
-                    style={{ color: isInventorySection ? 'var(--accent)' : 'var(--text-dim)' }}
-                    className="group-hover:text-[var(--accent)] transition-colors duration-300"
+                <div
+                  onClick={() => navigate('/admin/inventory')}
+                  className="flex items-center gap-4 cursor-pointer flex-1"
+                >
+                  <div className="w-6 flex justify-center relative z-10">
+                    <Box
+                      size={20}
+                      strokeWidth={2.5}
+                      style={{ color: isInventorySection ? 'var(--accent)' : 'var(--text-dim)' }}
+                      className="group-hover:text-[var(--accent)] transition-colors duration-300"
+                    />
+                  </div>
+                  <span
+                    className="text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
+                  >
+                    Inventory
+                  </span>
+                </div>
+                <div
+                  onClick={(e) => { e.stopPropagation(); toggleMenu('inventory'); }}
+                  className="cursor-pointer p-1.5 rounded-lg transition-all"
+                >
+                  <ChevronDown
+                    size={16}
+                    className="transition-transform duration-500"
+                    style={{
+                      transform: openMenus.inventory ? 'rotate(180deg)' : 'rotate(0deg)',
+                      color: openMenus.inventory ? 'var(--accent)' : 'var(--text-dim)',
+                    }}
+                    strokeWidth={3}
                   />
                 </div>
-                <span
-                  className="text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
-                >
-                  Inventory
-                </span>
               </div>
-              <div
-                onClick={(e) => { e.stopPropagation(); toggleMenu('inventory'); }}
-                className="cursor-pointer p-1.5 rounded-lg transition-all"
-              >
-                <ChevronDown
-                  size={16}
-                  className="transition-transform duration-500"
-                  style={{
-                    transform: openMenus.inventory ? 'rotate(180deg)' : 'rotate(0deg)',
-                    color: openMenus.inventory ? 'var(--accent)' : 'var(--text-dim)',
-                  }}
-                  strokeWidth={3}
-                />
-              </div>
+
+              <SubMenu isOpen={openMenus.inventory}>
+                <div className="space-y-0.5 py-1">
+                  <NavItem to="/admin/inventory/pcb" label="PCB" icon={Cpu} isSubItem />
+                  <NavItem to="/admin/inventory/electronics" label="Electronics Parts" icon={CircuitBoard} isSubItem />
+                  <NavItem to="/admin/inventory/electrical" label="Electrical Parts" icon={Plug} isSubItem />
+                  <NavItem to="/admin/inventory/structural" label="Structural Parts" icon={Layers} isSubItem />
+                </div>
+              </SubMenu>
             </div>
 
-            <SubMenu isOpen={openMenus.inventory}>
-              <div className="space-y-0.5 py-1">
-                <NavItem to="/admin/inventory/pcb" label="PCB" icon={Cpu} isSubItem />
-                <NavItem to="/admin/inventory/electronics" label="Electronics Parts" icon={CircuitBoard} isSubItem />
-                <NavItem to="/admin/inventory/electrical" label="Electrical Parts" icon={Plug} isSubItem />
-                <NavItem to="/admin/inventory/structural" label="Structural Parts" icon={Layers} isSubItem />
-              </div>
-            </SubMenu>
-
-            <div className="animate-entrance-right" style={{ animationDelay: '500ms' }}>
+            <div className="animate-entrance-right" style={{ animationDelay: '600ms' }}>
               <NavItem to="/admin/feature-mapping" label="Feature Mapping" icon={Cpu} />
             </div>
           </div>

@@ -1036,7 +1036,7 @@ const buildFileUrl = (filePath) => {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'create' ? "Register Electronics Part" : modalMode === 'edit' ? "Edit Specifications" : "Component Data Sheet"}
+        title={modalMode === 'create' ? "Add Electronics Part" : modalMode === 'edit' ? "Edit Specifications" : "Component Data Sheet"}
         maxWidth={!selectedCategory && modalMode === 'create' ? 'max-w-2xl' : 'max-w-6xl'}
         headerActions={
           <div className="flex items-center gap-3">

@@ -8,11 +8,19 @@ import ErrorBanner from '../../components/shared/ErrorBanner';
 
 const LoginPage = () => {
   const { login, isAuthenticated, user } = useAuth();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      setValue('email', rememberedEmail);
+      setValue('rememberMe', true);
+    }
+  }, [setValue]);
 
   if (isAuthenticated && user) {
     const roleRoutes = {
@@ -29,6 +37,13 @@ const LoginPage = () => {
     setApiError(null);
     try {
       const loggedUser = await login(data.email, data.password);
+      
+      if (data.rememberMe) {
+        localStorage.setItem('rememberedEmail', data.email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+
       toast.success(`Access Granted. Welcome back, ${loggedUser.full_name}.`);
       
       const roleRoutes = {
@@ -110,6 +125,22 @@ const LoginPage = () => {
                 </button>
               </div>
               {errors.password && <p className="text-red-400 text-[10px] mt-2 font-bold tracking-wide uppercase">{errors.password.message}</p>}
+            </div>
+
+            <div className="flex items-center justify-between px-1">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    {...register('rememberMe')}
+                    className="peer appearance-none w-5 h-5 border-2 border-[var(--border-color)] rounded-lg bg-[var(--input-bg)] checked:bg-[var(--accent)] checked:border-[var(--accent)] transition-all cursor-pointer"
+                  />
+                  <ShieldCheck size={12} className="absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                </div>
+                <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest group-hover:text-[var(--text-main)] transition-colors">Remember Me</span>
+              </label>
+              
+              <button type="button" className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest hover:underline opacity-60 hover:opacity-100">Forgot Password?</button>
             </div>
 
             <button

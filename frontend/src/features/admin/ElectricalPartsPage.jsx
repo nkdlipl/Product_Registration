@@ -716,7 +716,7 @@ const ElectricalPartsPage = () => {
           style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
         >
           <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span className="text-[12px] md:text-[14px]">Register Electrical Part</span>
+          <span className="text-[12px] md:text-[14px]">Add Electrical Part</span>
         </button>
       </div>
 

@@ -105,4 +105,4 @@ const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentP
   );
 };
 
-export default DataTable;
+export default React.memo(DataTable);

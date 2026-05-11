@@ -22,6 +22,7 @@ const upload = multer({ storage: storage });
 
 const electronicsController = require('../controllers/electronicsController');
 const electricalController = require('../controllers/electricalController');
+const structuralController = require('../controllers/structuralController');
 
 const pcbFiles = [
     { name: 'file_gerber', maxCount: 1 },
@@ -57,6 +58,18 @@ const electricalFiles = [
     { name: 'file_invoice', maxCount: 1 },
     { name: 'part_images', maxCount: 10 }
 ];
+const structuralFiles = [
+    { name: 'file_2d_drawing', maxCount: 1 },
+    { name: 'file_3d_model', maxCount: 1 },
+    { name: 'file_fabrication_drawing', maxCount: 1 },
+    { name: 'file_assembly_drawing', maxCount: 1 },
+    { name: 'file_cutting', maxCount: 1 },
+    { name: 'file_bend_drawing', maxCount: 1 },
+    { name: 'file_paint_spec', maxCount: 1 },
+    { name: 'file_qc_report', maxCount: 1 },
+    { name: 'file_invoice', maxCount: 1 },
+    { name: 'part_images', maxCount: 10 }
+];
 
 router.get('/pcb', inventoryController.getPCBs);
 router.get('/pcb/:id', inventoryController.getPCBById);
@@ -80,5 +93,11 @@ router.put('/electrical/:id', upload.fields(electricalFiles), electricalControll
 router.delete('/electrical/:id', electricalController.deleteElectricalPart);
 router.delete('/electrical/:id/image', electricalController.deleteElectricalImage);
 router.delete('/electrical/:id/file', electricalController.deleteElectricalFile);
+
+router.get('/structural', structuralController.getStructuralParts);
+router.get('/structural/:id', structuralController.getStructuralPartById);
+router.post('/structural', upload.fields(structuralFiles), structuralController.createStructuralPart);
+router.put('/structural/:id', upload.fields(structuralFiles), structuralController.updateStructuralPart);
+router.delete('/structural/:id', structuralController.deleteStructuralPart);
 
 module.exports = router;

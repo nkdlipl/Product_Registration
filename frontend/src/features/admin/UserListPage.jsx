@@ -7,6 +7,7 @@ import Modal from '../../components/shared/Modal';
 import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { useDebounce } from '../../hooks/useDebounce';
 
 const UserListPage = ({ initialRole = '' }) => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const UserListPage = ({ initialRole = '' }) => {
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState(initialRole);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [teams, setTeams] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
 

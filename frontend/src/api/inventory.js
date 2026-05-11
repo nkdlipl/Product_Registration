@@ -34,3 +34,14 @@ export const updateElectricalPart = (id, formData) => axiosInstance.put(`/invent
 export const deleteElectricalPart = (id) => axiosInstance.delete(`/inventory/electrical/${id}`);
 export const deleteElectricalImage = (id, imageUrl) => axiosInstance.delete(`/inventory/electrical/${id}/image`, { data: { imageUrl } });
 export const deleteElectricalFile = (id, field) => axiosInstance.delete(`/inventory/electrical/${id}/file`, { data: { field } });
+
+export const getStructuralParts = (params) => axiosInstance.get('/inventory/structural', { params });
+export const getStructuralPartById = (id) => axiosInstance.get(`/inventory/structural/${id}`);
+export const createStructuralPart = (formData) => axiosInstance.post('/inventory/structural', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+});
+export const updateStructuralPart = (id, formData) => axiosInstance.put(`/inventory/structural/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+});
+export const deleteStructuralPart = (id) => axiosInstance.delete(`/inventory/structural/${id}`);
+export const deleteStructuralFile = (id, field) => axiosInstance.delete(`/inventory/structural/${id}/file`, { data: { field } });

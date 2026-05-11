@@ -146,53 +146,53 @@ const getMaintenance = async (req, res, next) => {
   }
 };
 
+let statsCache = {
+  data: null,
+  timestamp: 0
+};
+
 const getAdminStats = async (req, res, next) => {
   try {
-    const designerCount = await db.query(`
-      SELECT COUNT(*) FROM designer_profiles dp
-      JOIN users u ON dp.designer_id = u.user_id
-      WHERE u.is_active = TRUE
-    `);
-    const salesCount = await db.query(`
-      SELECT COUNT(*) FROM sales_profiles sp
-      JOIN users u ON sp.sales_id = u.user_id
-      WHERE u.is_active = TRUE
-    `);
-    const maintenanceCount = await db.query(`
-      SELECT COUNT(*) FROM maintenance_profiles mp
-      JOIN users u ON mp.maintenance_id = u.user_id
-      WHERE u.is_active = TRUE
-    `);
-    const teamCount = await db.query(`
-      SELECT COUNT(*) FROM teams t
-      JOIN roles r ON t.role_id = r.role_id
-      WHERE r.role_name = 'Designer'
-    `);
-    const productCount = await db.query('SELECT COUNT(*) FROM products WHERE is_active = TRUE');
-    const customerCount = await db.query('SELECT COUNT(*) FROM customers');
+    const now = Date.now();
+    // 10-second cache to prevent DB hammering from multiple simultaneous sessions
+    if (statsCache.data && (now - statsCache.timestamp < 10000)) {
+      return sendSuccess(res, statsCache.data);
+    }
 
-    // New Inventory Counts
-    const pcbCount = await db.query('SELECT COUNT(*) FROM pcb_master WHERE is_active = TRUE');
-    const electronicsCount = await db.query('SELECT COUNT(*) FROM electronics_part_master WHERE is_active = TRUE');
-    const electricalCount = await db.query('SELECT COUNT(*) FROM electrical_part_master WHERE is_active = TRUE');
-    const structuralCount = await db.query('SELECT COUNT(*) FROM structural_component_detail');
+    // Consolidate 10 separate queries into 1 single multi-count query for speed
+    const queryText = `
+      SELECT
+        (SELECT COUNT(*) FROM designer_profiles dp JOIN users u ON dp.designer_id = u.user_id WHERE u.is_active = TRUE) as designers,
+        (SELECT COUNT(*) FROM sales_profiles sp JOIN users u ON sp.sales_id = u.user_id WHERE u.is_active = TRUE) as sales,
+        (SELECT COUNT(*) FROM maintenance_profiles mp JOIN users u ON mp.maintenance_id = u.user_id WHERE u.is_active = TRUE) as maintenance,
+        (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Designer') as teams,
+        (SELECT COUNT(*) FROM products WHERE is_active = TRUE) as products,
+        (SELECT COUNT(*) FROM customers) as customers,
+        (SELECT COUNT(*) FROM pcb_master WHERE is_active = TRUE) as pcb,
+        (SELECT COUNT(*) FROM electronics_part_master WHERE is_active = TRUE) as electronics,
+        (SELECT COUNT(*) FROM electrical_part_master WHERE is_active = TRUE) as electrical,
+        (SELECT COUNT(*) FROM structural_component_detail) as structural
+    `;
+
+    const result = await db.query(queryText);
+    const row = result.rows[0];
 
     const stats = {
-      designers: parseInt(designerCount.rows[0].count),
-      sales: parseInt(salesCount.rows[0].count),
-      maintenance: parseInt(maintenanceCount.rows[0].count),
-      teams: parseInt(teamCount.rows[0].count),
-      products: parseInt(productCount.rows[0].count),
-      customers: parseInt(customerCount.rows[0].count),
+      designers: parseInt(row.designers),
+      sales: parseInt(row.sales),
+      maintenance: parseInt(row.maintenance),
+      teams: parseInt(row.teams),
+      products: parseInt(row.products),
+      customers: parseInt(row.customers),
       inventory: {
-        pcb: parseInt(pcbCount.rows[0].count),
-        electronics: parseInt(electronicsCount.rows[0].count),
-        electrical: parseInt(electricalCount.rows[0].count),
-        structural: parseInt(structuralCount.rows[0].count)
+        pcb: parseInt(row.pcb),
+        electronics: parseInt(row.electronics),
+        electrical: parseInt(row.electrical),
+        structural: parseInt(row.structural)
       }
     };
 
-    console.log('DEBUG: Backend Stats:', stats);
+    statsCache = { data: stats, timestamp: now };
     sendSuccess(res, stats);
   } catch (error) {
     next(error);

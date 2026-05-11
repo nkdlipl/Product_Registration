@@ -5,7 +5,7 @@ import Modal from '../../components/shared/Modal';
 import { getAdminStats } from '../../api/admin';
 import { 
   getPCBs, createPCB, getPCBById, deletePCB, updatePCB, deletePCBImage, deletePCBFile,
-  getElectronicsParts, getElectricalParts, deleteElectronicsPart, deleteElectricalPart
+  getElectronicsParts, getElectricalParts, getStructuralParts, deleteElectronicsPart, deleteElectricalPart, deleteStructuralPart
 } from '../../api/inventory';
 import { 
   Search, 
@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { useDebounce } from '../../hooks/useDebounce';
 
 const InventoryListPage = ({ type = '' }) => {
   const navigate = useNavigate();
@@ -61,6 +62,7 @@ const buildFileUrl = (filePath) => {
   const [stats, setStats] = useState({ pcb: 0, electronics: 0, electrical: 0, structural: 0 });
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -98,37 +100,57 @@ const buildFileUrl = (filePath) => {
   };
 
   const fetchItems = async () => {
+    const fetchCategory = selectedCategory;
+    const fetchSearch = searchTerm;
+    const fetchType = type;
+    
     setLoading(true);
     try {
       let allItems = [];
       let totalCount = 0;
 
       if (!type) {
-        // Fetch all categories for Overview
-        const [pcbRes, elecRes, electRes] = await Promise.all([
-          getPCBs({ limit: 20, search: searchTerm }),
-          getElectronicsParts({ limit: 20, search: searchTerm }),
-          getElectricalParts({ limit: 20, search: searchTerm })
-        ]);
-        
-        let pcbs = (pcbRes.data.data || []).map(i => ({ ...i, category: 'PCB', pcb_name: i.pcb_name, pcb_id: i.pcb_id }));
-        let electronics = (elecRes.data.data || []).map(i => ({ ...i, category: 'Electronic Part', pcb_name: i.part_name, pcb_id: i.part_id }));
-        let electrical = (electRes.data.data || []).map(i => ({ ...i, category: 'Electrical Part', pcb_name: i.part_name, pcb_id: i.part_id }));
-        
-        allItems = [...pcbs, ...electronics, ...electrical];
-
+        // Overview mode with category prioritization
         if (selectedCategory) {
-            allItems = allItems.filter(item => item.category === selectedCategory);
+            let res;
+            if (selectedCategory === 'PCB') {
+                res = await getPCBs({ limit: pagination.limit, search: searchTerm });
+                allItems = (res.data.data || []).map(i => ({ ...i, category: 'PCB', pcb_name: i.pcb_name, pcb_id: i.pcb_id }));
+            } else if (selectedCategory === 'Electronic Part') {
+                res = await getElectronicsParts({ limit: pagination.limit, search: searchTerm });
+                allItems = (res.data.data || []).map(i => ({ ...i, category: 'Electronic Part', pcb_name: i.part_name, pcb_id: i.part_id }));
+            } else if (selectedCategory === 'Electrical Part') {
+                res = await getElectricalParts({ limit: pagination.limit, search: searchTerm });
+                allItems = (res.data.data || []).map(i => ({ ...i, category: 'Electrical Part', pcb_name: i.part_name, pcb_id: i.part_id }));
+            } else if (selectedCategory === 'Structural Part') {
+                res = await getStructuralParts({ limit: pagination.limit, search: searchTerm });
+                allItems = (res.data.data || []).map(i => ({ ...i, category: 'Structural Part', pcb_name: i.part_name, pcb_id: i.part_id }));
+            }
+            totalCount = res?.data?.meta?.total || allItems.length;
+        } else {
+            // Aggregate all categories for true Overview
+            const [pcbRes, elecRes, electRes, structRes] = await Promise.all([
+              getPCBs({ limit: 15, search: searchTerm }),
+              getElectronicsParts({ limit: 15, search: searchTerm }),
+              getElectricalParts({ limit: 15, search: searchTerm }),
+              getStructuralParts({ limit: 15, search: searchTerm })
+            ]);
+            
+            let pcbs = (pcbRes.data.data || []).map(i => ({ ...i, category: 'PCB', pcb_name: i.pcb_name, pcb_id: i.pcb_id }));
+            let electronics = (elecRes.data.data || []).map(i => ({ ...i, category: 'Electronic Part', pcb_name: i.part_name, pcb_id: i.part_id }));
+            let electrical = (electRes.data.data || []).map(i => ({ ...i, category: 'Electrical Part', pcb_name: i.part_name, pcb_id: i.part_id }));
+            let structural = (structRes.data.data || []).map(i => ({ ...i, category: 'Structural Part', pcb_name: i.part_name, pcb_id: i.part_id }));
+            
+            allItems = [...pcbs, ...electronics, ...electrical, ...structural];
+            totalCount = allItems.length;
         }
-
-        totalCount = allItems.length;
       } else if (type === 'PCB') {
         const res = await getPCBs({
           page: pagination.page,
           limit: pagination.limit,
           search: searchTerm
         });
-        allItems = res.data.data;
+        allItems = (res.data.data || []).map(i => ({ ...i, category: 'PCB' }));
         totalCount = res.data.meta.total;
       } else if (type === 'Electronic Part') {
         const res = await getElectronicsParts({
@@ -136,7 +158,7 @@ const buildFileUrl = (filePath) => {
           limit: pagination.limit,
           search: searchTerm
         });
-        allItems = (res.data.data || []).map(i => ({ ...i, pcb_name: i.part_name, pcb_id: i.part_id }));
+        allItems = (res.data.data || []).map(i => ({ ...i, category: 'Electronic Part', pcb_name: i.part_name, pcb_id: i.part_id }));
         totalCount = res.data.meta.total;
       } else if (type === 'Electrical Part') {
         const res = await getElectricalParts({
@@ -144,8 +166,21 @@ const buildFileUrl = (filePath) => {
           limit: pagination.limit,
           search: searchTerm
         });
-        allItems = (res.data.data || []).map(i => ({ ...i, pcb_name: i.part_name, pcb_id: i.part_id }));
+        allItems = (res.data.data || []).map(i => ({ ...i, category: 'Electrical Part', pcb_name: i.part_name, pcb_id: i.part_id }));
         totalCount = res.data.meta.total;
+      } else if (type === 'Structural Part') {
+        const res = await getStructuralParts({
+          page: pagination.page,
+          limit: pagination.limit,
+          search: searchTerm
+        });
+        allItems = (res.data.data || []).map(i => ({ ...i, category: 'Structural Part', pcb_name: i.part_name, pcb_id: i.part_id }));
+        totalCount = res.data.meta.total;
+      }
+
+      // Race condition protection: only update if filters haven't changed
+      if (fetchCategory !== selectedCategory || fetchSearch !== searchTerm || fetchType !== type) {
+          return;
       }
 
       setItems(allItems);
@@ -201,15 +236,11 @@ const buildFileUrl = (filePath) => {
 
   useEffect(() => {
     fetchStats();
-    fetchItems();
-  }, [type, searchTerm, pagination.page, selectedCategory]);
+  }, [type]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-        fetchItems();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [type, pagination.page, searchTerm]);
+    fetchItems();
+  }, [type, pagination.page, debouncedSearchTerm, selectedCategory]);
 
   const onSubmit = async (data) => {
     if (modalMode === 'view') return;
@@ -238,7 +269,8 @@ const buildFileUrl = (filePath) => {
         });
       }
 
-      if (type === 'PCB') {
+      // Handle PCB Operations
+      if (type === 'PCB' || selectedItem?.pcb_id) {
           if (modalMode === 'create') {
               await createPCB(formData);
               toast.success('PCB registered successfully!');
@@ -300,7 +332,7 @@ const buildFileUrl = (filePath) => {
     const itemType = item.category || 'PCB';
     
     // If it's not a PCB, navigate to the specialized module
-    if (itemType !== 'PCB' && itemType !== 'Structural Component') {
+    if (itemType !== 'PCB' && itemType !== 'Structural Part') {
         const path = itemType === 'Electronic Part' ? '/admin/inventory/electronics' : '/admin/inventory/electrical';
         navigate(path);
         toast.success(`Redirecting to ${itemType} module...`);
@@ -326,6 +358,8 @@ const buildFileUrl = (filePath) => {
             await deleteElectronicsPart(item.pcb_id); // Note: pcb_id is used as alias for part_id in Overview
         } else if (itemType === 'Electrical Part') {
             await deleteElectricalPart(item.pcb_id);
+        } else if (itemType === 'Structural Part') {
+            await deleteStructuralPart(item.pcb_id);
         }
         toast.success(`${itemType} deleted successfully`);
         fetchItems();
@@ -401,7 +435,7 @@ const buildFileUrl = (filePath) => {
       case 'PCB': return <Cpu size={24} className="text-[var(--accent)]" />;
       case 'Electronic Part': return <CircuitBoard size={24} className="text-[var(--accent)]" />;
       case 'Electrical Part': return <Plug size={24} className="text-[var(--accent)]" />;
-      case 'Structural Component': return <Layers size={24} className="text-[var(--accent)]" />;
+      case 'Structural Part': return <Layers size={24} className="text-[var(--accent)]" />;
       default: return <Box size={24} className="text-[var(--accent)]" />;
     }
   };
@@ -622,7 +656,7 @@ const buildFileUrl = (filePath) => {
             style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
           >
             <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-            <span className="text-[12px] md:text-[14px]">Register New {type}</span>
+            <span className="text-[12px] md:text-[14px]">Add {type}</span>
           </button>
         )}
       </div>
@@ -783,11 +817,11 @@ const buildFileUrl = (filePath) => {
         <Modal 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)}
-          title={modalMode === 'view' ? "Technical Data Sheet" : (modalMode === 'create' ? `Register New ${type || 'Item'}` : `Update ${type || 'Item'} Specifications`)}
+          title={modalMode === 'view' ? "Technical Data Sheet" : (modalMode === 'create' ? `Add ${type || 'Item'}` : `Update ${type || 'Item'} Specifications`)}
           maxWidth="max-w-6xl"
           headerActions={
             <div className="flex items-center gap-3">
-               {modalMode !== 'view' && type === 'PCB' && (
+               {modalMode !== 'view' && (type === 'PCB' || selectedItem?.pcb_id) && (
                   <button
                       onClick={handleSubmit(onSubmit)}
                       disabled={isSubmitting}
