@@ -7,6 +7,9 @@ import {
   FileUp, ChevronRight, Eye, Download, Trash2, Box, Cpu,
   Activity, ArrowLeft, ImageIcon, CheckCircle2, Layers, Factory, ShieldAlert, FileText, BatteryCharging, Wrench, Package, Shield, Scale, Ruler, Banknote, ShoppingCart, X, LayoutGrid, List, Fingerprint, Calendar, Pencil
 } from 'lucide-react';
+import Sidebar from '../../components/shared/Sidebar';
+import Breadcrumbs from '../../components/shared/Breadcrumbs';
+import { useAuth } from '../../context/AuthContext';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { getElectricalParts, createElectricalPart, updateElectricalPart, deleteElectricalPart, getElectricalPartById, deleteElectricalImage, deleteElectricalFile } from '../../api/inventory';
@@ -654,33 +657,16 @@ const ElectricalPartsPage = () => {
       >
         {modalMode === 'view' ? (
           <div className="space-y-12 pb-10 max-h-[82vh] overflow-y-auto custom-scrollbar pr-4">
-             {/* Breadcrumb Navigation */}
-             <div className="flex items-center gap-4 px-1">
-                <button 
-                  onClick={() => navigate('/admin/dashboard')}
-                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-                >
-                  <span>Dashboard</span>
-                </button>
-                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-                <button 
-                  onClick={() => navigate('/admin/inventory')}
-                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-                >
-                  <span>Inventory</span>
-                </button>
-                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-                >
-                  <span>Electrical</span>
-                </button>
-                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-                <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">
-                  <span>{selectedItem?.part_name}</span>
-                </div>
-             </div>
+               <div className="px-1">
+                  <Breadcrumbs 
+                    items={[
+                      { label: 'Dashboard', path: '/admin/dashboard' },
+                      { label: 'Inventory', path: '/admin/inventory' },
+                      { label: 'Electrical', path: '/admin/inventory/electrical' },
+                      { label: selectedItem?.part_name, active: true }
+                    ]} 
+                  />
+               </div>
 
              {/* Premium Header Layout */}
              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

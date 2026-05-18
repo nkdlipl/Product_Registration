@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
+import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import { getAdminStats } from '../../api/admin';
 import { 
   getPCBs, createPCB, getPCBById, deletePCB, updatePCB, deletePCBImage, deletePCBFile,
@@ -68,7 +69,7 @@ const buildFileUrl = (filePath) => {
 
   const [items, setItems] = useState([]);
   const [stats, setStats] = useState({ pcb: 0, electronics: 0, electrical: 0, structural: 0 });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
@@ -1068,18 +1069,10 @@ const buildFileUrl = (filePath) => {
         </div>
 
         {!type && items.length === 0 ? (
-          <div className="p-20 text-center bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] border-dashed relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="w-20 h-20 bg-[var(--nav-hover)] rounded-3xl flex items-center justify-center mx-auto mb-6 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-all group-hover:scale-110 group-hover:rotate-6 shadow-inner">
-              <Box size={40} strokeWidth={1.5} />
-            </div>
-            <h3 className="text-xl font-black text-[var(--text-main)] uppercase tracking-tight mb-2">Centralized Inventory System</h3>
-            <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] max-w-sm mx-auto opacity-60">Select a specialized category above to deep-dive into detailed technical records and management</p>
-          </div>
+          <div className="w-full min-h-[400px]" />
         ) : loading ? (
-          <div className="p-20 text-center">
-            <Loader2 size={40} className="animate-spin text-[var(--accent)] mx-auto mb-4 opacity-40" />
-            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Fetching records...</p>
+          <div className="p-20 text-center flex items-center justify-center">
+            <Loader2 size={40} className="animate-spin text-[var(--accent)] opacity-40" />
           </div>
         ) : viewMode === 'table' ? (
           <DataTable 
@@ -1176,32 +1169,15 @@ const buildFileUrl = (filePath) => {
           {modalMode === 'view' ? (
             /* Universal View Mode */
             <div className="space-y-10 pb-10 max-h-[82vh] overflow-y-auto custom-scrollbar pr-4">
-               {/* Breadcrumb Navigation */}
-               <div className="flex items-center gap-4 px-1">
-                  <button 
-                    onClick={() => navigate('/admin/dashboard')}
-                    className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-                  >
-                    <span>Dashboard</span>
-                  </button>
-                  <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-                  <button 
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-                  >
-                    <span>Inventory</span>
-                  </button>
-                  <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-                  <button 
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-                  >
-                    <span>{selectedItem?.category || type || 'General'}</span>
-                  </button>
-                  <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-                  <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">
-                    <span>{selectedItem?.pcb_name || selectedItem?.part_name || selectedItem?.name}</span>
-                  </div>
+               <div className="px-1">
+                  <Breadcrumbs 
+                    items={[
+                      { label: 'Dashboard', path: '/admin/dashboard' },
+                      { label: 'Inventory', path: '/admin/inventory' },
+                      { label: selectedItem?.category || type || 'General', path: `/admin/inventory/${(selectedItem?.category || type || '').toLowerCase()}` },
+                      { label: selectedItem?.pcb_name || selectedItem?.part_name || selectedItem?.name, active: true }
+                    ]} 
+                  />
                </div>
 
                {/* Premium Header Layout */}

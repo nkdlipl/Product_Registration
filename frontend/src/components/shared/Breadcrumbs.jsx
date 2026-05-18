@@ -1,9 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Home } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const Breadcrumbs = ({ items = [] }) => {
   const location = useLocation();
+  const { user } = useAuth();
+
+  const homePath = user?.role_name ? `/${user.role_name.toLowerCase()}/dashboard` : '/';
 
   const pathLabels = {
     'admin': 'Dashboard',
@@ -69,34 +73,44 @@ const Breadcrumbs = ({ items = [] }) => {
   }
 
   return (
-    <nav className="flex mb-6 overflow-hidden" aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-y-2">
-        {breadcrumbItems.map((item, index) => (
-          <li key={index} className="flex items-center">
-            {index > 0 && (
-              <ChevronRight size={10} strokeWidth={4} className="text-[var(--text-dim)] mx-3 opacity-40" />
-            )}
-            {item.active ? (
-              <span
-                className="text-[11px] font-black uppercase tracking-[0.25em] whitespace-nowrap"
-                style={{ color: 'var(--text-main)' }}
-              >
-                {item.label}
-              </span>
-            ) : (
-              <Link
-                to={item.path}
-                className="text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 whitespace-nowrap opacity-60 hover:opacity-100 hover:translate-x-0.5"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                {item.label}
-              </Link>
-            )}
-          </li>
-        ))}
+    <nav className="flex items-center mb-8 animate-entrance-down" aria-label="Breadcrumb">
+      <ol className="flex items-center flex-wrap gap-x-2">
+        <li className="flex items-center">
+          <Link 
+            to={homePath} 
+            className="flex items-center text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors duration-200"
+          >
+            <Home size={16} className="mr-2" />
+            <span className="text-sm font-medium">Home</span>
+          </Link>
+        </li>
+
+        {breadcrumbItems.map((item, index) => {
+          // Skip if it's the 'admin' or 'dashboard' root as we have 'Home' now
+          if (item.label.toLowerCase() === 'dashboard' || item.label.toLowerCase() === 'admin') return null;
+          
+          return (
+            <li key={index} className="flex items-center">
+              <ChevronRight size={14} className="text-[var(--text-dim)] mx-1 opacity-50" />
+              {item.active ? (
+                <span className="text-sm font-semibold text-[var(--text-main)] px-2 py-1 rounded-md bg-[var(--nav-active)]/10">
+                  {item.label}
+                </span>
+              ) : (
+                <Link
+                  to={item.path}
+                  className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--nav-hover)] px-2 py-1 rounded-md transition-all duration-200"
+                >
+                  {item.label}
+                </Link>
+              )}
+            </li>
+          );
+        })}
       </ol>
     </nav>
   );
 };
 
 export default Breadcrumbs;
+

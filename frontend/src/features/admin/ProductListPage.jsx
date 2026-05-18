@@ -4,6 +4,7 @@ import { getProducts, createProduct, updateProduct, removeAsset, deleteProduct }
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import CategoryModal from '../../components/shared/CategoryModal';
+import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download, X, Zap, Building2, Pencil } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -582,25 +583,14 @@ const ProductListPage = () => {
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-400">
           {modalMode === 'view' ? (
             <div className="space-y-12 pb-10">
-              {/* Breadcrumb Navigation */}
-              <div className="flex items-center gap-4 px-1">
-                <button 
-                  onClick={() => navigate('/admin')}
-                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-                >
-                  <span>Dashboard</span>
-                </button>
-                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-                >
-                  <span>Products</span>
-                </button>
-                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-                <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">
-                  <span>{selectedProduct?.product_name}</span>
-                </div>
+              <div className="px-1">
+                <Breadcrumbs 
+                  items={[
+                    { label: 'Dashboard', path: '/admin/dashboard' },
+                    { label: 'Products', path: '/admin/products' },
+                    { label: selectedProduct?.product_name, active: true }
+                  ]} 
+                />
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <div className="lg:col-span-5 space-y-6">
@@ -1123,7 +1113,7 @@ const ProductListPage = () => {
 
       <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} onSelect={handleSubCategoryPick} onSelectCategory={handleCategoryPick} initialCategory={categoryModalMode === 'subcategory' ? categories.find(c => c.name === watchedCategory) : null} />
       <CompanyModal isOpen={isCompanyModalOpen} onClose={() => setIsCompanyModalOpen(false)} onSelect={handleSubCompanyPick} onSelectCompany={handleCompanyPick} initialCompany={companyModalMode === 'subcompany' ? companies.find(c => c.name === watchedCompany) : null} />
-      {previewImageUrl && ( <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-10" onClick={() => setPreviewImageUrl(null)}><img src={previewImageUrl} className="max-w-full max-h-full object-contain shadow-2xl rounded-3xl" /><button className="absolute top-10 right-10 p-4 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all"><X size={32} /></button></div> )}
+      {previewImageUrl && ( <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-10" onClick={() => setPreviewImageUrl(null)}><img src={previewImageUrl} className="max-w-full max-h-full object-contain shadow-2xl rounded-3xl" /><button className="absolute top-10 right-10 p-4 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all"><X size={32} /></button></div> )}
     </div>
   );
 };

@@ -9,7 +9,7 @@ const LoadingSpinner = ({ fullPage = false }) => {
 
   if (fullPage) {
     return (
-      <div className="fixed inset-0 bg-[var(--bg-page)] bg-opacity-75 flex items-center justify-center z-50 backdrop-blur-sm">
+      <div className="fixed inset-0 bg-[var(--bg-page)] bg-opacity-75 flex items-center justify-center z-50">
         {spinner}
       </div>
     );

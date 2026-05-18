@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
+import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import {
   getStructuralParts, createStructuralPart, getStructuralPartById, deleteStructuralPart, updateStructuralPart, deleteStructuralFile, deleteStructuralImage
 } from '../../api/inventory';
@@ -608,33 +609,16 @@ const StructuralPartsPage = () => {
       >
         {modalMode === 'view' ? (
           <div className="space-y-10 pb-10 max-h-[85vh] overflow-y-auto custom-scrollbar pr-4">
-            {/* Breadcrumb Navigation */}
-            <div className="flex items-center gap-4 px-1">
-              <button 
-                onClick={() => navigate('/admin/dashboard')}
-                className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-              >
-                <span>Dashboard</span>
-              </button>
-              <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-              <button 
-                onClick={() => navigate('/admin/inventory')}
-                className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-              >
-                <span>Inventory</span>
-              </button>
-              <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
-              >
-                <span>Structural</span>
-              </button>
-              <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
-              <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">
-                <span>{selectedItem?.part_name}</span>
-              </div>
-            </div>
+             <div className="px-1">
+                <Breadcrumbs 
+                  items={[
+                    { label: 'Dashboard', path: '/admin/dashboard' },
+                    { label: 'Inventory', path: '/admin/inventory' },
+                    { label: 'Structural', path: '/admin/inventory/structural' },
+                    { label: selectedItem?.part_name, active: true }
+                  ]} 
+                />
+             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
               <div className="lg:col-span-5 space-y-6">
