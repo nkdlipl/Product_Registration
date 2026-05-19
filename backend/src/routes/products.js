@@ -7,6 +7,7 @@ const upload = require('../middleware/upload');
 
 // All product routes are protected and for Admin
 router.get('/', verifyToken, requireRole('Admin', 'Staff'), productController.getProducts);
+router.get('/:id', verifyToken, requireRole('Admin', 'Staff'), productController.getProductById);
 router.post('/', 
   verifyToken, 
   requireRole('Admin'), 

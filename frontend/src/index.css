@@ -404,35 +404,72 @@ table td {
 /* ═══════════════════════════════════════
    RICH TEXT CONTENT RENDERING
    ═══════════════════════════════════════ */
+.rich-text-content {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+}
+
+.rich-text-content * {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
 .rich-text-content ul {
-  list-style-type: disc;
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
+  list-style-type: disc !important;
+  padding-left: 2.5rem !important;
+  margin-left: 0 !important;
+  margin-bottom: 1rem !important;
+  list-style-position: outside !important;
 }
 
 .rich-text-content ol {
-  list-style-type: decimal;
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
+  list-style-type: decimal !important;
+  padding-left: 2.5rem !important;
+  margin-left: 0 !important;
+  margin-bottom: 1rem !important;
+  list-style-position: outside !important;
 }
 
 .rich-text-content li {
-  margin-bottom: 0.5rem;
+  display: list-item !important;
+  list-style-type: inherit !important;
+  margin-bottom: 0.5rem !important;
+  padding-left: 0.5rem;
+  position: static !important;
+}
+
+.rich-text-content li::before {
+  content: none !important;
+  display: none !important;
 }
 
 .rich-text-content p {
-  margin-bottom: 1rem;
+  margin-bottom: 1rem !important;
+  line-height: 1.6 !important;
 }
 
 .rich-text-content a {
-  color: var(--accent);
-  text-decoration: underline;
+  color: var(--accent) !important;
+  text-decoration: underline !important;
 }
 
 .rich-text-content blockquote {
-  border-left: 4px solid var(--accent);
-  padding-left: 1rem;
-  margin-left: 0;
-  font-style: italic;
-  opacity: 0.8;
+  border-left: 4px solid var(--accent) !important;
+  padding-left: 1rem !important;
+  margin-left: 0 !important;
+  font-style: italic !important;
+  opacity: 0.8 !important;
+}
+
+/* Push header action buttons down on desktop to prevent overlap with top-right breadcrumbs */
+@media (min-width: 768px) {
+  .animate-entrance-down > button.btn-primary,
+  .animate-entrance-down > a.btn-primary,
+  .animate-entrance-down > .btn-primary {
+    align-self: flex-start !important;
+    margin-top: 35px !important;
+  }
 }

@@ -26,13 +26,20 @@ const Breadcrumbs = ({ items = [] }) => {
 
   const pathnames = location.pathname.split('/').filter((x) => x);
   
+  const searchParams = new URLSearchParams(location.search);
+  const role = searchParams.get('role') || '';
+
   // Define logical hierarchy that doesn't match the URL structure
   const hierarchyMap = {
     '/admin/users': ['admin'],
     '/admin/designers': ['admin', 'users'],
     '/admin/maintenance': ['admin', 'users'],
     '/admin/sales': ['admin', 'users'],
-    '/admin/teams': ['admin', 'users', 'designers']
+    '/admin/teams': role.toLowerCase() === 'sales'
+      ? ['admin', 'users', 'sales']
+      : role.toLowerCase() === 'maintenance'
+        ? ['admin', 'users', 'maintenance']
+        : ['admin', 'users', 'designers']
   };
 
   const currentPath = location.pathname;
@@ -49,6 +56,8 @@ const Breadcrumbs = ({ items = [] }) => {
       if (name === 'admin') routeTo = '/admin/dashboard';
       else if (name === 'users') routeTo = '/admin/users';
       else if (name === 'designers') routeTo = '/admin/designers';
+      else if (name === 'sales') routeTo = '/admin/sales';
+      else if (name === 'maintenance') routeTo = '/admin/maintenance';
       else routeTo = currentPath; // The last item
     } else {
       // Default logic for flat paths
@@ -73,7 +82,7 @@ const Breadcrumbs = ({ items = [] }) => {
   }
 
   return (
-    <nav className="flex items-center mb-8 animate-entrance-down" aria-label="Breadcrumb">
+    <nav className="flex items-center mb-3 animate-entrance-down" aria-label="Breadcrumb">
       <ol className="flex items-center flex-wrap gap-x-2">
         <li className="flex items-center">
           <Link 
@@ -87,7 +96,7 @@ const Breadcrumbs = ({ items = [] }) => {
 
         {breadcrumbItems.map((item, index) => {
           // Skip if it's the 'admin' or 'dashboard' root as we have 'Home' now
-          if (item.label.toLowerCase() === 'dashboard' || item.label.toLowerCase() === 'admin') return null;
+          if (item.label?.toLowerCase() === 'dashboard' || item.label?.toLowerCase() === 'admin') return null;
           
           return (
             <li key={index} className="flex items-center">
@@ -96,6 +105,14 @@ const Breadcrumbs = ({ items = [] }) => {
                 <span className="text-sm font-semibold text-[var(--text-main)] px-2 py-1 rounded-md bg-[var(--nav-active)]/10">
                   {item.label}
                 </span>
+              ) : item.onClick ? (
+                <button
+                  type="button"
+                  onClick={item.onClick}
+                  className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--nav-hover)] px-2 py-1 rounded-md transition-all duration-200"
+                >
+                  {item.label}
+                </button>
               ) : (
                 <Link
                   to={item.path}

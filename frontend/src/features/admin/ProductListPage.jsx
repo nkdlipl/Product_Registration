@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getProducts, createProduct, updateProduct, removeAsset, deleteProduct } from '../../api/products';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { getProducts, getProductById, createProduct, updateProduct, removeAsset, deleteProduct } from '../../api/products';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import CategoryModal from '../../components/shared/CategoryModal';
@@ -17,6 +17,7 @@ import 'react-quill-new/dist/quill.snow.css';
 
 const ProductListPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -257,6 +258,25 @@ const ProductListPage = () => {
     fetchProducts();
   }, [debouncedSearchTerm, selectedCategory, selectedCompany, pagination.page]);
 
+  useEffect(() => {
+    const editProductId = location.state?.editProductId;
+    if (editProductId) {
+      const fetchAndEdit = async () => {
+        try {
+          const res = await getProductById(editProductId);
+          if (res.data.success) {
+            handleEdit(res.data.data);
+            // Clear location state to prevent reopening on subsequent renders
+            navigate(location.pathname, { replace: true, state: {} });
+          }
+        } catch (err) {
+          toast.error('Failed to load product details for editing');
+        }
+      };
+      fetchAndEdit();
+    }
+  }, [location.state]);
+
   const onSubmit = async (data) => {
     if (modalMode === 'view') return;
     setIsSubmitting(true);
@@ -340,16 +360,7 @@ const ProductListPage = () => {
   };
 
   const handleView = (product) => {
-    const hardware = parseHardwareSpec(product.specification);
-    const enrichedProduct = { ...product, parsedSpecification: hardware ? hardware.original_spec : product.specification, hardware: hardware };
-    setSelectedProduct(enrichedProduct);
-    setModalMode('view');
-    setActiveTab('description');
-    setActiveImageIdx(0);
-    const resetData = { ...product, fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', dispenser_type: hardware?.dispenser_type || '', specification: hardware ? hardware.original_spec : product.specification };
-    reset(resetData);
-    setPendingImages([]);
-    setIsModalOpen(true);
+    navigate(`/admin/products/${product.product_id}`);
   };
 
   const handleEdit = (product) => {
@@ -480,47 +491,47 @@ const ProductListPage = () => {
         </button>
       </div>
 
-      <div className="workspace-card p-4 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)]">
+      <div className="workspace-card p-2.5 flex flex-col md:flex-row gap-3 items-center border border-[var(--border-color)] bg-[var(--bg-card)] rounded-xl">
         <div className="relative flex-1 group w-full">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={16} />
           <input 
             type="text" 
             placeholder="Search products..." 
             value={searchTerm} 
             onChange={(e) => setSearchTerm(e.target.value)} 
-            className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-12 pr-32 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium" 
+            className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg py-2 pl-10 pr-28 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium" 
           />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40 pointer-events-none hidden sm:block">{products.length} Products Found</div>
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40 pointer-events-none hidden sm:block">{products.length} Products Found</div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <div className="relative group min-w-[180px] flex-1 md:flex-none">
-            <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={16} />
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          <div className="relative group min-w-[160px] flex-1 md:flex-none">
+            <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={14} />
             <select 
               value={selectedCategory || ''} 
               onChange={(e) => setSelectedCategory(e.target.value || null)} 
-              className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-11 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[13px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+              className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg py-2 pl-9 pr-8 outline-none focus:border-[var(--accent)] transition-all text-[12px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.1em', backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat' }}
             >
               <option value="">All Categories</option>
               {categories.map((cat) => ( <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option> ))}
             </select>
           </div>
-          <div className="relative group min-w-[180px] flex-1 md:flex-none">
-            <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={16} />
+          <div className="relative group min-w-[160px] flex-1 md:flex-none">
+            <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={14} />
             <select 
               value={selectedCompany || ''} 
               onChange={(e) => setSelectedCompany(e.target.value || null)} 
-              className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-11 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[13px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+              className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg py-2 pl-9 pr-8 outline-none focus:border-[var(--accent)] transition-all text-[12px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.1em', backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat' }}
             >
               <option value="">All Manufacturers</option>
               {companies.map((comp) => ( <option key={comp.id || comp.name} value={comp.name}>{comp.name}</option> ))}
             </select>
           </div>
-          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner">
-            <button onClick={() => setViewMode('grid')} className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'grid' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`} title="Grid View"><LayoutGrid size={18} /></button>
-            <button onClick={() => setViewMode('table')} className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'table' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`} title="Table View"><List size={18} /></button>
+          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-0.5 rounded-lg shadow-inner">
+            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md transition-all duration-300 ${viewMode === 'grid' ? 'bg-[var(--accent)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`} title="Grid View"><LayoutGrid size={15} /></button>
+            <button onClick={() => setViewMode('table')} className={`p-2 rounded-md transition-all duration-300 ${viewMode === 'table' ? 'bg-[var(--accent)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`} title="Table View"><List size={15} /></button>
           </div>
         </div>
       </div>
@@ -528,7 +539,7 @@ const ProductListPage = () => {
       {viewMode === 'table' ? (
         <DataTable columns={columns} data={products} loading={loading} totalCount={pagination.total} filteredCount={products.length} currentPage={pagination.page} totalPages={Math.ceil(pagination.total / pagination.limit) || 1} onView={handleView} onEdit={handleEdit} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
           {products.map((product) => (
             <div key={product.product_id} className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl">
               <div onClick={() => handleView(product)} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] block cursor-zoom-in group/img">
@@ -538,14 +549,14 @@ const ProductListPage = () => {
                 </div>
                 <div className="absolute top-4 left-4"><span className="bg-[var(--bg-card)] backdrop-blur-md border border-[var(--border-color)] text-[10px] font-black uppercase tracking-[0.15em] px-3.5 py-1.5 rounded-full text-[var(--accent)] shadow-sm">{product.category || 'Standard'}</span></div>
               </div>
-              <div className="p-6 flex-1 flex flex-col">
+              <div className="p-4 flex-1 flex flex-col">
                 <div className="flex-1 space-y-3">
-                  <h3 className="text-[17px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">{product.product_name}</h3>
-                  <p className="text-[13px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-3">
+                  <h3 className="text-[15px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">{product.product_name}</h3>
+                  <p className="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-2">
                     {(product.description || 'No detailed description available.').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ')}
                   </p>
                 </div>
-                <div className="flex items-center justify-between pt-6 mt-6 border-t border-[var(--border-color)]">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
                     <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">{product.company_name || 'Generic'}</span>
@@ -564,218 +575,23 @@ const ProductListPage = () => {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={modalMode === 'create' ? 'Add Product' : modalMode === 'edit' ? 'Update Specifications' : 'Product Profile'} 
+        title={modalMode === 'create' ? 'Add Product' : 'Update Specifications'} 
         maxWidth="max-w-[1400px]"
-        headerActions={modalMode !== 'view' && (
-          <div className="flex items-center gap-3">
-            <button
-              form="product-form"
-              type="submit"
-              disabled={isSubmitting}
-              className="btn-primary py-2 px-6 shadow-md flex items-center gap-2 text-[9px] font-black uppercase tracking-widest"
-              style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
-            >
-              {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save Product' : 'Update Product')}
-            </button>
-          </div>
-        )}
+        headerActions={
+            <div className="flex items-center gap-3">
+              <button
+                form="product-form"
+                type="submit"
+                disabled={isSubmitting}
+                className="btn-primary py-2 px-6 shadow-md flex items-center gap-2 text-[9px] font-black uppercase tracking-widest"
+                style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
+              >
+                {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save Product' : 'Update Product')}
+              </button>
+            </div>
+        }
       >
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-400">
-          {modalMode === 'view' ? (
-            <div className="space-y-12 pb-10">
-              <div className="px-1">
-                <Breadcrumbs 
-                  items={[
-                    { label: 'Dashboard', path: '/admin/dashboard' },
-                    { label: 'Products', path: '/admin/products' },
-                    { label: selectedProduct?.product_name, active: true }
-                  ]} 
-                />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                <div className="lg:col-span-5 space-y-6">
-                  {(() => {
-                    const allImages = selectedProduct?.images && selectedProduct.images.length > 0 ? selectedProduct.images : (selectedProduct?.image_url ? [selectedProduct.image_url] : []);
-                    const currentUrl = allImages[activeImageIdx] || allImages[0];
-                    return (
-                      <>
-                        <div className="aspect-square bg-[var(--bg-workspace)] rounded-[32px] border border-[var(--border-color)] overflow-hidden group relative flex items-center justify-center">
-                          {currentUrl ? ( <img src={getFullUrl(currentUrl)} className="w-full h-full object-contain p-8 animate-in fade-in zoom-in-95" alt="Main Product" /> ) : ( <Box size={100} className="text-[var(--text-dim)] opacity-20" /> )}
-                          {allImages.length > 1 && (
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-                              {allImages.map((_, i) => ( <button key={i} onClick={() => setActiveImageIdx(i)} className={`w-1.5 h-1.5 rounded-full transition-all ${i === activeImageIdx ? 'bg-[var(--accent)] w-6' : 'bg-[var(--text-muted)] opacity-30'}`} /> ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-                          {allImages.map((url, idx) => ( <button key={idx} onClick={() => setActiveImageIdx(idx)} className={`w-20 h-20 flex-shrink-0 rounded-2xl border-2 transition-all overflow-hidden bg-[var(--bg-workspace)] ${idx === activeImageIdx ? 'border-[var(--accent)] scale-105' : 'border-transparent opacity-60'}`}><img src={getFullUrl(url)} className="w-full h-full object-contain p-2" /></button> ))}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-                <div className="lg:col-span-7 space-y-10 py-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-4"><span className="bg-[var(--nav-hover)] text-[var(--accent)] font-black text-[11px] uppercase tracking-[0.2em] px-3 py-1.5 rounded-lg border border-[var(--border-color)]">{selectedProduct?.category || 'General'}</span><span className="text-[var(--text-muted)] font-black text-[11px] uppercase tracking-widest opacity-40">Ref: {selectedProduct?.product_id?.toString().slice(0, 8).toUpperCase()}</span></div>
-                    {selectedProduct?.company_name && <p className="text-[12px] font-black text-[var(--accent)] uppercase tracking-[0.2em] mb-2">{selectedProduct.company_name}</p>}
-                    <h1 className="text-4xl font-black text-[var(--text-main)] leading-tight tracking-tight">{selectedProduct?.product_name}</h1>
-                    
-                    {(() => {
-                      const hardware = parseHardwareSpec(selectedProduct?.specification);
-                      if (!hardware) return null;
-                      return (
-                        <div className="flex flex-wrap gap-x-8 gap-y-3 mt-6">
-                          {hardware.fuel_types?.length > 0 && (
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/10"><Droplet size={14} strokeWidth={3} /></div>
-                              <span className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.fuel_types.join(', ')}</span>
-                            </div>
-                          )}
-                          {hardware.dispenser_type && (
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/10"><LayoutGrid size={14} strokeWidth={3} /></div>
-                              <span className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.dispenser_type}</span>
-                            </div>
-                          )}
-                          {hardware.nozzles && (
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/10"><Box size={14} strokeWidth={3} /></div>
-                              <span className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.nozzles}</span>
-                            </div>
-                          )}
-                          {hardware.dispensing && (
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/10"><Activity size={14} strokeWidth={3} /></div>
-                              <span className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.dispensing}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <div className="flex items-center gap-6 py-6 border-y border-[var(--border-color)]">
-                    <div className="flex items-center gap-2"><CheckCircle className="text-emerald-500" size={16} /><span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest">Certified Operational</span></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-                    <div className="space-y-1"><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest opacity-60">Manufacturer</p><p className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-wider">{selectedProduct?.company_name || 'Generic Brand'}</p></div>
-                    <div className="space-y-1"><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest opacity-60">Classification</p><p className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-wider">{selectedProduct?.sub_category || 'Industrial System'}</p></div>
-                  </div>
-                  <div className="flex items-center gap-4 pt-6">
-                    <button onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedProduct), 100); }} className="btn-primary flex-1 py-4 px-6 shadow-lg uppercase tracking-widest text-[12px]" style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}>Edit Specifications</button>
-                    <button onClick={() => handleDelete(selectedProduct)} className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={18} /></button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-[var(--bg-surface)] rounded-[32px] border border-[var(--border-color)] overflow-hidden shadow-sm">
-                <div className="flex bg-[var(--bg-workspace)] border-b border-[var(--border-color)] overflow-x-auto no-scrollbar">
-                  {['description', 'specification', 'features', 'documents', 'faqs'].map(tab => (
-                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-5 text-[11px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === tab ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
-                      {tab}
-                      {activeTab === tab && <div className="absolute bottom-0 left-8 right-8 h-1 bg-[var(--accent)] rounded-t-full shadow-[0_-4px_12px_var(--border-glow)]" />}
-                    </button>
-                  ))}
-                </div>
-                <div className="p-10">
-                  {activeTab === 'description' && ( 
-                    <div 
-                      className="text-[15px] text-[var(--text-main)] leading-relaxed font-medium opacity-80 rich-text-content"
-                      dangerouslySetInnerHTML={{ __html: selectedProduct?.description || 'No description available.' }}
-                    /> 
-                  )}
-                    {activeTab === 'specification' && (() => {
-                      const specTableRows = parseSpecRows(selectedProduct?.specification);
-                      
-                      return (
-                        <div className="space-y-8">
-                          {specTableRows.length > 0 && (specTableRows.some(r => r.key.trim() !== '')) ? (
-                            <div className="space-y-4">
-                              <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-card)]">
-                                {specTableRows.filter(r => r.key.trim() !== '').map((row, idx) => (
-                                  <div key={idx} className={`grid grid-cols-[220px_1fr] border-b border-[var(--border-color)] last:border-b-0 ${idx % 2 === 0 ? 'bg-[var(--bg-workspace)]/30' : 'bg-[var(--bg-workspace)]/10'}`}>
-                                    <div className="px-6 py-4 text-[13px] font-black text-[var(--text-muted)] border-r border-[var(--border-color)] uppercase tracking-wider">{row.key}</div>
-                                    <div className="px-6 py-4 text-[13px] text-[var(--text-main)] font-bold">{row.value || '—'}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-center py-12 bg-[var(--bg-workspace)]/20 rounded-3xl border-2 border-dashed border-[var(--border-color)]">
-                              <p className="text-[var(--text-dim)] font-black uppercase tracking-widest text-[11px] opacity-40">No technical data specified</p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  {activeTab === 'features' && (
-                    <div className="space-y-4 rich-text-content">
-                      {selectedProduct?.feature ? (
-                        <div 
-                          className="text-[14px] text-[var(--text-main)] font-bold tracking-wide leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: selectedProduct.feature }}
-                        />
-                      ) : ( 
-                        <p className="text-center text-[var(--text-dim)] font-black uppercase tracking-widest text-[11px] py-10">No specific features listed</p> 
-                      )}
-                    </div>
-                  )}
-                  {activeTab === 'documents' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {(selectedProduct?.documents || [selectedProduct?.document_url]).filter(Boolean).map((docUrl, idx) => (
-                        <div key={idx} className="flex items-center gap-4 p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-workspace)]/30 hover:border-[var(--accent)] transition-all group">
-                          <div className="p-3 bg-[var(--nav-hover)] rounded-xl text-[var(--accent)]"><FileText size={22} /></div>
-                          <div className="flex-1 min-w-0"><p className="text-[13px] font-black text-[var(--text-main)] truncate tracking-wider uppercase">{docUrl.split('/').pop()}</p></div>
-                          <div className="flex items-center gap-2.5 opacity-0 group-hover:opacity-100 transition-all">
-                            <a 
-                              href={getFullUrl(docUrl)} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="p-2.5 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
-                              title="View Document"
-                            >
-                              <Eye size={18} />
-                            </a>
-                            <a 
-                              href={getFullUrl(docUrl)} 
-                              download 
-                              className="p-2.5 bg-[var(--accent)] text-white rounded-xl shadow-lg hover:scale-105 transition-all"
-                              title="Download Document"
-                            >
-                              <Download size={18} />
-                            </a>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {activeTab === 'faqs' && (
-                    <div className="space-y-8 py-2">
-                      {selectedProduct?.faqs && selectedProduct.faqs.length > 0 ? (
-                        <div className="divide-y divide-[var(--border-color)]/60">
-                          {selectedProduct.faqs.map((faq, idx) => (
-                            <div key={idx} className="py-6 first:pt-0 last:pb-0 space-y-3">
-                              <h4 className="text-[15px] font-bold text-[var(--text-main)] flex items-start gap-3">
-                                <span className="text-[var(--accent)] font-black">Q.</span>
-                                {faq.question}
-                              </h4>
-                              <div className="pl-8 flex items-start gap-3">
-                                <span className="text-emerald-500 font-black text-[13px]">A.</span>
-                                <p className="text-[14px] text-[var(--text-muted)] font-medium leading-relaxed">{faq.answer}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12 bg-[var(--bg-workspace)]/10 rounded-2xl border border-dashed border-[var(--border-color)]">
-                          <p className="text-[var(--text-dim)] font-black uppercase tracking-widest text-[10px] opacity-40">No technical FAQs available</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
             <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-10">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div className="space-y-6">
@@ -935,7 +751,7 @@ const ProductListPage = () => {
                         <div key={idx} className="p-4 rounded-xl bg-[var(--bg-workspace)] border border-[var(--border-color)] space-y-3 relative group">
                           <div className="flex items-center justify-between">
                             <span className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest">Item {idx + 1}</span>
-                            <button type="button" onClick={() => setFaqRows(faqRows.filter((_, i) => i !== idx))} disabled={faqRows.length === 1} className="text-[var(--text-dim)] hover:text-rose-500 disabled:opacity-10 transition-colors">
+                            <button type="button" onClick={() => setFaqRows(faqRows.filter((_, i) => i !== idx))} className="text-[var(--text-dim)] hover:text-rose-500 transition-colors">
                               <Trash2 size={14} />
                             </button>
                           </div>
@@ -972,7 +788,7 @@ const ProductListPage = () => {
                               <div key={idx} className="grid grid-cols-[1fr_1fr_48px] border-b border-[var(--border-color)] last:border-b-0 group hover:bg-[var(--accent)]/5 transition-colors">
                                 <input type="text" value={row.key} onChange={(e) => { const updated = [...specRows]; updated[idx].key = e.target.value; setSpecRows(updated); }} placeholder="e.g. Item Type" className="px-5 py-4 text-[13px] font-bold bg-transparent outline-none text-[var(--text-main)] placeholder-[var(--text-dim)]" />
                                 <input type="text" value={row.value} onChange={(e) => { const updated = [...specRows]; updated[idx].value = e.target.value; setSpecRows(updated); }} placeholder="e.g. Camera Bracket" className="px-5 py-4 text-[13px] font-bold bg-transparent outline-none text-[var(--text-muted)] placeholder-[var(--text-dim)] border-l border-[var(--border-color)]" />
-                                <button type="button" onClick={() => setSpecRows(specRows.filter((_, i) => i !== idx))} disabled={specRows.length === 1} className="flex items-center justify-center text-[var(--text-dim)] hover:text-rose-500 disabled:opacity-10 transition-colors"><Trash2 size={16} /></button>
+                                <button type="button" onClick={() => setSpecRows(specRows.filter((_, i) => i !== idx))} className="flex items-center justify-center text-[var(--text-dim)] hover:text-rose-500 transition-colors"><Trash2 size={16} /></button>
                               </div>
                             ))}
                           </div>
@@ -984,7 +800,6 @@ const ProductListPage = () => {
                 </div>
               </div>
             </form>
-          )}
         </div>
       </Modal>
 

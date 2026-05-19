@@ -177,13 +177,15 @@ const getAdminStats = async (req, res, next) => {
       return sendSuccess(res, statsCache.data);
     }
 
-    // Consolidate 10 separate queries into 1 single multi-count query for speed
+    // Consolidate separate queries into 1 single multi-count query for speed
     const queryText = `
       SELECT
         (SELECT COUNT(*) FROM designer_profiles dp JOIN users u ON dp.designer_id = u.user_id WHERE u.is_active = TRUE) as designers,
         (SELECT COUNT(*) FROM sales_profiles sp JOIN users u ON sp.sales_id = u.user_id WHERE u.is_active = TRUE) as sales,
         (SELECT COUNT(*) FROM maintenance_profiles mp JOIN users u ON mp.maintenance_id = u.user_id WHERE u.is_active = TRUE) as maintenance,
-        (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Designer') as teams,
+        (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Designer') as designer_teams,
+        (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Sales') as sales_teams,
+        (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Maintenance') as maintenance_teams,
         (SELECT COUNT(*) FROM products WHERE is_active = TRUE) as products,
         (SELECT COUNT(*) FROM customers) as customers,
         (SELECT COUNT(*) FROM pcb_master WHERE is_active = TRUE) as pcb,
@@ -199,7 +201,10 @@ const getAdminStats = async (req, res, next) => {
       designers: parseInt(row.designers),
       sales: parseInt(row.sales),
       maintenance: parseInt(row.maintenance),
-      teams: parseInt(row.teams),
+      designerTeams: parseInt(row.designer_teams),
+      salesTeams: parseInt(row.sales_teams),
+      maintenanceTeams: parseInt(row.maintenance_teams),
+      teams: parseInt(row.designer_teams) + parseInt(row.sales_teams) + parseInt(row.maintenance_teams),
       products: parseInt(row.products),
       customers: parseInt(row.customers),
       inventory: {

@@ -298,15 +298,15 @@ const TeamsPage = () => {
 
                     <div className="border-b border-[var(--border-color)] pb-4">
                       <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Product Description</label>
-                      <div className="text-[var(--text-main)] text-[14px] leading-relaxed rich-text-content mt-2">
-                        <div dangerouslySetInnerHTML={{ __html: selectedTeam?.product_description || '<span class="italic opacity-50">No description provided</span>' }} />
+                      <div className="text-[var(--text-main)] text-[14px] leading-relaxed rich-text-content mt-2 ql-snow">
+                        <div className="ql-editor !p-0" dangerouslySetInnerHTML={{ __html: selectedTeam?.product_description || '<span class="italic opacity-50">No description provided</span>' }} />
                       </div>
                     </div>
 
                     <div className="border-b border-[var(--border-color)] pb-4">
                       <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Team Directives</label>
-                      <div className="text-[var(--text-main)] text-[14px] leading-relaxed rich-text-content mt-2">
-                        <div dangerouslySetInnerHTML={{ __html: selectedTeam?.description || '<span class="italic opacity-50">No directives provided</span>' }} />
+                      <div className="text-[var(--text-main)] text-[14px] leading-relaxed rich-text-content mt-2 ql-snow">
+                        <div className="ql-editor !p-0" dangerouslySetInnerHTML={{ __html: selectedTeam?.description || '<span class="italic opacity-50">No directives provided</span>' }} />
                       </div>
                     </div>
 

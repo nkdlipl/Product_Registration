@@ -42,6 +42,19 @@ const getProducts = async (req, res, next) => {
   }
 };
 
+const getProductById = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query('SELECT * FROM products WHERE product_id = $1 AND is_active = TRUE', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: { message: 'Product not found' } });
+    }
+    sendSuccess(res, result.rows[0]);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const createProduct = async (req, res, next) => {
   console.log('DEBUG: createProduct Body:', req.body);
   const { 
@@ -308,6 +321,7 @@ const deleteProduct = async (req, res, next) => {
 
 module.exports = {
   getProducts,
+  getProductById,
   createProduct,
   updateProduct,
   removeAsset,

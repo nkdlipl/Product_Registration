@@ -12,7 +12,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 const UserListPage = ({ initialRole = '' }) => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  const [stats, setStats] = useState({ designers: 0, sales: 0, maintenance: 0, teams: 0 });
+  const [stats, setStats] = useState({ designers: 0, sales: 0, maintenance: 0, teams: 0, designerTeams: 0, salesTeams: 0, maintenanceTeams: 0 });
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState(initialRole);
   const [searchTerm, setSearchTerm] = useState('');
@@ -275,11 +275,13 @@ const UserListPage = ({ initialRole = '' }) => {
       </div>
 
       {!initialRole && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <StatCard title="Designers" count={stats.designers} icon={PenTool} to="/admin/designers" />
-          <StatCard title="Teams" count={stats.teams} icon={Users} to="/admin/teams" />
+          <StatCard title="Designer Teams" count={stats.designerTeams || 0} icon={Users} to="/admin/teams?role=Designer" />
           <StatCard title="Maintenance" count={stats.maintenance} icon={Wrench} to="/admin/maintenance" />
+          <StatCard title="Maintenance Teams" count={stats.maintenanceTeams || 0} icon={Users} to="/admin/teams?role=Maintenance" />
           <StatCard title="Sales" count={stats.sales} icon={ShoppingBag} to="/admin/sales" />
+          <StatCard title="Sales Teams" count={stats.salesTeams || 0} icon={Users} to="/admin/teams?role=Sales" />
         </div>
       )}
 

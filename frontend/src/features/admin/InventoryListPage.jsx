@@ -1087,7 +1087,7 @@ const buildFileUrl = (filePath) => {
             onDelete={handleDelete}
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
             {items.map((item) => (
               <div key={item.pcb_id || item.id} className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl">
                 <div onClick={() => handleView(item)} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] block cursor-zoom-in group/img">
@@ -1112,20 +1112,20 @@ const buildFileUrl = (filePath) => {
                   </div>
                 </div>
                 
-                <div className="p-6 flex-1 flex flex-col">
+                <div className="p-4 flex-1 flex flex-col">
                   <div className="flex-1 space-y-3">
                     <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">{item.category || type}</span>
                     </div>
-                    <h3 className="text-[17px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
+                    <h3 className="text-[15px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
                       {item.pcb_name || item.name}
                     </h3>
-                    <p className="text-[13px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-3 opacity-70">
+                    <p className="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-2 opacity-70">
                       {item.description || item.pcb_description || 'No detailed technical specifications provided for this inventory record.'}
                     </p>
                   </div>
                   
-                  <div className="flex items-center justify-between pt-5 mt-5 border-t border-[var(--border-color)]">
+                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
                     <div className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
                       <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
