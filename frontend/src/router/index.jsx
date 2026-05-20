@@ -173,14 +173,16 @@ const DashboardLayout = () => {
 
   // Function to clear all tabs
   const handleClearAllTabs = () => {
-    const dashboardTab = { 
-      fullPath: user?.role_name ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
-      label: 'Overview', 
-      iconType: 'Home' 
-    };
-    setTabs([dashboardTab]);
-    localStorage.setItem('admin_workspace_tabs', JSON.stringify([dashboardTab]));
-    navigate(dashboardTab.fullPath);
+    if (window.confirm("Would you like to delete the tabs?")) {
+      const dashboardTab = { 
+        fullPath: user?.role_name ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
+        label: 'Overview', 
+        iconType: 'Home' 
+      };
+      setTabs([dashboardTab]);
+      localStorage.setItem('admin_workspace_tabs', JSON.stringify([dashboardTab]));
+      navigate(dashboardTab.fullPath);
+    }
   };
 
   // Function to update a tab's label dynamically

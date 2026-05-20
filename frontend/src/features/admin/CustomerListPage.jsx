@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '../../api/customers';
+import { getProducts } from '../../api/products';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { Search, Plus, Loader2, Users, Mail, Phone, MapPin, Building, Globe, Hash, ShieldCheck, Trash2, Edit3, Edit2, Check, Eye, FileText, Briefcase, CreditCard, PenTool } from 'lucide-react';
@@ -19,6 +20,8 @@ const CustomerListPage = () => {
   const [ownerContacts, setOwnerContacts] = useState([]);
   const [accountsContacts, setAccountsContacts] = useState([]);
   const [qaQcContacts, setQaQcContacts] = useState([]);
+  const [otherContacts, setOtherContacts] = useState([]);
+  const [availableProducts, setAvailableProducts] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [isPersonnelModalOpen, setIsPersonnelModalOpen] = useState(false);
   const [personnelType, setPersonnelType] = useState('technical');
@@ -43,19 +46,31 @@ const CustomerListPage = () => {
     }
   };
 
+  const fetchProductsData = async () => {
+    try {
+      const res = await getProducts({ limit: 1000 });
+      setAvailableProducts(res.data?.data || res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    }
+  };
+
   useEffect(() => {
     fetchCustomers();
+    fetchProductsData();
   }, []);
 
   const filteredCustomers = customers.filter(customer =>
     customer.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.customer_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.product?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.technical_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
     customer.sales_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
     customer.owner_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
     customer.accounts_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    customer.qa_qc_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase()))
+    customer.qa_qc_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    customer.other_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const onSubmit = async (data) => {
@@ -92,6 +107,13 @@ const CustomerListPage = () => {
           designation: c.designation || ''
         })).filter(c => c.name.trim()),
         qa_qc_contacts: qaQcContacts.map(c => ({
+          person: c.name || c.person || '',
+          name: c.name || c.person || '',
+          mobile: c.mobile || '',
+          email: c.email || '',
+          designation: c.designation || ''
+        })).filter(c => c.name.trim()),
+        other_contacts: otherContacts.map(c => ({
           person: c.name || c.person || '',
           name: c.name || c.person || '',
           mobile: c.mobile || '',
@@ -167,6 +189,7 @@ const CustomerListPage = () => {
     else if (type === 'owner') contactsList = ownerContacts;
     else if (type === 'accounts') contactsList = accountsContacts;
     else if (type === 'qa_qc') contactsList = qaQcContacts;
+    else if (type === 'other') contactsList = otherContacts;
 
     if (idx !== null) {
       const contact = contactsList[idx];
@@ -228,6 +251,11 @@ const CustomerListPage = () => {
       if (editingPersonnelIdx !== null) next[editingPersonnelIdx] = newContact;
       else next.push(newContact);
       setQaQcContacts(next);
+    } else if (personnelType === 'other') {
+      let next = [...otherContacts];
+      if (editingPersonnelIdx !== null) next[editingPersonnelIdx] = newContact;
+      else next.push(newContact);
+      setOtherContacts(next);
     }
 
     setIsPersonnelModalOpen(false);
@@ -239,6 +267,7 @@ const CustomerListPage = () => {
     setOwnerContacts([]);
     setAccountsContacts([]);
     setQaQcContacts([]);
+    setOtherContacts([]);
     setAddresses([]);
     setModalMode('create');
     setSelectedCustomer(null);
@@ -252,7 +281,8 @@ const CustomerListPage = () => {
       email: '',
       gst_no: '',
       status: 'Active',
-      company_type: ''
+      company_type: '',
+      product: ''
     });
     setIsModalOpen(true);
   };
@@ -266,6 +296,7 @@ const CustomerListPage = () => {
     setOwnerContacts(customer.owner_contacts || []);
     setAccountsContacts(customer.accounts_contacts || []);
     setQaQcContacts(customer.qa_qc_contacts || []);
+    setOtherContacts(customer.other_contacts || []);
     setAddresses(customer.addresses || []);
     setIsModalOpen(true);
   };
@@ -279,6 +310,7 @@ const CustomerListPage = () => {
     setOwnerContacts(customer.owner_contacts || []);
     setAccountsContacts(customer.accounts_contacts || []);
     setQaQcContacts(customer.qa_qc_contacts || []);
+    setOtherContacts(customer.other_contacts || []);
     setAddresses(customer.addresses || []);
     setIsModalOpen(true);
   };
@@ -299,6 +331,7 @@ const CustomerListPage = () => {
     { key: 'customer_name', label: 'Customer Name' },
     { key: 'company_name', label: 'Company' },
     { key: 'company_type', label: 'Type' },
+    { key: 'product', label: 'Product', render: (row) => row.product || 'N/A' },
     {
       key: 'status',
       label: 'Status',
@@ -337,7 +370,7 @@ const CustomerListPage = () => {
         </button>
       </div>
 
-      <div className="workspace-card p-4 flex flex-col md:flex-row gap-4 items-center">
+      <div className="workspace-card p-3 flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
           <input
@@ -345,7 +378,7 @@ const CustomerListPage = () => {
             placeholder="Search by name, code or company details..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 pl-12 pr-32 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
+            className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-2 pl-12 pr-32 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40 pointer-events-none hidden sm:block">
             {customers.length} Records Listed
@@ -425,6 +458,13 @@ const CustomerListPage = () => {
                 <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1.5 opacity-80">Udyam Aadhar No</label>
                 <div className="text-[14px] font-bold text-[var(--text-main)]">
                   {selectedCustomer?.udyam_aadhar_no || 'N/A'}
+                </div>
+              </div>
+
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1.5 opacity-80">Linked Product</label>
+                <div className="text-[14px] font-bold text-[var(--text-main)]">
+                  {selectedCustomer?.product || 'N/A'}
                 </div>
               </div>
             </div>
@@ -563,6 +603,26 @@ const CustomerListPage = () => {
                     </div>
                   </div>
                 )}
+
+                {selectedCustomer?.other_contacts && selectedCustomer.other_contacts.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-3 opacity-80">Other Personnel</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {selectedCustomer.other_contacts.map((c, i) => (
+                        <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
+                          <div>
+                            <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
+                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                          </div>
+                          <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
+                            {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
+                            {c.email && <p className="flex items-center gap-1.5"><Mail size={10} className="text-[var(--accent)]" /> {c.email}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -657,6 +717,15 @@ const CustomerListPage = () => {
                         </select>
                       </div>
                       <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Product</label>
+                      <select {...register('product')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px] appearance-none">
+                        <option value="">Select Product</option>
+                        {availableProducts.map(p => (
+                          <option key={p.product_id} value={p.product_name}>{p.product_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                      <div className="space-y-1.5">
                         <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">GST Number</label>
                         <input {...register('gst_no')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]" />
                       </div>
@@ -670,10 +739,11 @@ const CustomerListPage = () => {
                     <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Communication</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
+                    {/* <div className="space-y-1.5 col-span-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Email</label>
                       <input {...register('email', { required: true })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]" />
-                    </div>
+                    </div> */}
+                    
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Status</label>
                       <select {...register('status')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px] appearance-none">
@@ -869,6 +939,35 @@ const CustomerListPage = () => {
                         ))}
                         {qaQcContacts.length === 0 && (
                           <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No QA/QC added</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Other Personnel */}
+                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Other Personnel</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('other')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                      </div>
+                      <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                        {otherContacts.map((c, idx) => (
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
+                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
+                              <button type="button" onClick={() => handleOpenPersonnelModal('other', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => setOtherContacts(otherContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
+                            </div>
+                          </div>
+                        ))}
+                        {otherContacts.length === 0 && (
+                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No other personnel added</div>
                         )}
                       </div>
                     </div>

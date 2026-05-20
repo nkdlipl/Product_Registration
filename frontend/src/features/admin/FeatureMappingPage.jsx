@@ -168,7 +168,7 @@ const FeatureMappingPage = () => {
         </button>
       </div>
 
-      <div className="workspace-card p-4 border border-[var(--border-color)] bg-[var(--bg-card)]">
+      <div className="workspace-card p-3 border border-[var(--border-color)] bg-[var(--bg-card)]">
         <div className="relative group w-full md:w-96">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors" size={18} />
           <input
@@ -176,7 +176,7 @@ const FeatureMappingPage = () => {
             placeholder="Search mappings..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 pl-12 pr-4 outline-none focus:border-[var(--accent)] transition-all text-[14px] text-[var(--text-main)] font-medium"
+            className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-2 pl-12 pr-4 outline-none focus:border-[var(--accent)] transition-all text-[14px] text-[var(--text-main)] font-medium"
           />
         </div>
       </div>

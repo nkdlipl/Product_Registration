@@ -14,7 +14,7 @@ import { ELECTRONICS_SPEC_FIELDS, ELECTRONICS_CATEGORY_CONFIG } from '../../cons
 
 const CATEGORY_CONFIG = ELECTRONICS_CATEGORY_CONFIG;
 
-const categoriesList = Object.keys(CATEGORY_CONFIG);
+const BASE_CATEGORIES = Object.keys(CATEGORY_CONFIG);
 
 const ElectronicsPartsPage = () => {
   const navigate = useNavigate();
@@ -49,6 +49,9 @@ const buildFileUrl = (filePath) => {
   const [previews, setPreviews] = useState([]);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [viewMode, setViewMode] = useState('grid');
+  const [customCategories, setCustomCategories] = useState([]);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryInput, setNewCategoryInput] = useState('');
 
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
@@ -588,7 +591,7 @@ const buildFileUrl = (filePath) => {
 
       {/* Main Content Area */}
       <div className="space-y-6 animate-entrance-up" style={{ animationDelay: '200ms' }}>
-        <div className="workspace-card p-4 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] hover-scale-sm transition-all duration-500">
+        <div className="workspace-card p-3 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] hover-scale-sm transition-all duration-500">
           <div className="relative flex-1 group w-full">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
             <input 
@@ -596,7 +599,7 @@ const buildFileUrl = (filePath) => {
               placeholder="Search by part name, number, or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-12 pr-32 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
+              className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-12 pr-32 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
             />
             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40 pointer-events-none hidden sm:block">
               {pagination.total} Records Found
@@ -634,7 +637,7 @@ const buildFileUrl = (filePath) => {
               onDelete={handleDelete}
             />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
               {items.map((item) => (
                 <div key={item.part_id} className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl">
                   <div onClick={() => handleView(item)} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] block cursor-zoom-in group/img">
@@ -659,20 +662,20 @@ const buildFileUrl = (filePath) => {
                     </div>
                   </div>
                   
-                  <div className="p-6 flex-1 flex flex-col">
+                  <div className="p-4 flex-1 flex flex-col">
                     <div className="flex-1 space-y-3">
                       <div className="flex items-center justify-between mb-1">
                           <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">{item.part_category}</span>
                       </div>
-                      <h3 className="text-[17px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
+                      <h3 className="text-[15px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
                         {item.part_name}
                       </h3>
-                      <p className="text-[13px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-3 opacity-70">
+                      <p className="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-2 opacity-70">
                         {item.part_description || 'No detailed technical specifications provided for this inventory record.'}
                       </p>
                     </div>
                     
-                    <div className="flex items-center justify-between pt-5 mt-5 border-t border-[var(--border-color)]">
+                    <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
                         <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
@@ -701,14 +704,25 @@ const buildFileUrl = (filePath) => {
         headerActions={
           <div className="flex items-center gap-3">
              {modalMode !== 'view' && (
-                <button
-                    onClick={handleSubmit(onSubmit)}
-                    disabled={isSubmitting}
-                    className="btn-primary py-2.5 px-8 shadow-md flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
-                    style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
-                >
-                    {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save' : 'Update Specs')}
-                </button>
+                 (!selectedCategory && modalMode === 'create') ? (
+                     <button
+                        type="button"
+                        onClick={() => setIsAddingCategory(true)}
+                        className="btn-primary py-2.5 px-6 shadow-md flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                        style={{ background: 'var(--bg-card)', color: 'var(--text-main)', borderColor: 'var(--border-color)' }}
+                     >
+                         <Plus size={14} className="text-[var(--accent)]" /> Add Category
+                     </button>
+                 ) : (
+                    <button
+                        onClick={handleSubmit(onSubmit)}
+                        disabled={isSubmitting}
+                        className="btn-primary py-2.5 px-8 shadow-md flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                        style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
+                    >
+                        {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save' : 'Update Specs')}
+                    </button>
+                 )
              )}
           </div>
         }
@@ -937,7 +951,7 @@ const buildFileUrl = (filePath) => {
                    </p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
-                   {categoriesList.map((cat, idx) => {
+                   {[...BASE_CATEGORIES, ...customCategories].map((cat, idx) => {
                       const Icon = CATEGORY_CONFIG[cat]?.icon || Layers;
                       return (
                         <button 
@@ -958,8 +972,56 @@ const buildFileUrl = (filePath) => {
                         </button>
                       );
                    })}
+
                 </div>
              </div>
+
+             {/* Add New Category Popup */}
+             {isAddingCategory && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center rounded-[32px] p-4">
+                   <div className="bg-[var(--bg-card)] border border-[var(--accent)]/30 p-6 rounded-[24px] shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-300">
+                      <h4 className="text-[14px] font-black uppercase text-[var(--text-main)] mb-4 flex items-center gap-2"><Plus size={16} className="text-[var(--accent)]"/> Add Custom Category</h4>
+                      <input
+                         autoFocus
+                         type="text"
+                         value={newCategoryInput}
+                         onChange={e => setNewCategoryInput(e.target.value)}
+                         onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                               const trimmed = newCategoryInput.trim();
+                               if (trimmed && ![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) {
+                                  setCustomCategories(prev => [...prev, trimmed]);
+                               }
+                               if (trimmed) {
+                                  setValue('category_name', trimmed, { shouldValidate: true });
+                                  setSelectedCategory(trimmed);
+                                  setModalTab('general');
+                               }
+                               setIsAddingCategory(false);
+                               setNewCategoryInput('');
+                            }
+                            if (e.key === 'Escape') { setIsAddingCategory(false); setNewCategoryInput(''); }
+                         }}
+                         placeholder="Category name..."
+                         className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] px-4 py-3 rounded-xl outline-none focus:border-[var(--accent)] text-[12px] font-black uppercase text-[var(--text-main)] mb-4"
+                      />
+                      <div className="flex justify-end gap-3">
+                         <button onClick={() => { setIsAddingCategory(false); setNewCategoryInput(''); }} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors">Cancel</button>
+                         <button onClick={() => {
+                            const trimmed = newCategoryInput.trim();
+                            if (trimmed && ![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) setCustomCategories(prev => [...prev, trimmed]);
+                            if (trimmed) {
+                               setValue('category_name', trimmed, { shouldValidate: true });
+                               setSelectedCategory(trimmed);
+                               setModalTab('general');
+                            }
+                            setIsAddingCategory(false);
+                            setNewCategoryInput('');
+                         }} className="px-4 py-2 bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-80 transition-all shadow-md">Add Category</button>
+                      </div>
+                   </div>
+                </div>
+             )}
           </div>
         ) : (
           /* Create / Edit Mode (Tabs) */

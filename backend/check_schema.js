@@ -5,7 +5,7 @@ async function checkSchema() {
     const result = await db.query(`
       SELECT column_name, data_type, is_nullable, column_default 
       FROM information_schema.columns 
-      WHERE table_name = 'products'
+      WHERE table_name = 'customers'
     `);
     console.table(result.rows);
     process.exit(0);
