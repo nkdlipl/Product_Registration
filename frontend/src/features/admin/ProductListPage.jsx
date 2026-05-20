@@ -53,6 +53,7 @@ const ProductListPage = () => {
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); 
   const [activeTab, setActiveTab] = useState('description'); 
+  const [modalActiveTab, setModalActiveTab] = useState('general');
   const [specRows, setSpecRows] = useState([]);
   const [faqRows, setFaqRows] = useState([]);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
@@ -356,6 +357,7 @@ const ProductListPage = () => {
       faqs: '[]'
     });
     setPendingImages([]);
+    setModalActiveTab('general');
     setIsModalOpen(true);
   };
 
@@ -372,6 +374,7 @@ const ProductListPage = () => {
     const resetData = { product_name: product.product_name, company_name: product.company_name || '', sub_company: product.sub_company || '', description: product.description || '', category: product.category || '', sub_category: product.sub_category || '', feature: product.feature || '', fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', dispenser_type: hardware?.dispenser_type || '', specification: hardware ? hardware.original_spec : product.specification };
     reset(resetData);
     setPendingImages([]);
+    setModalActiveTab('general');
     setIsModalOpen(true);
   };
 
@@ -593,209 +596,290 @@ const ProductListPage = () => {
       >
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-400">
             <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-10">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <div className="space-y-6">
-                  <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
-                    <div className="flex items-center gap-3 mb-4"><div className="w-1 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">General Information</h3></div>
-                    <div className="space-y-5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
-                        <div>
-                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company / Brand</label>
-                          <input {...register('company_name', { required: 'Company is required' })} readOnly onClick={openCompanyModal} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold cursor-pointer" placeholder="Select Manufacturer..." />
-                          {errors.company_name && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase tracking-wider ml-1">{errors.company_name.message}</p>}
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Name</label>
-                          <input {...register('product_name', { required: 'Name is required' })} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" placeholder="Enterprise Dispenser X-1..." />
-                          {errors.product_name && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase tracking-wider ml-1">{errors.product_name.message}</p>}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Division / Dept</label>
-                          <div className="flex gap-2">
-                            <input {...register('sub_company')} readOnly onClick={openSubCompanyModal} className={`flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none transition-all ${!watchedCompany ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer focus:border-[var(--accent)]'}`} placeholder="Select Division" />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Category</label>
-                          <div className="flex gap-2">
-                            <input {...register('category', { required: 'Required' })} readOnly onClick={openCategoryModal} className="flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] cursor-pointer outline-none focus:border-[var(--accent)] transition-all" placeholder="Select Category" />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Sub Category</label>
-                          <div className="flex gap-2">
-                            <input {...register('sub_category')} readOnly onClick={openSubCategoryModal} className={`flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none transition-all ${!watchedCategory ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer focus:border-[var(--accent)]'}`} placeholder="Select Sub-Category" />
-                          </div>
-                        </div>
-                      </div>
+              {/* Tab Navigation */}
+              <div className="flex border-b border-[var(--border-color)] mb-8 overflow-x-auto no-scrollbar gap-2">
+                {[
+                  { id: 'general', label: 'General Information' },
+                  { id: 'specs', label: 'Technical Specifications' },
+                  { id: 'files', label: 'Files' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setModalActiveTab(tab.id)}
+                    className={`px-6 py-3.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all relative rounded-t-xl -mb-[1px] cursor-pointer ${
+                      modalActiveTab === tab.id
+                        ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-[var(--accent)]/5'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--nav-hover)]'
+                    }`}
+                  >
+                    {tab.label}
+                    {modalActiveTab === tab.id && (
+                      <div className="absolute bottom-0 left-6 right-6 h-0.5 bg-[var(--accent)] rounded-t-full shadow-[0_-4px_12px_var(--border-glow)]" />
+                    )}
+                  </button>
+                ))}
+              </div>
 
-                      {(watchedCategory?.toLowerCase().includes('dispenser') || watchedSubCategory?.toLowerCase().includes('dispenser')) && (
-                        <div className="pt-2">
-                          <button 
-                            type="button" 
-                            onClick={() => setIsHardwareModalOpen(true)} 
-                            className="w-full p-5 bg-[var(--bg-sidebar)] border border-[var(--border-color)] text-[var(--accent)] rounded-2xl shadow-sm hover:shadow-md hover:border-[var(--accent)]/50 hover:scale-[1.01] transition-all flex items-center justify-between group"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="p-3 bg-[var(--accent)]/10 rounded-xl">
-                                <Activity className="text-[var(--accent)]" size={24} />
-                              </div>
-                              <div className="text-left">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-70">Dispenser Specification</p>
-                                <h4 className="text-[15px] font-black uppercase tracking-tight text-[var(--text-main)]">Configure Hardware</h4>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {(watch('fuel_types')?.length > 0 || watch('nozzles') || watch('dispensing')) && ( 
-                                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-500">
-                                  <Check size={12} strokeWidth={4} />
-                                  <span>Configured</span>
-                                </div> 
-                              )}
-                              <ChevronRight size={20} strokeWidth={3} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] group-hover:translate-x-1 transition-all" />
-                            </div>
-                          </button>
-                        </div>
-                      )}
-                    </div>
+              {/* Tab Contents */}
+
+              {/* 1. General Information Tab */}
+              <div className={modalActiveTab === 'general' ? 'space-y-6 animate-in fade-in duration-300' : 'hidden'}>
+                <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-1 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" />
+                    <h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">General Information</h3>
                   </div>
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+                      <div>
+                        <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company / Brand</label>
+                        <input {...register('company_name', { required: 'Company is required' })} readOnly onClick={openCompanyModal} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold cursor-pointer" placeholder="Select Manufacturer..." />
+                        {errors.company_name && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase tracking-wider ml-1">{errors.company_name.message}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Name</label>
+                        <input {...register('product_name', { required: 'Name is required' })} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" placeholder="Enterprise Dispenser X-1..." />
+                        {errors.product_name && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase tracking-wider ml-1">{errors.product_name.message}</p>}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="space-y-2">
+                        <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Division / Dept</label>
+                        <div className="flex gap-2">
+                          <input {...register('sub_company')} readOnly onClick={openSubCompanyModal} className={`flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none transition-all ${!watchedCompany ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer focus:border-[var(--accent)]'}`} placeholder="Select Division" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Category</label>
+                        <div className="flex gap-2">
+                          <input {...register('category', { required: 'Required' })} readOnly onClick={openCategoryModal} className="flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] cursor-pointer outline-none focus:border-[var(--accent)] transition-all" placeholder="Select Category" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 ml-1">Sub Category</label>
+                        <div className="flex gap-2">
+                          <input {...register('sub_category')} readOnly onClick={openSubCategoryModal} className={`flex-1 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none transition-all ${!watchedCategory ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer focus:border-[var(--accent)]'}`} placeholder="Select Sub-Category" />
+                        </div>
+                      </div>
+                    </div>
 
-                  <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
-                    <div className="flex items-center gap-3 mb-4"><div className="w-1 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Asset Management</h3></div>
-                    {modalMode === 'edit' && (
-                      <div className="space-y-6">
-                        {((selectedProduct?.images && selectedProduct.images.length > 0) || selectedProduct?.image_url) && (
-                          <div className="space-y-3">
-                            <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Gallery</label>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                              {(selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image_url]).filter(Boolean).map((url, idx) => (
-                                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-[var(--border-color)] group bg-[var(--bg-workspace)]/50">
-                                  <img src={getFullUrl(url)} alt="" className="w-full h-full object-contain p-2" />
-                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                                    <button type="button" onClick={() => handleRemoveAsset(url, 'images')} className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"><Trash2 size={16} /></button>
-                                  </div>
-                                </div>
-                              ))}
+                    {(watchedCategory?.toLowerCase().includes('dispenser') || watchedSubCategory?.toLowerCase().includes('dispenser')) && (
+                      <div className="pt-2">
+                        <button 
+                          type="button" 
+                          onClick={() => setIsHardwareModalOpen(true)} 
+                          className="w-full p-5 bg-[var(--bg-sidebar)] border border-[var(--border-color)] text-[var(--accent)] rounded-2xl shadow-sm hover:shadow-md hover:border-[var(--accent)]/50 hover:scale-[1.01] transition-all flex items-center justify-between group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-[var(--accent)]/10 rounded-xl">
+                              <Activity className="text-[var(--accent)]" size={24} />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-70">Dispenser Specification</p>
+                              <h4 className="text-[15px] font-black uppercase tracking-tight text-[var(--text-main)]">Configure Hardware</h4>
                             </div>
                           </div>
-                        )}
-
-                        {/* Pending Images Previews */}
-                        {previews.length > 0 && (
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <label className="block text-[11px] font-black text-[var(--accent)] uppercase tracking-[0.2em] ml-1">Pending Photos ({previews.length})</label>
-                                    <button type="button" onClick={clearPendingImages} className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline">Clear All</button>
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                    {previews.map((preview, idx) => (
-                                        <div key={preview.id} className="relative aspect-square rounded-xl border-2 border-[var(--accent)] border-dashed overflow-hidden group bg-[var(--bg-workspace)]">
-                                            <img src={preview.url} alt="Preview" className="w-full h-full object-contain p-2" />
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                                                <button type="button" onClick={() => removePendingImage(idx)} className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"><Trash2 size={16} /></button>
-                                            </div>
-                                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1"><p className="text-[8px] text-white truncate">{preview.name}</p></div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {((selectedProduct?.documents && selectedProduct.documents.length > 0) || selectedProduct?.document_url) && (
-                          <div className="space-y-3">
-                            <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Documents</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {(selectedProduct.documents && selectedProduct.documents.length > 0 ? selectedProduct.documents : [selectedProduct.document_url]).filter(Boolean).map((url, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] rounded-xl group hover:border-[var(--accent)]/50 transition-all">
-                                  <div className="flex items-center gap-3 truncate">
-                                    <FileText size={16} className="text-[var(--accent)]" />
-                                    <span className="text-[11px] font-bold text-[var(--text-main)] truncate uppercase tracking-wider">{url.split('/').pop()}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <a 
-                                      href={getFullUrl(url)} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="p-1.5 text-[var(--text-dim)] hover:text-[var(--accent)] transition-colors"
-                                      title="View"
-                                    >
-                                      <Eye size={14} />
-                                    </a>
-                                    <button 
-                                      type="button" 
-                                      onClick={() => handleRemoveAsset(url, 'documents')} 
-                                      className="p-1.5 text-rose-500/50 hover:text-rose-500 transition-colors"
-                                      title="Delete"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="flex items-center gap-3">
+                            {(watch('fuel_types')?.length > 0 || watch('nozzles') || watch('dispensing')) && ( 
+                              <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                                <Check size={12} strokeWidth={4} />
+                                <span>Configured</span>
+                              </div> 
+                            )}
+                            <ChevronRight size={20} strokeWidth={3} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] group-hover:translate-x-1 transition-all" />
                           </div>
-                        )}
+                        </button>
                       </div>
                     )}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FileInput label="Upload New Image" name="image" accept="image/*" icon={Plus} />
-                      <FileInput label="Upload New Datasheet" name="document" accept=".pdf,.doc,.docx,.xls,.xlsx" icon={FileText} />
-                    </div>
-                  </div>
-
-                  <div className="p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-[32px]">
-                    <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><div className="w-2 h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-lg font-black text-[var(--text-main)] uppercase tracking-widest">FAQs</h3></div></div>
-                    <div className="space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar pr-2">
-                      {faqRows.map((faq, idx) => (
-                        <div key={idx} className="p-4 rounded-xl bg-[var(--bg-workspace)] border border-[var(--border-color)] space-y-3 relative group">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest">Item {idx + 1}</span>
-                            <button type="button" onClick={() => setFaqRows(faqRows.filter((_, i) => i !== idx))} className="text-[var(--text-dim)] hover:text-rose-500 transition-colors">
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                          <div className="space-y-2">
-                            <input type="text" value={faq.question} onChange={(e) => { const updated = [...faqRows]; updated[idx].question = e.target.value; setFaqRows(updated); }} placeholder="Enter Question..." className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] font-bold" />
-                            <textarea value={faq.answer} onChange={(e) => { const updated = [...faqRows]; updated[idx].answer = e.target.value; setFaqRows(updated); }} placeholder="Enter Answer..." rows={1} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[13px] text-[var(--text-muted)] outline-none focus:border-[var(--accent)] resize-none font-medium" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setFaqRows([...faqRows, { question: '', answer: '' }])} 
-                      className="w-full py-3 rounded-xl border border-dashed border-[var(--border-color)] text-[var(--accent)] flex items-center justify-center gap-2 hover:bg-[var(--accent)]/5 hover:border-[var(--accent)]/50 transition-all group mt-2"
-                    >
-                      <Plus size={14} strokeWidth={3} />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Add FAQ Row</span>
-                    </button>
                   </div>
                 </div>
+              </div>
 
-                <div className="space-y-6">
-                  <div className="p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-[32px]">
-                    <div className="flex items-center gap-3 mb-4"><div className="w-2 h-8 bg-[var(--accent)] rounded-full" /><h3 className="text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Technical Specifications</h3></div>
-                    <div className="space-y-5">
-                      <div className="space-y-2"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Product Description</label><Controller name="description" control={control} render={({ field }) => ( <ReactQuill theme="snow" value={field.value || ''} onChange={field.onChange} modules={quillModules} readOnly={modalMode === 'view'} placeholder="Primary operational description..." /> )} /></div>
-                      <div className="space-y-2"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Key Features</label><Controller name="feature" control={control} render={({ field }) => ( <ReactQuill theme="snow" value={field.value || ''} onChange={field.onChange} modules={quillModules} readOnly={modalMode === 'view'} placeholder="• High durability&#10;• Weather resistant..." /> )} /></div>
-                      <div className="pt-4 space-y-4">
-                        <div className="flex items-center justify-between ml-1"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">Product Specifications</label></div>
-                        <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-workspace)]/20">
-                          <div className="grid grid-cols-[1fr_1fr_48px] bg-[var(--nav-hover)] border-b border-[var(--border-color)]"><div className="px-5 py-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Attribute</div><div className="px-5 py-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest border-l border-[var(--border-color)]">Value</div><div /></div>
-                          <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                            {specRows.map((row, idx) => (
-                              <div key={idx} className="grid grid-cols-[1fr_1fr_48px] border-b border-[var(--border-color)] last:border-b-0 group hover:bg-[var(--accent)]/5 transition-colors">
-                                <input type="text" value={row.key} onChange={(e) => { const updated = [...specRows]; updated[idx].key = e.target.value; setSpecRows(updated); }} placeholder="e.g. Item Type" className="px-5 py-4 text-[13px] font-bold bg-transparent outline-none text-[var(--text-main)] placeholder-[var(--text-dim)]" />
-                                <input type="text" value={row.value} onChange={(e) => { const updated = [...specRows]; updated[idx].value = e.target.value; setSpecRows(updated); }} placeholder="e.g. Camera Bracket" className="px-5 py-4 text-[13px] font-bold bg-transparent outline-none text-[var(--text-muted)] placeholder-[var(--text-dim)] border-l border-[var(--border-color)]" />
-                                <button type="button" onClick={() => setSpecRows(specRows.filter((_, i) => i !== idx))} className="flex items-center justify-center text-[var(--text-dim)] hover:text-rose-500 transition-colors"><Trash2 size={16} /></button>
+              {/* 2. Technical Specifications Tab */}
+              <div className={modalActiveTab === 'specs' ? 'space-y-6 animate-in fade-in duration-300' : 'hidden'}>
+                <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-8 rounded-2xl md:rounded-[32px]">
+                  
+                  {/* Tab Title/Header */}
+                  <div className="flex items-center gap-3 pb-4 border-b border-[var(--border-color)]/60">
+                    <div className="w-1.5 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" />
+                    <h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Technical Specifications & FAQs</h3>
+                  </div>
+
+                  {/* Descriptions Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Product Description</label>
+                      <Controller name="description" control={control} render={({ field }) => ( <ReactQuill theme="snow" value={field.value || ''} onChange={field.onChange} modules={quillModules} readOnly={modalMode === 'view'} placeholder="Primary operational description..." /> )} />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Key Features</label>
+                      <Controller name="feature" control={control} render={({ field }) => ( <ReactQuill theme="snow" value={field.value || ''} onChange={field.onChange} modules={quillModules} readOnly={modalMode === 'view'} placeholder="• High durability&#10;• Weather resistant..." /> )} />
+                    </div>
+                  </div>
+
+                  {/* Grid for Specifications and FAQs */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-6 border-t border-[var(--border-color)]/40">
+                    {/* Product Specifications Section */}
+                    <div className="space-y-4">
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Product Specifications Table</label>
+                      <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-workspace)]/20">
+                        <div className="grid grid-cols-[1fr_1fr_48px] bg-[var(--nav-hover)] border-b border-[var(--border-color)]">
+                          <div className="px-5 py-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Attribute</div>
+                          <div className="px-5 py-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest border-l border-[var(--border-color)]">Value</div>
+                          <div />
+                        </div>
+                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                          {specRows.map((row, idx) => (
+                            <div key={idx} className="grid grid-cols-[1fr_1fr_48px] border-b border-[var(--border-color)] last:border-b-0 group hover:bg-[var(--accent)]/5 transition-colors">
+                              <input type="text" value={row.key} onChange={(e) => { const updated = [...specRows]; updated[idx].key = e.target.value; setSpecRows(updated); }} placeholder="e.g. Item Type" className="px-5 py-4 text-[13px] font-bold bg-transparent outline-none text-[var(--text-main)] placeholder-[var(--text-dim)]" />
+                              <input type="text" value={row.value} onChange={(e) => { const updated = [...specRows]; updated[idx].value = e.target.value; setSpecRows(updated); }} placeholder="e.g. Camera Bracket" className="px-5 py-4 text-[13px] font-bold bg-transparent outline-none text-[var(--text-muted)] placeholder-[var(--text-dim)] border-l border-[var(--border-color)]" />
+                              <button type="button" onClick={() => setSpecRows(specRows.filter((_, i) => i !== idx))} className="flex items-center justify-center text-[var(--text-dim)] hover:text-rose-500 transition-colors"><Trash2 size={16} /></button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => setSpecRows([...specRows, { key: '', value: '' }])} className="flex items-center gap-2 text-[var(--accent)] text-[11px] font-black uppercase tracking-[0.2em] hover:opacity-80 transition-all ml-1 cursor-pointer">
+                        <Plus size={16} strokeWidth={3} />
+                        <span>Add Specification Row</span>
+                      </button>
+                    </div>
+
+                    {/* FAQs Section */}
+                    <div className="space-y-4">
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Frequently Asked Questions (FAQs)</label>
+                      <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                        {faqRows.map((faq, idx) => (
+                          <div key={idx} className="p-5 rounded-2xl bg-[var(--bg-workspace)]/40 border border-[var(--border-color)] space-y-4 relative group hover:border-[var(--accent)]/30 transition-all">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest">FAQ Item #{idx + 1}</span>
+                              <button type="button" onClick={() => setFaqRows(faqRows.filter((_, i) => i !== idx))} className="text-[var(--text-dim)] hover:text-rose-500 transition-colors cursor-pointer p-1 rounded-md hover:bg-rose-500/10" title="Remove FAQ">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                            <div className="space-y-3">
+                              <div className="flex gap-3 items-center">
+                                <span className="text-[var(--accent)] font-black text-sm w-4 flex-shrink-0">Q.</span>
+                                <input 
+                                  type="text" 
+                                  value={faq.question} 
+                                  onChange={(e) => { const updated = [...faqRows]; updated[idx].question = e.target.value; setFaqRows(updated); }} 
+                                  placeholder="What is the operating voltage?" 
+                                  className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] font-bold transition-all" 
+                                />
+                              </div>
+                              <div className="flex gap-3 items-start">
+                                <span className="text-emerald-500 font-black text-sm w-4 flex-shrink-0 mt-2">A.</span>
+                                <textarea 
+                                  value={faq.answer} 
+                                  onChange={(e) => { const updated = [...faqRows]; updated[idx].answer = e.target.value; setFaqRows(updated); }} 
+                                  placeholder="The operating voltage is 230V AC." 
+                                  rows={2} 
+                                  className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-[13px] text-[var(--text-muted)] outline-none focus:border-[var(--accent)] resize-none font-medium transition-all" 
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => setFaqRows([...faqRows, { question: '', answer: '' }])} 
+                        className="w-full py-3 rounded-xl border border-dashed border-[var(--border-color)] text-[var(--accent)] flex items-center justify-center gap-2 hover:bg-[var(--accent)]/5 hover:border-[var(--accent)]/50 transition-all group mt-2 cursor-pointer"
+                      >
+                        <Plus size={14} strokeWidth={3} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Add FAQ Row</span>
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* 3. Files Tab */}
+              <div className={modalActiveTab === 'files' ? 'space-y-6 animate-in fade-in duration-300' : 'hidden'}>
+                <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-1 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" />
+                    <h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Files</h3>
+                  </div>
+                  {modalMode === 'edit' && (
+                    <div className="space-y-6">
+                      {((selectedProduct?.images && selectedProduct.images.length > 0) || selectedProduct?.image_url) && (
+                        <div className="space-y-3">
+                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Gallery</label>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            {(selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image_url]).filter(Boolean).map((url, idx) => (
+                              <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-[var(--border-color)] group bg-[var(--bg-workspace)]/50">
+                                <img src={getFullUrl(url)} alt="" className="w-full h-full object-contain p-2" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                  <button type="button" onClick={() => handleRemoveAsset(url, 'images')} className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all cursor-pointer"><Trash2 size={16} /></button>
+                                </div>
                               </div>
                             ))}
                           </div>
                         </div>
-                        <button type="button" onClick={() => setSpecRows([...specRows, { key: '', value: '' }])} className="flex items-center gap-2 text-[var(--accent)] text-[11px] font-black uppercase tracking-[0.2em] hover:opacity-80 transition-all ml-1"><Plus size={16} strokeWidth={3} /><span>Add Specification Row</span></button>
-                      </div>
+                      )}
+
+                      {/* Pending Images Previews */}
+                      {previews.length > 0 && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-[11px] font-black text-[var(--accent)] uppercase tracking-[0.2em] ml-1">Pending Photos ({previews.length})</label>
+                            <button type="button" onClick={clearPendingImages} className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline cursor-pointer">Clear All</button>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            {previews.map((preview, idx) => (
+                              <div key={preview.id} className="relative aspect-square rounded-xl border-2 border-[var(--accent)] border-dashed overflow-hidden group bg-[var(--bg-workspace)]">
+                                <img src={preview.url} alt="Preview" className="w-full h-full object-contain p-2" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                  <button type="button" onClick={() => removePendingImage(idx)} className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all cursor-pointer"><Trash2 size={16} /></button>
+                                </div>
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1"><p className="text-[8px] text-white truncate">{preview.name}</p></div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {((selectedProduct?.documents && selectedProduct.documents.length > 0) || selectedProduct?.document_url) && (
+                        <div className="space-y-3">
+                          <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Documents</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {(selectedProduct.documents && selectedProduct.documents.length > 0 ? selectedProduct.documents : [selectedProduct.document_url]).filter(Boolean).map((url, idx) => (
+                              <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] rounded-xl group hover:border-[var(--accent)]/50 transition-all">
+                                <div className="flex items-center gap-3 truncate">
+                                  <FileText size={16} className="text-[var(--accent)]" />
+                                  <span className="text-[11px] font-bold text-[var(--text-main)] truncate uppercase tracking-wider">{url.split('/').pop()}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <a 
+                                    href={getFullUrl(url)} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="p-1.5 text-[var(--text-dim)] hover:text-[var(--accent)] transition-colors"
+                                    title="View"
+                                  >
+                                    <Eye size={14} />
+                                  </a>
+                                  <button 
+                                    type="button" 
+                                    onClick={() => handleRemoveAsset(url, 'documents')} 
+                                    className="p-1.5 text-rose-500/50 hover:text-rose-500 transition-colors cursor-pointer"
+                                    title="Delete"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FileInput label="Upload New Image" name="image" accept="image/*" icon={Plus} />
+                    <FileInput label="Upload New Datasheet" name="document" accept=".pdf,.doc,.docx,.xls,.xlsx" icon={FileText} />
                   </div>
                 </div>
               </div>
