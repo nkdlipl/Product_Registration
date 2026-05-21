@@ -69,6 +69,10 @@ const Sidebar = ({ role, isOpen, onClose }) => {
     location.pathname.includes('/admin/finished-goods')
   );
 
+  const isBookASaleSection = (
+    location.pathname.includes('/admin/book-a-sale')
+  );
+
   const isDesignersActive = (
     location.pathname === '/admin/designers' ||
     (location.pathname.includes('/admin/teams') && (location.search.includes('role=Designer') || (!location.search.includes('role=Sales') && !location.search.includes('role=Maintenance'))))
@@ -530,6 +534,9 @@ const Sidebar = ({ role, isOpen, onClose }) => {
             </div>
             <div className="animate-entrance-right" style={{ animationDelay: '650ms' }}>
               <NavItem to="/admin/finished-goods" label="Finished Goods" icon={Package} />
+            </div>
+            <div className="animate-entrance-right" style={{ animationDelay: '700ms' }}>
+              <NavItem to="/admin/book-a-sale" label="Book a Sale" icon={ShoppingBag} />
             </div>
           </div>
         )}

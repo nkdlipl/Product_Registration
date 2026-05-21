@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, useOutletContext } from 'react-router-dom';
-import { getProductById, deleteProduct } from '../../api/products';
+import { getProductById, deleteProduct, getProductBom, getBomOptions } from '../../api/products';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import { Loader2, Box, Droplet, LayoutGrid, Activity, FileText, Eye, Download, CheckCircle, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -14,6 +14,8 @@ const ProductProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('description');
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [bomItems, setBomItems] = useState([]);
+  const [bomOptionsMap, setBomOptionsMap] = useState({ pcb: [], electrical: [], electronics: [], structural: [] });
 
   const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
   const assetBaseURL = rawApiUrl.replace(/\/api$/, '');
@@ -32,6 +34,17 @@ const ProductProfilePage = () => {
         const response = await getProductById(id);
         if (response.data.success) {
           setSelectedProduct(response.data.data);
+          
+          try {
+            const [bomRes, optRes] = await Promise.all([
+              getProductBom(id),
+              getBomOptions()
+            ]);
+            if (bomRes.data.success) setBomItems(bomRes.data.data || []);
+            if (optRes.data.success) setBomOptionsMap(optRes.data.data || { pcb: [], electrical: [], electronics: [], structural: [] });
+          } catch (e) {
+            console.error('Failed to load BOM details', e);
+          }
         } else {
           toast.error('Failed to load product');
           navigate('/admin/products');
@@ -259,8 +272,8 @@ const ProductProfilePage = () => {
 
       <div className="bg-[var(--bg-surface)] rounded-[32px] border border-[var(--border-color)] overflow-hidden shadow-sm">
         <div className="flex bg-[var(--bg-workspace)] border-b border-[var(--border-color)] overflow-x-auto no-scrollbar">
-          {['description', 'specification', 'documents', 'faqs'].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-4.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === tab ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
+          {['description', 'specification', 'documents', 'faqs', 'bill of materials'].map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-4.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
               {tab}
               {activeTab === tab && <div className="absolute bottom-0 left-8 right-8 h-1 bg-[var(--accent)] rounded-t-full shadow-[0_-4px_12px_var(--border-glow)]" />}
             </button>
@@ -370,6 +383,40 @@ const ProductProfilePage = () => {
               ) : (
                 <div className="text-center py-12 bg-[var(--bg-workspace)]/10 rounded-2xl border border-dashed border-[var(--border-color)]">
                   <p className="text-[var(--text-dim)] font-black uppercase tracking-widest text-[10px] opacity-40">No technical FAQs available</p>
+                </div>
+              )}
+            </div>
+          )}
+          {activeTab === 'bill of materials' && (
+            <div className="space-y-6">
+              {bomItems.length > 0 ? (
+                <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-card)]">
+                  <div className="grid grid-cols-[150px_1fr_100px_1fr] bg-[var(--bg-workspace)]/50 border-b border-[var(--border-color)]">
+                    <div className="px-6 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Type</div>
+                    <div className="px-6 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Part Name</div>
+                    <div className="px-6 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider text-right">Qty</div>
+                    {/* <div className="px-6 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Notes</div> */}
+                  </div>
+                  {bomItems.map((item, idx) => {
+                    const optionsList = bomOptionsMap[item.component_type] || [];
+                    const matchedOption = optionsList.find(opt => String(opt.id) === String(item.component_id));
+                    const partName = matchedOption ? matchedOption.name : `Unknown Part (ID: ${item.component_id})`;
+                    
+                    return (
+                      <div key={idx} className="grid grid-cols-[150px_1fr_100px_1fr] border-b border-[var(--border-color)] last:border-b-0 hover:bg-[var(--bg-workspace)]/20 transition-colors">
+                        <div className="px-6 py-4 text-[13px] font-black text-[var(--text-main)] uppercase tracking-wider flex items-center">
+                          <span className="bg-[var(--bg-workspace)] px-2 py-1 rounded border border-[var(--border-color)]">{item.component_type}</span>
+                        </div>
+                        <div className="px-6 py-4 text-[14px] text-[var(--text-main)] font-bold flex items-center">{partName}</div>
+                        <div className="px-6 py-4 text-[14px] text-[var(--accent)] font-black flex items-center justify-end">{item.quantity}</div>
+                        {/* <div className="px-6 py-4 text-[13px] text-[var(--text-muted)] flex items-center">{item.notes || '—'}</div> */}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-[var(--bg-workspace)]/10 rounded-2xl border border-dashed border-[var(--border-color)]">
+                  <p className="text-[var(--text-dim)] font-black uppercase tracking-widest text-[10px] opacity-40">No Bill of Materials associated with this product.</p>
                 </div>
               )}
             </div>

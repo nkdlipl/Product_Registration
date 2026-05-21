@@ -22,9 +22,11 @@ import {
     Fingerprint,
     ListPlus,
     Wrench,
-    Binary
+    Binary,
+    Pencil
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import MultiSelectDropdown from '../../components/shared/MultiSelectDropdown';
 
 const FinishedGoodsPage = () => {
     const [items, setItems] = useState([]);
@@ -40,8 +42,22 @@ const FinishedGoodsPage = () => {
     const [productId, setProductId] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [hardwareFeatures, setHardwareFeatures] = useState([]); // [{type: '', id: '', name: ''}]
-    const [softwareFeatures, setSoftwareFeatures] = useState([]); // [string]
-    const [newSoftwareFeature, setNewSoftwareFeature] = useState('');
+    const [communicationDetails, setCommunicationDetails] = useState([]);
+    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+    const [editInterfaceIndex, setEditInterfaceIndex] = useState(null);
+    const [builderState, setBuilderState] = useState({
+        method: '',
+        communicationProtocol: [],
+        otaProtocol: [],
+        dataFormat: []
+    });
+    const [powerController, setPowerController] = useState(false);
+    const [motherboardId, setMotherboardId] = useState('');
+    
+    const COMMUNICATION_OPTIONS = ['wifi', 'bluetooth', 'gsm 2G', 'gsm 3G', 'gsm 4G', 'gsm 5G', 'ethernet', 'RS485', 'USB', 'RS232'];
+    const COMMUNICATION_PROTOCOL_OPTIONS = ['MQTT', 'HTTP(Client)', 'HTTP(Server)', 'TCP/IP(Client)', 'TCP/IP(Server)', 'FTP'];
+    const OTA_PROTOCOL_OPTIONS = ['MQTT', 'HTTP(Client)', 'HTTP(Server)', 'TCP/IP(Client)', 'TCP/IP(Server)', 'FTP'];
+    const DATA_FORMAT_OPTIONS = ['JSON', 'TOON', 'CSV', 'MODBUS'];
     const [isIot, setIsIot] = useState(false);
     const [editItem, setEditItem] = useState(null);
     const [inventoryError, setInventoryError] = useState('');
@@ -98,20 +114,6 @@ const FinishedGoodsPage = () => {
         setHardwareFeatures(hardwareFeatures.filter((_, i) => i !== index));
     };
 
-    const handleAddSoftwareFeature = () => {
-        if (!newSoftwareFeature.trim()) return;
-        if (softwareFeatures.includes(newSoftwareFeature.trim())) {
-            toast.error('Feature already added');
-            return;
-        }
-        setSoftwareFeatures([...softwareFeatures, newSoftwareFeature.trim()]);
-        setNewSoftwareFeature('');
-    };
-
-    const handleRemoveSoftwareFeature = (index) => {
-        setSoftwareFeatures(softwareFeatures.filter((_, i) => i !== index));
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!productId) {
@@ -142,7 +144,9 @@ const FinishedGoodsPage = () => {
                 product_id: productId,
                 quantity: quantity,
                 hardware_features: hardwareFeatures.map(f => ({ type: f.type, id: f.id })),
-                software_features: isIot ? softwareFeatures : [],
+                communication_details: isIot ? communicationDetails : [],
+                power_controller: isIot ? powerController : false,
+                motherboard_id: isIot ? motherboardId : null,
                 is_iot: isIot
             };
 
@@ -190,8 +194,9 @@ const FinishedGoodsPage = () => {
         });
         setHardwareFeatures(mappedHardware);
 
-        const mappedSoftware = (row.software_features || []).map(s => s.feature_name || s);
-        setSoftwareFeatures(mappedSoftware);
+        setCommunicationDetails(row.communication_details || []);
+        setPowerController(row.power_controller || false);
+        setMotherboardId(row.motherboard_id || '');
 
         setIsModalOpen(true);
     };
@@ -212,8 +217,12 @@ const FinishedGoodsPage = () => {
         setProductId('');
         setQuantity(1);
         setHardwareFeatures([]);
-        setSoftwareFeatures([]);
-        setNewSoftwareFeature('');
+        setCommunicationDetails([]);
+        setIsBuilderOpen(false);
+        setEditInterfaceIndex(null);
+        setBuilderState({ method: '', communicationProtocol: [], otaProtocol: [], dataFormat: [] });
+        setPowerController(false);
+        setMotherboardId('');
         setIsIot(false);
         setEditItem(null);
         setInventoryError('');
@@ -363,7 +372,7 @@ const FinishedGoodsPage = () => {
                 isOpen={isModalOpen}
                 onClose={() => { setIsModalOpen(false); setViewItem(null); resetForm(); }}
                 title={viewItem ? 'Finished Good Details' : editItem ? 'Edit Finished Good Assembly' : 'Assemble New Finished Good'}
-                width="800px"
+                maxWidth="max-w-4xl"
             >
                 {viewItem ? (
                     <div className="p-4 space-y-4">
@@ -385,14 +394,46 @@ const FinishedGoodsPage = () => {
                                 ))}
                             </ul>
                         </div>
-                        {viewItem.is_iot && viewItem.software_features && viewItem.software_features.length > 0 && (
-                            <div>
-                                <h4 className="text-xs font-black uppercase text-[var(--text-dim)]">Software Features</h4>
-                                <ul className="mt-2 list-disc pl-5 text-sm text-[var(--text-main)]">
-                                    {viewItem.software_features.map((s, i) => (
-                                        <li key={i}>{s.feature_name}</li>
-                                    ))}
-                                </ul>
+                        {viewItem.is_iot && (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 className="text-xs font-black uppercase text-[var(--text-dim)]">Power Controller</h4>
+                                        <p className="mt-1 text-sm font-bold text-[var(--text-main)]">{viewItem.power_controller ? 'Enabled' : 'Disabled'}</p>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-black uppercase text-[var(--text-dim)]">Motherboard</h4>
+                                        <p className="mt-1 text-sm font-bold text-[var(--text-main)]">
+                                            {viewItem.motherboard_id ? getComponentName('pcb', viewItem.motherboard_id) : 'None'}
+                                        </p>
+                                    </div>
+                                </div>
+                                {(viewItem.communication_details || []).length > 0 && (
+                                    <div className="space-y-3 pt-4 border-t border-[var(--border-color)]">
+                                        <h4 className="text-xs font-black uppercase text-[var(--text-dim)]">Communication Interfaces</h4>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {(viewItem.communication_details || []).map((comm, i) => (
+                                                <div key={i} className="p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl">
+                                                    <h5 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)] mb-2">{comm.method}</h5>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                        <div>
+                                                            <span className="text-[9px] font-black uppercase text-[var(--text-dim)] block mb-1">Comm Protocol</span>
+                                                            <div className="flex flex-wrap gap-1">{(comm.communicationProtocol || []).map(p => <span key={p} className="px-1.5 py-0.5 border border-[var(--border-color)] rounded bg-[var(--bg-card)] text-[9px] font-bold text-[var(--text-main)]">{p}</span>)}</div>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-[9px] font-black uppercase text-[var(--text-dim)] block mb-1">OTA Protocol</span>
+                                                            <div className="flex flex-wrap gap-1">{(comm.otaProtocol || []).map(p => <span key={p} className="px-1.5 py-0.5 border border-[var(--border-color)] rounded bg-[var(--bg-card)] text-[9px] font-bold text-[var(--text-main)]">{p}</span>)}</div>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-[9px] font-black uppercase text-[var(--text-dim)] block mb-1">Data Format</span>
+                                                            <div className="flex flex-wrap gap-1">{(comm.dataFormat || []).map(p => <span key={p} className="px-1.5 py-0.5 border border-[var(--border-color)] rounded bg-[var(--bg-card)] text-[9px] font-bold text-[var(--text-main)]">{p}</span>)}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                         <div>
@@ -429,7 +470,7 @@ const FinishedGoodsPage = () => {
                             <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-2xl h-[58px] items-center">
                                 <button
                                     type="button"
-                                    onClick={() => { setIsIot(false); setSoftwareFeatures([]); }}
+                                    onClick={() => { setIsIot(false); setCommunicationDetails([]); setIsBuilderOpen(false); setPowerController(false); setMotherboardId(''); }}
                                     className={`flex-1 py-3 rounded-xl transition-all duration-300 font-black text-[10px] uppercase tracking-widest ${!isIot ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
                                 >
                                     Non-IoT
@@ -503,45 +544,96 @@ const FinishedGoodsPage = () => {
 
                     {/* Software Features */}
                     {isIot && (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <label className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">
+                        <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300 bg-[var(--bg-card)] border border-[var(--border-color)] p-5 rounded-2xl">
+                            <label className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">
                                 Software Features
                             </label>
-                            <div className="flex gap-3">
-                                <input
-                                    type="text"
-                                    placeholder="Add new software feature..."
-                                    className="flex-1 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-2xl px-5 py-4 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold"
-                                    value={newSoftwareFeature}
-                                    onChange={(e) => setNewSoftwareFeature(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSoftwareFeature())}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleAddSoftwareFeature}
-                                    className="px-6 rounded-2xl bg-[var(--nav-hover)] text-[var(--accent)] border border-[var(--border-color)] hover:border-[var(--accent)] transition-all"
-                                >
-                                    <ListPlus size={20} />
-                                </button>
-                            </div>
-
-                            {/* Selected Software List */}
-                            <div className="flex flex-wrap gap-2 pt-2">
-                                {softwareFeatures.map((f, i) => (
-                                    <div key={i} className="flex items-center gap-2 bg-[var(--border-glow)] border border-[var(--accent)] pl-3 pr-1 py-1.5 rounded-xl">
-                                        <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-wider">{f}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveSoftwareFeature(i)}
-                                            className="p-1 text-[var(--accent)] hover:text-rose-500 transition-colors"
-                                        >
-                                            <Trash2 size={12} />
-                                        </button>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Communication Interfaces Builder */}
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">
+                                        Communication Interfaces
+                                    </label>
+                                    
+                                    {/* List added interfaces */}
+                                    <div className="space-y-3">
+                                        {communicationDetails.map((comm, idx) => (
+                                            <div key={idx} className="p-4 border border-[var(--border-color)] bg-[var(--bg-workspace)] rounded-xl relative group shadow-sm hover:shadow-md transition-all duration-300">
+                                                <div className="absolute top-3 right-3 flex items-center gap-2">
+                                                    <button type="button" onClick={() => { setBuilderState(comm); setEditInterfaceIndex(idx); setIsBuilderOpen(true); }} className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors">
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                    <button type="button" onClick={() => setCommunicationDetails(prev => prev.filter((_, i) => i !== idx))} className="text-[var(--text-muted)] hover:text-rose-500 transition-colors">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                                <h5 className="text-[12px] font-black uppercase text-[var(--accent)] tracking-widest mb-3 pr-12">{comm.method}</h5>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                    {['communicationProtocol', 'otaProtocol', 'dataFormat'].map(key => (
+                                                        <div key={key}>
+                                                            <span className="text-[9px] font-black uppercase text-[var(--text-dim)] block mb-1">
+                                                                {key.replace('Protocol', ' Prot').replace('Format', ' Fmt')}
+                                                            </span>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {comm[key].length > 0 ? comm[key].map(p => (
+                                                                    <span key={p} className="px-1.5 py-0.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded text-[9px] font-bold text-[var(--text-main)]">{p}</span>
+                                                                )) : <span className="text-[9px] text-[var(--text-muted)] italic">None</span>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                                {softwareFeatures.length === 0 && (
-                                    <p className="text-[10px] text-[var(--text-dim)] font-bold uppercase tracking-wider italic">No software features added</p>
-                                )}
+
+                                    {/* Builder Trigger */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsBuilderOpen(true)}
+                                        className="w-full py-4 border-2 border-dashed border-[var(--border-color)] rounded-xl text-[var(--text-dim)] hover:text-[var(--accent)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all font-bold text-[12px] uppercase tracking-wider flex items-center justify-center gap-2"
+                                    >
+                                        <Plus size={16} /> Add Communication Interface
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* Motherboard Selection */}
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">
+                                            Motherboard (PCB)
+                                        </label>
+                                        <select
+                                            className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold"
+                                            value={motherboardId}
+                                            onChange={(e) => setMotherboardId(e.target.value)}
+                                        >
+                                            <option value="">Select a Motherboard...</option>
+                                            {(options.pcb || []).map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Power Controller Checkbox */}
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">
+                                            Power Controller
+                                        </label>
+                                        <label className="flex items-center gap-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] p-4 rounded-xl cursor-pointer hover:border-[var(--accent)] transition-all group">
+                                            <input 
+                                                type="checkbox" 
+                                                className="hidden" 
+                                                checked={powerController}
+                                                onChange={(e) => setPowerController(e.target.checked)}
+                                            />
+                                            <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${powerController ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-[var(--border-color)] bg-[var(--bg-card)] group-hover:border-[var(--accent)]'}`}>
+                                                {powerController && <CheckCircle2 size={14} className="text-white" />}
+                                            </div>
+                                            <span className="text-[13px] font-bold text-[var(--text-main)]">Enable Power Controller</span>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -611,6 +703,74 @@ const FinishedGoodsPage = () => {
                     </div>
                 </form>
                 )}
+            </Modal>
+
+            {/* Builder Popup Modal */}
+            <Modal
+                isOpen={isBuilderOpen}
+                onClose={() => { setIsBuilderOpen(false); setEditInterfaceIndex(null); setBuilderState({ method: '', communicationProtocol: [], otaProtocol: [], dataFormat: [] }); }}
+                title={editInterfaceIndex !== null ? "Edit Communication Interface" : "Add Communication Interface"}
+                maxWidth="max-w-md"
+            >
+                <div className="space-y-6 pt-2">
+                    <div className="space-y-2">
+                        <label className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">Method</label>
+                        <select
+                            className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] font-bold transition-colors"
+                            value={builderState.method}
+                            onChange={(e) => setBuilderState({...builderState, method: e.target.value})}
+                        >
+                            <option value="">Select Method...</option>
+                            {COMMUNICATION_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                    </div>
+
+                    {builderState.method && (
+                        <div className="space-y-5 animate-in fade-in zoom-in-95 pt-2 border-t border-[var(--border-color)]">
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">Comm Protocol</label>
+                                <MultiSelectDropdown options={COMMUNICATION_PROTOCOL_OPTIONS} selectedOptions={builderState.communicationProtocol} onChange={(val) => setBuilderState({...builderState, communicationProtocol: val})} placeholder="Select Comm Protocols..." />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">OTA Protocol</label>
+                                <MultiSelectDropdown options={OTA_PROTOCOL_OPTIONS} selectedOptions={builderState.otaProtocol} onChange={(val) => setBuilderState({...builderState, otaProtocol: val})} placeholder="Select OTA Protocols..." />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">Data Format</label>
+                                <MultiSelectDropdown options={DATA_FORMAT_OPTIONS} selectedOptions={builderState.dataFormat} onChange={(val) => setBuilderState({...builderState, dataFormat: val})} placeholder="Select Data Formats..." />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]">
+                        <button
+                            type="button"
+                            onClick={() => { setIsBuilderOpen(false); setEditInterfaceIndex(null); setBuilderState({ method: '', communicationProtocol: [], otaProtocol: [], dataFormat: [] }); }}
+                            className="px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest text-[var(--text-dim)] hover:text-[var(--text-main)] transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            disabled={!builderState.method}
+                            onClick={() => {
+                                if (editInterfaceIndex !== null) {
+                                    const updated = [...communicationDetails];
+                                    updated[editInterfaceIndex] = builderState;
+                                    setCommunicationDetails(updated);
+                                } else {
+                                    setCommunicationDetails([...communicationDetails, builderState]);
+                                }
+                                setIsBuilderOpen(false);
+                                setEditInterfaceIndex(null);
+                                setBuilderState({ method: '', communicationProtocol: [], otaProtocol: [], dataFormat: [] });
+                            }}
+                            className="px-8 py-3 bg-[var(--accent)] text-white rounded-xl font-black text-[10px] uppercase tracking-widest disabled:opacity-50 hover:shadow-lg transition-all"
+                        >
+                            {editInterfaceIndex !== null ? 'Update Interface' : 'Save Interface'}
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );
