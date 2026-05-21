@@ -11,6 +11,7 @@ import Sidebar from '../../components/shared/Sidebar';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import { useAuth } from '../../context/AuthContext';
 import DataTable from '../../components/shared/DataTable';
+import InventoryCard from '../../components/shared/InventoryCard';
 import Modal from '../../components/shared/Modal';
 import { getElectricalParts, createElectricalPart, updateElectricalPart, deleteElectricalPart, getElectricalPartById, deleteElectricalImage, deleteElectricalFile } from '../../api/inventory';
 import { getProducts } from '../../api/products';
@@ -505,6 +506,7 @@ const ElectricalPartsPage = () => {
     { key: 'part_category', label: 'Category' },
     { key: 'part_number', label: 'Part Number' },
     { key: 'status', label: 'Status' },
+    { key: 'stock_quantity', label: 'Stock Qty', render: (row) => <span className="font-black text-[var(--accent)]">{row.stock_quantity ?? 0}</span> },
     { key: 'created_at', label: 'Registered On', render: (row) => new Date(row.created_at).toLocaleDateString() }
   ];
 
@@ -583,56 +585,21 @@ const ElectricalPartsPage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
             {items.map((item) => (
-              <div key={item.part_id} className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl">
-                <div onClick={() => loadPartDetails(item.part_id, 'view')} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] block cursor-zoom-in group/img">
-                  {(item.part_images?.[0] || item.image_url) ? (
-                    <img 
-                        src={buildFileUrl(item.part_images?.[0] || item.image_url)} 
-                        alt={item.part_name} 
-                        className="w-full h-full object-contain p-6 group-hover/img:scale-110 transition-transform duration-700 ease-out" 
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] opacity-20"><Box size={64} strokeWidth={1} /></div>
-                  )}
-                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
-                    <button onClick={(e) => { e.stopPropagation(); loadPartDetails(item.part_id, 'view'); }} className="w-12 h-12 bg-[var(--accent)] rounded-2xl shadow-xl flex items-center justify-center text-white hover:scale-110 transition-all transform translate-y-4 group-hover:translate-y-0" title="View Details">
-                      <Eye size={22} />
-                    </button>
-                  </div>
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-[var(--bg-card)]/90 backdrop-blur-md border border-[var(--border-color)] text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg text-[var(--accent)] shadow-sm">
-                      {item.part_number || 'N/A'}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="p-4 flex-1 flex flex-col">
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">{item.part_category}</span>
-                    </div>
-                    <h3 className="text-[15px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
-                      {item.part_name}
-                    </h3>
-                    <p className="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-2 opacity-70">
-                      {item.description || 'No detailed technical specifications provided for this inventory record.'}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
-                      <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                       <button onClick={(e) => { e.stopPropagation(); loadPartDetails(item.part_id, 'edit'); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" title="Edit"><Pencil size={14} /></button>
-                       <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"><Trash2 size={14} /></button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <InventoryCard
+                key={item.part_id}
+                item={item}
+                title={item.part_name}
+                category={item.part_category}
+                description={item.description || 'No detailed technical specifications provided for this inventory record.'}
+                date={item.created_at}
+                imageSrc={item.part_images?.[0] || item.image_url}
+                code={item.part_number}
+                stockQuantity={item.stock_quantity}
+                onView={(row) => loadPartDetails(row.part_id, 'view')}
+                onEdit={(row) => loadPartDetails(row.part_id, 'edit')}
+                onDelete={handleDelete}
+                getImageSrc={buildFileUrl}
+              />
             ))}
           </div>
         )}
@@ -1043,6 +1010,9 @@ const ElectricalPartsPage = () => {
                             <SelectField label="Status" name="status" options={['Active', 'Inactive', 'Damaged', 'Deleted']} />
                             <SelectField label="Used in Product" name="used_in_product" options={products.map(p => p.product_name)} />
                             <FormField label="Material" name="material" placeholder="e.g. Cast Iron" />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <FormField label="Stock Quantity" name="stock_quantity" type="number" placeholder="e.g. 25" />
                         </div>
                         <TextAreaField label="Description" name="description" placeholder="Technical overview..." />
                     </div>

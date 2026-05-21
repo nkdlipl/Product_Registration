@@ -419,25 +419,25 @@ table td {
 
 .rich-text-content ul {
   list-style-type: disc !important;
-  padding-left: 2.5rem !important;
-  margin-left: 0 !important;
-  margin-bottom: 1rem !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
   list-style-position: outside !important;
 }
 
 .rich-text-content ol {
   list-style-type: decimal !important;
-  padding-left: 2.5rem !important;
-  margin-left: 0 !important;
-  margin-bottom: 1rem !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
   list-style-position: outside !important;
 }
 
 .rich-text-content li {
   display: list-item !important;
   list-style-type: inherit !important;
-  margin-bottom: 0.5rem !important;
-  padding-left: 0.5rem;
+  margin-bottom: 0.25rem !important;
+  padding-left: 0.25rem !important;
   position: static !important;
 }
 
@@ -446,9 +446,21 @@ table td {
   display: none !important;
 }
 
+/* Force show bold and italic formatting in view sections */
+.rich-text-content strong, 
+.rich-text-content b {
+  font-weight: 800 !important;
+  color: inherit !important;
+}
+
+.rich-text-content em, 
+.rich-text-content i {
+  font-style: italic !important;
+  color: inherit !important;
+}
+
 .rich-text-content p {
-  margin-bottom: 1rem !important;
-  line-height: 1.6 !important;
+  margin-bottom: 0.75rem !important;
 }
 
 .rich-text-content a {
@@ -462,6 +474,44 @@ table td {
   margin-left: 0 !important;
   font-style: italic !important;
   opacity: 0.8 !important;
+}
+
+/* Custom Line Height picker in Quill toolbar */
+.ql-snow .ql-picker.ql-line-height {
+  width: 110px !important;
+}
+
+.ql-snow .ql-picker.ql-line-height .ql-picker-label::before {
+  content: 'Line Spacing' !important;
+  font-size: 11px !important;
+  font-weight: bold !important;
+}
+
+.ql-snow .ql-picker.ql-line-height .ql-picker-item::before {
+  content: attr(data-value) !important;
+  font-size: 12px !important;
+}
+
+.ql-snow .ql-picker.ql-line-height .ql-picker-item:not([data-value])::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item[data-value=""]::before {
+  content: 'Normal' !important;
+}
+
+.ql-snow .ql-picker.ql-line-height .ql-picker-options {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  padding: 4px !important;
+}
+
+.ql-snow .ql-picker.ql-line-height .ql-picker-item {
+  color: var(--text-main) !important;
+  padding: 4px 8px !important;
+}
+
+.ql-snow .ql-picker.ql-line-height .ql-picker-item:hover,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item.ql-selected {
+  color: var(--accent) !important;
 }
 
 /* Push header action buttons down on desktop to prevent overlap with top-right breadcrumbs */

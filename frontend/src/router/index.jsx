@@ -7,7 +7,7 @@ import Sidebar from '../components/shared/Sidebar';
 import Breadcrumbs from '../components/shared/Breadcrumbs';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid } from 'lucide-react';
+import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package } from 'lucide-react';
 
 const IconMap = {
   Home,
@@ -18,7 +18,8 @@ const IconMap = {
   Box,
   Layers,
   Cpu,
-  LayoutGrid
+  LayoutGrid,
+  Package
 };
 
 const getTabMetadata = (pathname, search) => {
@@ -57,6 +58,9 @@ const getTabMetadata = (pathname, search) => {
   if (pathname === '/admin/feature-mapping') {
     return { label: 'Feature Mapping', iconType: 'LayoutGrid' };
   }
+  if (pathname === '/admin/finished-goods') {
+    return { label: 'Finished Goods', iconType: 'Package' };
+  }
   if (pathname === '/admin/inventory') {
     return { label: 'Inventory', iconType: 'Box' };
   }
@@ -85,6 +89,7 @@ const ProductListPage = lazy(() => import('../features/admin/ProductListPage'));
 const ProductProfilePage = lazy(() => import('../features/admin/ProductProfilePage'));
 const CustomerListPage = lazy(() => import('../features/admin/CustomerListPage'));
 const FeatureMappingPage = lazy(() => import('../features/admin/FeatureMappingPage'));
+const FinishedGoodsPage = lazy(() => import('../features/admin/FinishedGoodsPage'));
 const InventoryListPage = lazy(() => import('../features/admin/InventoryListPage'));
 const ElectronicsPartsPage = lazy(() => import('../features/admin/ElectronicsPartsPage'));
 const ElectricalPartsPage = lazy(() => import('../features/admin/ElectricalPartsPage'));
@@ -258,6 +263,7 @@ const Router = () => {
           <Route path="/admin/products/:id" element={<ProductProfilePage />} />
           <Route path="/admin/customers" element={<CustomerListPage />} />
           <Route path="/admin/feature-mapping" element={<FeatureMappingPage />} />
+          <Route path="/admin/finished-goods" element={<FinishedGoodsPage />} />
           <Route path="/admin/inventory" element={<InventoryListPage />} />
           <Route path="/admin/inventory/pcb" element={<InventoryListPage type="PCB" />} />
           <Route path="/admin/inventory/electronics" element={<ElectronicsPartsPage />} />

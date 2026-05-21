@@ -105,9 +105,9 @@ const createElectronicsPart = async (req, res, next) => {
         // 1. Create Master
         const masterResult = await db.query(
             `INSERT INTO ELECTRONICS_PART_MASTER 
-            (part_category, part_name, part_number, internal_sku, manufacturer, part_type, part_description, used_in_product, status) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [part_category, part_name, part_number, internal_sku, manufacturer, part_type, part_description, used_in_product, status || 'Active']
+            (part_category, part_name, part_number, internal_sku, manufacturer, part_type, part_description, used_in_product, status, stock_quantity) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+            [part_category, part_name, part_number, internal_sku, manufacturer, part_type, part_description, used_in_product, status || 'Active', req.body.stock_quantity || 0]
         );
         const partId = masterResult.rows[0].part_id;
 
@@ -214,9 +214,9 @@ const updateElectronicsPart = async (req, res, next) => {
         // 1. Update Master
         await db.query(
             `UPDATE ELECTRONICS_PART_MASTER SET
-            part_category = $1, part_name = $2, part_number = $3, internal_sku = $4, manufacturer = $5, part_type = $6, part_description = $7, used_in_product = $8, status = $9, updated_at = NOW()
-            WHERE part_id = $10`,
-            [part_category, part_name, part_number, internal_sku, manufacturer, part_type, part_description, used_in_product, status, id]
+            part_category = $1, part_name = $2, part_number = $3, internal_sku = $4, manufacturer = $5, part_type = $6, part_description = $7, used_in_product = $8, status = $9, stock_quantity = $10, updated_at = NOW()
+            WHERE part_id = $11`,
+            [part_category, part_name, part_number, internal_sku, manufacturer, part_type, part_description, used_in_product, status, req.body.stock_quantity || 0, id]
         );
 
         // 2. Tech Spec

@@ -69,7 +69,12 @@ const createProduct = async (req, res, next) => {
     nozzles,
     dispensing,
     company_name,
-    sub_company
+    sub_company,
+    product_promoted,
+    product_inquired,
+    product_quoted,
+    product_sampled,
+    product_purchased
   } = req.body;
 
   const formatFilePath = (file) => {
@@ -90,13 +95,22 @@ const createProduct = async (req, res, next) => {
   const documentFiles = req.files['document'] || [];
   
   const images = JSON.stringify(imageFiles.map(f => formatFilePath(f)));
-  const documents = JSON.stringify(documentFiles.map(f => formatFilePath(f)));
+  const documents = JSON.stringify(documentFiles.map(f => ({
+    url: formatFilePath(f),
+    name: req.body.document_label || f.originalname
+  })));
   
   const image_url = imageFiles.length > 0 ? formatFilePath(imageFiles[0]) : null;
   const document_url = documentFiles.length > 0 ? formatFilePath(documentFiles[0]) : null;
 
   let faqs = [];
   try { if (req.body.faqs) faqs = JSON.parse(req.body.faqs); } catch(e) {}
+
+  const promoted = product_promoted === 'true' || product_promoted === true;
+  const inquired = product_inquired === 'true' || product_inquired === true;
+  const quoted = product_quoted === 'true' || product_quoted === true;
+  const sampled = product_sampled === 'true' || product_sampled === true;
+  const purchased = product_purchased === 'true' || product_purchased === true;
 
   try {
     const result = await db.query(
@@ -115,9 +129,14 @@ const createProduct = async (req, res, next) => {
         images,
         documents,
         company_name,
-        sub_company
+        sub_company,
+        product_promoted,
+        product_inquired,
+        product_quoted,
+        product_sampled,
+        product_purchased
       ) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING *`,
       [
         product_name, 
         final_product_code, 
@@ -133,7 +152,12 @@ const createProduct = async (req, res, next) => {
         images,
         documents,
         company_name,
-        sub_company
+        sub_company,
+        promoted,
+        inquired,
+        quoted,
+        sampled,
+        purchased
       ]
     );
 
@@ -161,14 +185,19 @@ const updateProduct = async (req, res, next) => {
     nozzles,
     dispensing,
     company_name,
-    sub_company
+    sub_company,
+    product_promoted,
+    product_inquired,
+    product_quoted,
+    product_sampled,
+    product_purchased
   } = req.body;
 
   let specification = req.body.specification;
 
   try {
     // Fetch existing assets and data to fallback for missing UI fields
-    const currentProduct = await db.query('SELECT product_code, unit_price, company_name, sub_company, images, documents FROM products WHERE product_id = $1', [id]);
+    const currentProduct = await db.query('SELECT product_code, unit_price, company_name, sub_company, images, documents, product_promoted, product_inquired, product_quoted, product_sampled, product_purchased FROM products WHERE product_id = $1', [id]);
     if (currentProduct.rows.length === 0) {
       return res.status(404).json({ success: false, error: { message: 'Product not found' } });
     }
@@ -178,6 +207,11 @@ const updateProduct = async (req, res, next) => {
     const oldSubCompany = currentProduct.rows[0].sub_company;
     const oldImages = currentProduct.rows[0].images || [];
     const oldDocs = currentProduct.rows[0].documents || [];
+    const oldPromoted = currentProduct.rows[0].product_promoted;
+    const oldInquired = currentProduct.rows[0].product_inquired;
+    const oldQuoted = currentProduct.rows[0].product_quoted;
+    const oldSampled = currentProduct.rows[0].product_sampled;
+    const oldPurchased = currentProduct.rows[0].product_purchased;
 
     const formatFilePath = (file) => {
         if (!file) return null;
@@ -189,14 +223,28 @@ const updateProduct = async (req, res, next) => {
     const newDocFiles = req.files['document'] || [];
 
     const newImageUrls = newImageFiles.map(f => formatFilePath(f));
-    const newDocUrls = newDocFiles.map(f => formatFilePath(f));
+    const newDocObjects = newDocFiles.map(f => ({
+      url: formatFilePath(f),
+      name: req.body.document_label || f.originalname
+    }));
+
+    // Normalize old documents to object format
+    const oldDocsNormalized = oldDocs.map(item => 
+      typeof item === 'string' ? { url: item, name: item.split('/').pop() } : item
+    );
 
     const updatedImages = [...oldImages, ...newImageUrls];
-    const updatedDocuments = [...oldDocs, ...newDocUrls];
+    const updatedDocuments = [...oldDocsNormalized, ...newDocObjects];
 
     // Build update query dynamically for assets
     let faqs = [];
     try { if (req.body.faqs) faqs = JSON.parse(req.body.faqs); } catch(e) {}
+
+    const promoted = product_promoted !== undefined ? (product_promoted === 'true' || product_promoted === true) : oldPromoted;
+    const inquired = product_inquired !== undefined ? (product_inquired === 'true' || product_inquired === true) : oldInquired;
+    const quoted = product_quoted !== undefined ? (product_quoted === 'true' || product_quoted === true) : oldQuoted;
+    const sampled = product_sampled !== undefined ? (product_sampled === 'true' || product_sampled === true) : oldSampled;
+    const purchased = product_purchased !== undefined ? (product_purchased === 'true' || product_purchased === true) : oldPurchased;
 
     let queryText = `
       UPDATE products 
@@ -212,7 +260,12 @@ const updateProduct = async (req, res, next) => {
           images = $10,
           documents = $11,
           company_name = $12,
-          sub_company = $13
+          sub_company = $13,
+          product_promoted = $14,
+          product_inquired = $15,
+          product_quoted = $16,
+          product_sampled = $17,
+          product_purchased = $18
     `;
     const params = [
       product_name, 
@@ -227,12 +280,19 @@ const updateProduct = async (req, res, next) => {
       JSON.stringify(updatedImages),
       JSON.stringify(updatedDocuments),
       company_name !== undefined ? company_name : oldCompany,
-      sub_company !== undefined ? sub_company : oldSubCompany
+      sub_company !== undefined ? sub_company : oldSubCompany,
+      promoted,
+      inquired,
+      quoted,
+      sampled,
+      purchased
     ];
 
-    let paramIdx = 14;
+    let paramIdx = 19;
     const finalImageUrl = updatedImages.length > 0 ? updatedImages[0] : null;
-    const finalDocUrl = updatedDocuments.length > 0 ? updatedDocuments[0] : null;
+    const finalDocUrl = updatedDocuments.length > 0 
+      ? (typeof updatedDocuments[0] === 'string' ? updatedDocuments[0] : updatedDocuments[0].url) 
+      : null;
 
     queryText += `, image_url = $${paramIdx++}, document_url = $${paramIdx++}`;
     params.push(finalImageUrl, finalDocUrl);
@@ -266,9 +326,15 @@ const removeAsset = async (req, res, next) => {
     if (product.rows.length === 0) return res.status(404).json({ success: false, error: { message: 'Product not found' } });
 
     const currentAssets = product.rows[0][type] || [];
-    const updatedAssets = currentAssets.filter(assetUrl => assetUrl !== url);
+    const updatedAssets = currentAssets.filter(asset => {
+      const assetUrl = typeof asset === 'string' ? asset : asset.url;
+      return assetUrl !== url;
+    });
     const colToUpdate = type === 'images' ? 'image_url' : 'document_url';
-    const nextAsset = updatedAssets.length > 0 ? updatedAssets[0] : null;
+    let nextAsset = updatedAssets.length > 0 ? updatedAssets[0] : null;
+    if (nextAsset && typeof nextAsset === 'object') {
+      nextAsset = nextAsset.url;
+    }
 
     await db.query(
       `UPDATE products SET ${type} = $1, ${colToUpdate} = $2 WHERE product_id = $3`, 
@@ -319,11 +385,103 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
+// ── Bill of Material ─────────────────────────────────────────────────────────
+
+const getBomOptions = async (req, res, next) => {
+  try {
+    const [pcbs, electrical, electronics, structural] = await Promise.all([
+      db.query(`
+        SELECT pcb_id AS id, TRIM(part_no) AS name
+        FROM pcb_master
+        WHERE is_active = TRUE AND part_no IS NOT NULL AND TRIM(part_no) != ''
+        ORDER BY LOWER(TRIM(part_no))
+      `),
+      db.query(`
+        SELECT part_id AS id,
+               TRIM(part_name) || CASE WHEN part_number IS NOT NULL AND TRIM(part_number) != ''
+                 THEN ' (' || TRIM(part_number) || ')' ELSE '' END AS name
+        FROM electrical_part_master
+        WHERE is_active = TRUE AND part_name IS NOT NULL AND TRIM(part_name) != ''
+        ORDER BY LOWER(TRIM(part_name))
+      `),
+      db.query(`
+        SELECT part_id AS id,
+               TRIM(part_name) || CASE WHEN part_number IS NOT NULL AND TRIM(part_number) != ''
+                 THEN ' (' || TRIM(part_number) || ')' ELSE '' END AS name
+        FROM electronics_part_master
+        WHERE is_active = TRUE AND part_name IS NOT NULL AND TRIM(part_name) != ''
+        ORDER BY LOWER(TRIM(part_name))
+      `),
+      db.query(`
+        SELECT part_id AS id,
+               TRIM(part_name) || CASE WHEN part_number IS NOT NULL AND TRIM(part_number) != ''
+                 THEN ' (' || TRIM(part_number) || ')' ELSE '' END AS name
+        FROM structural_part_master
+        WHERE is_active = TRUE AND part_name IS NOT NULL AND TRIM(part_name) != ''
+        ORDER BY LOWER(TRIM(part_name))
+      `)
+    ]);
+
+    sendSuccess(res, {
+      pcb: pcbs.rows,
+      electrical: electrical.rows,
+      electronics: electronics.rows,
+      structural: structural.rows
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getProductBom = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query(
+      `SELECT bom_id, component_type, component_id, quantity, notes
+       FROM product_bom WHERE product_id = $1 ORDER BY component_type, bom_id`,
+      [id]
+    );
+    sendSuccess(res, result.rows);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const saveProductBom = async (req, res, next) => {
+  const { id } = req.params;
+  const { items } = req.body; // [{component_type, component_id, quantity, notes}]
+
+  if (!Array.isArray(items)) {
+    return res.status(400).json({ success: false, error: { message: 'items must be an array' } });
+  }
+
+  try {
+    await db.query('BEGIN');
+    await db.query('DELETE FROM product_bom WHERE product_id = $1', [id]);
+
+    for (const item of items) {
+      await db.query(
+        `INSERT INTO product_bom (product_id, component_type, component_id, quantity, notes)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, item.component_type, item.component_id, item.quantity || 1, item.notes || null]
+      );
+    }
+    await db.query('COMMIT');
+    sendSuccess(res, null, 'Bill of Material saved successfully');
+  } catch (error) {
+    await db.query('ROLLBACK');
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   getProductById,
   createProduct,
   updateProduct,
   removeAsset,
-  deleteProduct
+  deleteProduct,
+  getBomOptions,
+  getProductBom,
+  saveProductBom
 };

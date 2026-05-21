@@ -6,8 +6,11 @@ const { requireRole } = require('../middleware/rbac');
 const upload = require('../middleware/upload');
 
 // All product routes are protected and for Admin
+router.get('/bom-options', verifyToken, requireRole('Admin', 'Staff'), productController.getBomOptions);
 router.get('/', verifyToken, requireRole('Admin', 'Staff'), productController.getProducts);
 router.get('/:id', verifyToken, requireRole('Admin', 'Staff'), productController.getProductById);
+router.get('/:id/bom', verifyToken, requireRole('Admin', 'Staff'), productController.getProductBom);
+router.put('/:id/bom', verifyToken, requireRole('Admin'), productController.saveProductBom);
 router.post('/', 
   verifyToken, 
   requireRole('Admin'), 
@@ -30,3 +33,4 @@ router.delete('/:id/assets', verifyToken, requireRole('Admin'), productControlle
 router.delete('/:id', verifyToken, requireRole('Admin'), productController.deleteProduct);
 
 module.exports = router;
+

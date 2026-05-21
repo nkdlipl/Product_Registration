@@ -11,6 +11,7 @@ import {
   ChevronUp,
   LogOut,
   Box,
+  Package,
   LayoutDashboard,
   Layers,
   PenTool,
@@ -62,6 +63,10 @@ const Sidebar = ({ role, isOpen, onClose }) => {
   
   const isInventorySection = (
     location.pathname.includes('/admin/inventory')
+  );
+
+  const isFinishedGoodsSection = (
+    location.pathname.includes('/admin/finished-goods')
   );
 
   const isDesignersActive = (
@@ -449,6 +454,8 @@ const Sidebar = ({ role, isOpen, onClose }) => {
               <NavItem to="/admin/customers" label="Customers" icon={Users} />
             </div>
 
+            
+
             {/* Inventory row */}
             <div
               className="animate-entrance-right"
@@ -520,6 +527,9 @@ const Sidebar = ({ role, isOpen, onClose }) => {
 
             <div className="animate-entrance-right" style={{ animationDelay: '600ms' }}>
               <NavItem to="/admin/feature-mapping" label="Feature Mapping" icon={Cpu} />
+            </div>
+            <div className="animate-entrance-right" style={{ animationDelay: '650ms' }}>
+              <NavItem to="/admin/finished-goods" label="Finished Goods" icon={Package} />
             </div>
           </div>
         )}

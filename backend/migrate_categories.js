@@ -69,9 +69,15 @@ async function migrate() {
     console.error('MIGRATION ERROR:', err.message);
     throw err; // Re-throw to handle in server startup
   } finally {
-    await pool.end();
+    const pool = require('./src/config/db').pool || poolInstance;
+    // Only close if it's not the main app pool or if it's a dedicated local pool
+    // In this script 'pool' is local, so we should close it.
+    await poolInstance.end();
   }
 }
+
+// Ensure we use the local pool defined at the top
+const poolInstance = pool;
 
 // Only run immediately if this file is executed directly
 if (require.main === module) {

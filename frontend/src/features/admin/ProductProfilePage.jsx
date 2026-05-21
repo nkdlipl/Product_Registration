@@ -186,6 +186,27 @@ const ProductProfilePage = () => {
             {selectedProduct?.company_name && <p className="text-[11px] font-black text-[var(--accent)] uppercase tracking-[0.2em] mb-1">{selectedProduct.company_name}</p>}
             <h1 className="text-3xl font-black text-[var(--text-main)] leading-tight tracking-tight">{selectedProduct?.product_name}</h1>
             
+            {/* Active Status Badges */}
+            {(selectedProduct?.product_promoted || selectedProduct?.product_inquired || selectedProduct?.product_quoted || selectedProduct?.product_sampled || selectedProduct?.product_purchased) && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {selectedProduct?.product_promoted && (
+                  <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">Promoted</span>
+                )}
+                {selectedProduct?.product_inquired && (
+                  <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">Inquired</span>
+                )}
+                {selectedProduct?.product_quoted && (
+                  <span className="bg-purple-500/10 text-purple-500 border border-purple-500/20 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">Quoted</span>
+                )}
+                {selectedProduct?.product_sampled && (
+                  <span className="bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">Sampled</span>
+                )}
+                {selectedProduct?.product_purchased && (
+                  <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">Purchased</span>
+                )}
+              </div>
+            )}
+            
             {(() => {
               const hardware = parseHardwareSpec(selectedProduct?.specification);
               if (!hardware) return null;
@@ -292,31 +313,41 @@ const ProductProfilePage = () => {
           )}
           {activeTab === 'documents' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(selectedProduct?.documents || [selectedProduct?.document_url]).filter(Boolean).map((docUrl, idx) => (
-                <div key={idx} className="flex items-center gap-4 p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-workspace)]/30 hover:border-[var(--accent)] transition-all group">
-                  <div className="p-3 bg-[var(--nav-hover)] rounded-xl text-[var(--accent)]"><FileText size={22} /></div>
-                  <div className="flex-1 min-w-0"><p className="text-[13px] font-black text-[var(--text-main)] truncate tracking-wider uppercase">{docUrl.split('/').pop()}</p></div>
-                  <div className="flex items-center gap-2.5 opacity-0 group-hover:opacity-100 transition-all">
-                    <a 
-                      href={getFullUrl(docUrl)} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="p-2.5 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
-                      title="View Document"
-                    >
-                      <Eye size={18} />
-                    </a>
-                    <a 
-                      href={getFullUrl(docUrl)} 
-                      download 
-                      className="p-2.5 bg-[var(--accent)] text-white rounded-xl shadow-lg hover:scale-105 transition-all"
-                      title="Download Document"
-                    >
-                      <Download size={18} />
-                    </a>
+              {(selectedProduct?.documents && selectedProduct.documents.length > 0 
+                ? selectedProduct.documents 
+                : (selectedProduct?.document_url ? [selectedProduct.document_url] : [])
+              ).filter(Boolean).map((docItem, idx) => {
+                const doc = typeof docItem === 'string' ? { url: docItem, name: docItem.split('/').pop() } : docItem;
+                return (
+                  <div key={idx} className="flex items-center gap-4 p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-workspace)]/30 hover:border-[var(--accent)] transition-all group">
+                    <div className="p-3 bg-[var(--nav-hover)] rounded-xl text-[var(--accent)]"><FileText size={22} /></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-black text-[var(--text-main)] truncate tracking-wider uppercase">
+                        {doc.name}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2.5 opacity-0 group-hover:opacity-100 transition-all">
+                      <a 
+                        href={getFullUrl(doc.url)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="p-2.5 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
+                        title="View Document"
+                      >
+                        <Eye size={18} />
+                      </a>
+                      <a 
+                        href={getFullUrl(doc.url)} 
+                        download 
+                        className="p-2.5 bg-[var(--accent)] text-white rounded-xl shadow-lg hover:scale-105 transition-all"
+                        title="Download Document"
+                      >
+                        <Download size={18} />
+                      </a>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           {activeTab === 'faqs' && (

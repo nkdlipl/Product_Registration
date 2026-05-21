@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, X, Briefcase, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Menu, X, Briefcase, ChevronLeft, ChevronRight, Trash2, Package } from 'lucide-react';
 import { Home, Users, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid } from 'lucide-react';
 
 const IconMap = {
@@ -11,7 +11,8 @@ const IconMap = {
   Box,
   Layers,
   Cpu,
-  LayoutGrid
+  LayoutGrid,
+  Package
 };
 
 const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClick, onClearAllTabs }) => {

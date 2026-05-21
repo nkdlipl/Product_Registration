@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getProducts, getProductById, createProduct, updateProduct, removeAsset, deleteProduct } from '../../api/products';
+import { getProducts, getProductById, createProduct, updateProduct, removeAsset, deleteProduct, getBomOptions, getProductBom, saveProductBom } from '../../api/products';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import CategoryModal from '../../components/shared/CategoryModal';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
-import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download, X, Zap, Building2, Pencil } from 'lucide-react';
+import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download, X, Zap, Building2, Pencil, Cpu, CircuitBoard, Layers, ClipboardList, ChevronDown } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -14,6 +14,17 @@ import { getCompanies } from '../../api/companies';
 import CompanyModal from '../../components/shared/CompanyModal';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+
+// Register custom line height format in Quill
+const Quill = ReactQuill.Quill;
+const Parchment = Quill.import('parchment');
+const StyleAttributor = Parchment.StyleAttributor || Parchment.Attributor.Style;
+const LineHeightStyle = new StyleAttributor('line-height', 'line-height', {
+  scope: Parchment.Scope.INLINE,
+  whitelist: ['1', '1.2', '1.5', '1.8', '2', '2.5', '3']
+});
+Quill.register(LineHeightStyle, true);
+
 
 const ProductListPage = () => {
   const navigate = useNavigate();
@@ -59,6 +70,13 @@ const ProductListPage = () => {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [pendingImages, setPendingImages] = useState([]);
   const [previews, setPreviews] = useState([]);
+
+  // BOM state
+  const [bomOptions, setBomOptions] = useState({ pcb: [], electrical: [], electronics: [], structural: [] });
+  const [bomItems, setBomItems] = useState([]);
+  const [bomLoading, setBomLoading] = useState(false);
+  const [isSavingBom, setIsSavingBom] = useState(false);
+  const [bomExpandedSection, setBomExpandedSection] = useState(null);
 
   useEffect(() => {
     if (modalMode !== 'view') return;
@@ -120,11 +138,20 @@ const ProductListPage = () => {
     toolbar: [
       ['bold', 'italic', 'underline', 'strike'],
       [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      [{ 'line-height': ['1', '1.2', '1.5', '1.8', '2', '2.5', '3'] }],
       ['link'],
       [{ 'align': [] }],
       ['clean']
     ],
   };
+
+  const quillFormats = [
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'line-height',
+    'link',
+    'align'
+  ];
   const watchedCategory = watch('category');
   const watchedSubCategory = watch('sub_category');
   const watchedCompany = watch('company_name');
@@ -340,6 +367,7 @@ const ProductListPage = () => {
   const handleOpenCreate = () => {
     setSpecRows([]);
     setFaqRows([]);
+    setBomItems([]);
     setModalMode('create');
     setSelectedProduct(null);
     setCurrentCategoryObject(null);
@@ -354,10 +382,17 @@ const ProductListPage = () => {
       unit_price: '',
       specification: '',
       feature: '',
-      faqs: '[]'
+      faqs: '[]',
+      product_promoted: false,
+      product_inquired: false,
+      product_quoted: false,
+      product_sampled: false,
+      product_purchased: false,
+      document_label: ''
     });
     setPendingImages([]);
     setModalActiveTab('general');
+    loadBomOptionsForCreate();
     setIsModalOpen(true);
   };
 
@@ -371,11 +406,86 @@ const ProductListPage = () => {
     const hardware = parseHardwareSpec(product.specification);
     setSpecRows(parseSpecRows(product.specification));
     setFaqRows(product.faqs || []);
-    const resetData = { product_name: product.product_name, company_name: product.company_name || '', sub_company: product.sub_company || '', description: product.description || '', category: product.category || '', sub_category: product.sub_category || '', feature: product.feature || '', fuel_types: hardware?.fuel_types || [], nozzles: hardware?.nozzles || '', dispensing: hardware?.dispensing || '', dispenser_type: hardware?.dispenser_type || '', specification: hardware ? hardware.original_spec : product.specification };
+    const resetData = { 
+      product_name: product.product_name, 
+      company_name: product.company_name || '', 
+      sub_company: product.sub_company || '', 
+      description: product.description || '', 
+      category: product.category || '', 
+      sub_category: product.sub_category || '', 
+      feature: product.feature || '', 
+      fuel_types: hardware?.fuel_types || [], 
+      nozzles: hardware?.nozzles || '', 
+      dispensing: hardware?.dispensing || '', 
+      dispenser_type: hardware?.dispenser_type || '', 
+      specification: hardware ? hardware.original_spec : product.specification,
+      product_promoted: !!product.product_promoted,
+      product_inquired: !!product.product_inquired,
+      product_quoted: !!product.product_quoted,
+      product_sampled: !!product.product_sampled,
+      product_purchased: !!product.product_purchased,
+      document_label: ''
+    };
     reset(resetData);
     setPendingImages([]);
     setModalActiveTab('general');
+    setBomItems([]);
+    // Load BOM data and options for edit mode
+    Promise.all([
+      getBomOptions().catch(() => ({ data: { data: { pcb: [], electrical: [], electronics: [], structural: [] } } })),
+      getProductBom(product.product_id).catch(() => ({ data: { data: [] } }))
+    ]).then(([optRes, bomRes]) => {
+      const opts = optRes.data.data || { pcb: [], electrical: [], electronics: [], structural: [] };
+      setBomOptions(opts);
+      const rawItems = bomRes.data.data || [];
+      // Resolve names from options
+      const resolved = rawItems.map(item => {
+        const list = opts[item.component_type] || [];
+        const found = list.find(o => String(o.id) === String(item.component_id));
+        return { ...item, name: found ? found.name : `ID: ${item.component_id}` };
+      });
+      setBomItems(resolved);
+    });
     setIsModalOpen(true);
+  };
+
+  // Load BOM options when opening create modal
+  const loadBomOptionsForCreate = () => {
+    getBomOptions().then(res => {
+      setBomOptions(res.data.data || { pcb: [], electrical: [], electronics: [], structural: [] });
+    }).catch(() => {});
+  };
+
+  const handleSaveBom = async () => {
+    if (!selectedProduct?.product_id) return;
+    setIsSavingBom(true);
+    try {
+      await saveProductBom(selectedProduct.product_id, bomItems);
+      toast.success('Bill of Material saved!');
+    } catch (err) {
+      toast.error('Failed to save BOM');
+    } finally {
+      setIsSavingBom(false);
+    }
+  };
+
+  const addBomItem = (type, id, name) => {
+    if (!id) return;
+    const already = bomItems.some(i => i.component_type === type && String(i.component_id) === String(id));
+    if (already) { toast('Already added!', { icon: 'ℹ️' }); return; }
+    setBomItems(prev => [...prev, { component_type: type, component_id: id, name, quantity: 1, notes: '' }]);
+  };
+
+  const removeBomItem = (index) => {
+    setBomItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateBomItem = (index, field, value) => {
+    setBomItems(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
   };
 
   const handleRemoveAsset = async (url, type) => {
@@ -393,10 +503,14 @@ const ProductListPage = () => {
         }
       } else if (type === 'documents') {
         if (Array.isArray(updatedProduct.documents)) {
-          updatedProduct.documents = updatedProduct.documents.filter(u => u !== url);
+          updatedProduct.documents = updatedProduct.documents.filter(doc => {
+            const docUrl = typeof doc === 'string' ? doc : doc.url;
+            return docUrl !== url;
+          });
         }
         if (updatedProduct.document_url === url) {
-          updatedProduct.document_url = updatedProduct.documents?.[0] || null;
+          const nextDoc = updatedProduct.documents?.[0];
+          updatedProduct.document_url = nextDoc ? (typeof nextDoc === 'string' ? nextDoc : nextDoc.url) : null;
         }
       }
       setSelectedProduct(updatedProduct);
@@ -601,6 +715,8 @@ const ProductListPage = () => {
                 {[
                   { id: 'general', label: 'General Information' },
                   { id: 'specs', label: 'Technical Specifications' },
+                  { id: 'bom', label: 'Bill of Material' },
+                  { id: 'status', label: 'Product Status' },
                   { id: 'files', label: 'Files' }
                 ].map(tab => (
                   <button
@@ -614,6 +730,9 @@ const ProductListPage = () => {
                     }`}
                   >
                     {tab.label}
+                    {tab.id === 'bom' && bomItems.length > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--accent)] text-white text-[8px] font-black">{bomItems.length}</span>
+                    )}
                     {modalActiveTab === tab.id && (
                       <div className="absolute bottom-0 left-6 right-6 h-0.5 bg-[var(--accent)] rounded-t-full shadow-[0_-4px_12px_var(--border-glow)]" />
                     )}
@@ -710,11 +829,11 @@ const ProductListPage = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-3">
                       <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Product Description</label>
-                      <Controller name="description" control={control} render={({ field }) => ( <ReactQuill theme="snow" value={field.value || ''} onChange={field.onChange} modules={quillModules} readOnly={modalMode === 'view'} placeholder="Primary operational description..." /> )} />
+                      <Controller name="description" control={control} render={({ field }) => ( <ReactQuill theme="snow" value={field.value || ''} onChange={field.onChange} modules={quillModules} formats={quillFormats} readOnly={modalMode === 'view'} placeholder="Primary operational description..." /> )} />
                     </div>
                     <div className="space-y-3">
                       <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Key Features</label>
-                      <Controller name="feature" control={control} render={({ field }) => ( <ReactQuill theme="snow" value={field.value || ''} onChange={field.onChange} modules={quillModules} readOnly={modalMode === 'view'} placeholder="• High durability&#10;• Weather resistant..." /> )} />
+                      <Controller name="feature" control={control} render={({ field }) => ( <ReactQuill theme="snow" value={field.value || ''} onChange={field.onChange} modules={quillModules} formats={quillFormats} readOnly={modalMode === 'view'} placeholder="• High durability&#10;• Weather resistant..." /> )} />
                     </div>
                   </div>
 
@@ -796,7 +915,219 @@ const ProductListPage = () => {
                 </div>
               </div>
 
-              {/* 3. Files Tab */}
+              {/* 3. Bill of Material Tab */}
+              <div className={modalActiveTab === 'bom' ? 'space-y-6 animate-in fade-in duration-300' : 'hidden'}>
+                <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-8 rounded-2xl md:rounded-[32px]">
+                  {/* Header */}
+                  <div className="flex items-center justify-between pb-4 border-b border-[var(--border-color)]/60">
+                    <div className="flex items-center gap-3">
+                      <div className="w-1.5 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" />
+                      <h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Bill of Material</h3>
+                    </div>
+                    {selectedProduct?.product_id && (
+                      <button
+                        type="button"
+                        onClick={handleSaveBom}
+                        disabled={isSavingBom}
+                        className="btn-primary py-2 px-5 text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
+                        style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
+                      >
+                        {isSavingBom ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} strokeWidth={3} />}
+                        Save BOM
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Component Selector Sections */}
+                  <div className="space-y-4">
+                    {[
+                      { type: 'pcb', label: 'PCB', icon: Cpu, color: '#00d2ff', bgColor: 'rgba(0, 210, 255, 0.08)' },
+                      { type: 'electrical', label: 'Electrical Parts', icon: Zap, color: '#fbbf24', bgColor: 'rgba(251, 191, 36, 0.08)' },
+                      { type: 'electronics', label: 'Electronics Parts', icon: CircuitBoard, color: '#34d399', bgColor: 'rgba(52, 211, 153, 0.08)' },
+                      { type: 'structural', label: 'Structural Parts', icon: Layers, color: '#a78bfa', bgColor: 'rgba(167, 139, 250, 0.08)' }
+                    ].map(({ type, label, icon: Icon, color, bgColor }) => {
+                      const isOpen = bomExpandedSection === type;
+                      const sectionItems = bomItems.filter(i => i.component_type === type);
+                      const opts = bomOptions[type] || [];
+
+                      return (
+                        <div key={type} className="border border-[var(--border-color)] rounded-2xl overflow-hidden transition-all duration-300" style={{ borderColor: isOpen ? color + '55' : undefined }}>
+                          {/* Accordion Header */}
+                          <button
+                            type="button"
+                            onClick={() => setBomExpandedSection(isOpen ? null : type)}
+                            className="w-full flex items-center justify-between px-5 py-4 transition-all group"
+                            style={{ background: isOpen ? bgColor : undefined }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm" style={{ background: bgColor, color }}>
+                                <Icon size={16} strokeWidth={2.5} />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Component Group</p>
+                                <h4 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-tight">{label}</h4>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {sectionItems.length > 0 && (
+                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest" style={{ background: bgColor, color }}>
+                                  {sectionItems.length} selected
+                                </span>
+                              )}
+                              <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} style={{ color }} />
+                            </div>
+                          </button>
+
+                          {/* Dropdown Content */}
+                          {isOpen && (
+                            <div className="px-5 pb-5 space-y-4 border-t border-[var(--border-color)]/40">
+                              {/* Selector */}
+                              <div className="pt-4">
+                                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">Add component</label>
+                                <select
+                                  className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] font-bold text-[var(--text-main)] outline-none focus:ring-2 transition-all appearance-none cursor-pointer"
+                                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+                                  onChange={(e) => {
+                                    const opt = opts.find(o => String(o.id) === e.target.value);
+                                    if (opt) addBomItem(type, opt.id, opt.name);
+                                    e.target.value = '';
+                                  }}
+                                  defaultValue=""
+                                >
+                                  <option value="">— Select {label} to add —</option>
+                                  {opts.map(o => (
+                                    <option key={o.id} value={o.id}>{o.name}</option>
+                                  ))}
+                                </select>
+                                {opts.length === 0 && (
+                                  <p className="text-[10px] text-[var(--text-dim)] italic mt-2 ml-1">No active {label} found in inventory.</p>
+                                )}
+                              </div>
+
+                              {/* Selected items */}
+                              {sectionItems.length > 0 && (
+                                <div className="space-y-2">
+                                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Selected ({sectionItems.length})</label>
+                                  <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                                    {sectionItems.map((item, idx) => {
+                                      const globalIdx = bomItems.findIndex(b => b.component_type === type && String(b.component_id) === String(item.component_id));
+                                      return (
+                                        <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-workspace)]/60 group hover:border-[var(--accent)]/30 transition-all">
+                                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
+                                          <span className="flex-1 text-[12px] font-bold text-[var(--text-main)] truncate">{item.name}</span>
+                                          <div className="flex items-center gap-2">
+                                            <label className="text-[9px] font-black text-[var(--text-muted)] uppercase">Qty</label>
+                                            <input
+                                              type="number"
+                                              min="1"
+                                              value={item.quantity}
+                                              onChange={(e) => updateBomItem(globalIdx, 'quantity', parseInt(e.target.value) || 1)}
+                                              className="w-14 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-2 py-1 text-[12px] font-black text-center text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all"
+                                            />
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => removeBomItem(globalIdx)}
+                                            className="p-1.5 text-[var(--text-dim)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all flex-shrink-0"
+                                            title="Remove"
+                                          >
+                                            <X size={12} />
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* BOM Summary */}
+                  {bomItems.length > 0 && (
+                    <div className="pt-4 border-t border-[var(--border-color)]/40">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">BOM Summary — {bomItems.length} component{bomItems.length !== 1 ? 's' : ''}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {bomItems.map((item, i) => (
+                          <span key={i} className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider" style={{
+                            borderColor: item.component_type === 'pcb' ? '#00d2ff44' : item.component_type === 'electrical' ? '#fbbf2444' : item.component_type === 'electronics' ? '#34d39944' : '#a78bfa44',
+                            color: item.component_type === 'pcb' ? '#00d2ff' : item.component_type === 'electrical' ? '#fbbf24' : item.component_type === 'electronics' ? '#34d399' : '#a78bfa',
+                            background: item.component_type === 'pcb' ? 'rgba(0,210,255,0.08)' : item.component_type === 'electrical' ? 'rgba(251,191,36,0.08)' : item.component_type === 'electronics' ? 'rgba(52,211,153,0.08)' : 'rgba(167,139,250,0.08)'
+                          }}>
+                            <span className="opacity-60">{item.component_type}:</span>
+                            <span>{item.name}</span>
+                            {item.quantity > 1 && <span className="opacity-60">×{item.quantity}</span>}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. Product Status Tab */}
+              <div className={modalActiveTab === 'status' ? 'space-y-6 animate-in fade-in duration-300' : 'hidden'}>
+                <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-1.5 h-6 md:w-2 md:h-8 bg-[var(--accent)] rounded-full" />
+                    <h3 className="text-base md:text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Product Status</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[
+                      { name: 'product_promoted', label: 'Product Promoted', desc: 'Actively marketed & featured in campaigns' },
+                      { name: 'product_inquired', label: 'Product Inquired', desc: 'Customer queries received for this product' },
+                      { name: 'product_quoted', label: 'Product Quoted', desc: 'Formal price quotes generated for clients' },
+                      { name: 'product_sampled', label: 'Product Sampled', desc: 'Samples sent to prospective customers' },
+                      { name: 'product_purchased', label: 'Product Purchased', desc: 'Successfully ordered & sold in orders' }
+                    ].map(status => {
+                      const isChecked = watch(status.name);
+                      return (
+                        <label 
+                          key={status.name}
+                          className={`flex items-start gap-4 p-5 rounded-2xl border transition-all duration-300 cursor-pointer select-none group relative overflow-hidden ${
+                            isChecked 
+                              ? 'bg-[var(--accent)]/5 border-[var(--accent)]' 
+                              : 'bg-[var(--bg-workspace)]/40 border-[var(--border-color)] hover:border-[var(--text-muted)]/50'
+                          }`}
+                          style={{ boxShadow: isChecked ? '0 0 15px -3px var(--border-glow)' : 'none' }}
+                        >
+                          <input 
+                            type="checkbox"
+                            {...register(status.name)}
+                            disabled={modalMode === 'view'}
+                            className="sr-only"
+                          />
+                          {/* Custom Checkbox Indicator */}
+                          <div className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${
+                            isChecked 
+                              ? 'bg-[var(--accent)] border-[var(--accent)] text-white' 
+                              : 'border-[var(--text-muted)] group-hover:border-[var(--text-main)]'
+                          }`}>
+                            {isChecked && <Check size={12} strokeWidth={4} />}
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className={`block text-[13px] font-black uppercase tracking-wider transition-colors ${
+                              isChecked ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'
+                            }`}>
+                              {status.label}
+                            </span>
+                            <span className="block text-[11px] text-[var(--text-muted)] leading-relaxed font-medium">
+                              {status.desc}
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Files Tab */}
               <div className={modalActiveTab === 'files' ? 'space-y-6 animate-in fade-in duration-300' : 'hidden'}>
                 <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-6 rounded-2xl md:rounded-[32px]">
                   <div className="flex items-center gap-3 mb-4">
@@ -845,33 +1176,39 @@ const ProductListPage = () => {
                         <div className="space-y-3">
                           <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Documents</label>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {(selectedProduct.documents && selectedProduct.documents.length > 0 ? selectedProduct.documents : [selectedProduct.document_url]).filter(Boolean).map((url, idx) => (
-                              <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] rounded-xl group hover:border-[var(--accent)]/50 transition-all">
-                                <div className="flex items-center gap-3 truncate">
-                                  <FileText size={16} className="text-[var(--accent)]" />
-                                  <span className="text-[11px] font-bold text-[var(--text-main)] truncate uppercase tracking-wider">{url.split('/').pop()}</span>
+                            {(selectedProduct.documents && selectedProduct.documents.length > 0 
+                              ? selectedProduct.documents 
+                              : (selectedProduct?.document_url ? [selectedProduct.document_url] : [])
+                            ).filter(Boolean).map((docItem, idx) => {
+                              const doc = typeof docItem === 'string' ? { url: docItem, name: docItem.split('/').pop() } : docItem;
+                              return (
+                                <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] rounded-xl group hover:border-[var(--accent)]/50 transition-all">
+                                  <div className="flex items-center gap-3 truncate">
+                                    <FileText size={16} className="text-[var(--accent)]" />
+                                    <span className="text-[11px] font-bold text-[var(--text-main)] truncate uppercase tracking-wider">{doc.name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <a 
+                                      href={getFullUrl(doc.url)} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="p-1.5 text-[var(--text-dim)] hover:text-[var(--accent)] transition-colors"
+                                      title="View"
+                                    >
+                                      <Eye size={14} />
+                                    </a>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => handleRemoveAsset(doc.url, 'documents')} 
+                                      className="p-1.5 text-rose-500/50 hover:text-rose-500 transition-colors cursor-pointer"
+                                      title="Delete"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <a 
-                                    href={getFullUrl(url)} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="p-1.5 text-[var(--text-dim)] hover:text-[var(--accent)] transition-colors"
-                                    title="View"
-                                  >
-                                    <Eye size={14} />
-                                  </a>
-                                  <button 
-                                    type="button" 
-                                    onClick={() => handleRemoveAsset(url, 'documents')} 
-                                    className="p-1.5 text-rose-500/50 hover:text-rose-500 transition-colors cursor-pointer"
-                                    title="Delete"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -879,7 +1216,19 @@ const ProductListPage = () => {
                   )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FileInput label="Upload New Image" name="image" accept="image/*" icon={Plus} />
-                    <FileInput label="Upload New Datasheet" name="document" accept=".pdf,.doc,.docx,.xls,.xlsx" icon={FileText} />
+                    <div className="space-y-4">
+                      <FileInput label="Upload New Datasheet" name="document" accept=".pdf,.doc,.docx,.xls,.xlsx" icon={FileText} />
+                      <div>
+                        <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2 ml-1">Datasheet Label / Name</label>
+                        <input 
+                          type="text" 
+                          {...register('document_label')} 
+                          disabled={modalMode === 'view'}
+                          className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold"
+                          placeholder="e.g. Technical Datasheet V2, User Manual..."
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

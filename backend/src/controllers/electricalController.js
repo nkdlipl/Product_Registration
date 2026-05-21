@@ -100,9 +100,9 @@ const createElectricalPart = async (req, res, next) => {
 
         // 1. Insert Master
         const masterResult = await db.query(
-            `INSERT INTO electrical_part_master (part_category, part_name, part_number, manufacturer, part_type, description, used_in_product, material, status) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING part_id`,
-            [body.part_category, body.part_name, body.part_number, body.manufacturer, body.part_type, body.description, body.used_in_product, body.material, body.status || 'Active']
+            `INSERT INTO electrical_part_master (part_category, part_name, part_number, manufacturer, part_type, description, used_in_product, material, status, stock_quantity) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING part_id`,
+            [body.part_category, body.part_name, body.part_number, body.manufacturer, body.part_type, body.description, body.used_in_product, body.material, body.status || 'Active', body.stock_quantity || 0]
         );
         const part_id = masterResult.rows[0].part_id;
 
@@ -165,9 +165,9 @@ const updateElectricalPart = async (req, res, next) => {
         // 1. Update Master
         await db.query(
             `UPDATE electrical_part_master 
-             SET part_category=$1, part_name=$2, part_number=$3, manufacturer=$4, part_type=$5, description=$6, used_in_product=$7, material=$8, status=$9, updated_at=CURRENT_TIMESTAMP
-             WHERE part_id=$10`,
-            [body.part_category, body.part_name, body.part_number, body.manufacturer, body.part_type, body.description, body.used_in_product, body.material, body.status, id]
+             SET part_category=$1, part_name=$2, part_number=$3, manufacturer=$4, part_type=$5, description=$6, used_in_product=$7, material=$8, status=$9, stock_quantity=$10, updated_at=CURRENT_TIMESTAMP
+             WHERE part_id=$11`,
+            [body.part_category, body.part_name, body.part_number, body.manufacturer, body.part_type, body.description, body.used_in_product, body.material, body.status, body.stock_quantity || 0, id]
         );
 
         // 4. Update Tech Specs

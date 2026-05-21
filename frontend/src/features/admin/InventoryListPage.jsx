@@ -969,6 +969,7 @@ const buildFileUrl = (filePath) => {
     { key: 'pcb_name', label: 'PCB Name' },
     { key: 'part_no', label: 'Part Number' },
     { key: 'processor_count', label: 'Processors' },
+    { key: 'stock_quantity', label: 'Stock Qty', render: (row) => <span className="font-black text-[var(--accent)]">{row.stock_quantity ?? 0}</span> },
     { key: 'created_at', label: 'Registered On', render: (row) => new Date(row.created_at).toLocaleDateString() }
   ];
 
@@ -1125,16 +1126,20 @@ const buildFileUrl = (filePath) => {
                     </p>
                   </div>
                   
-                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
-                      <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </span>
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-[var(--border-color)]">
+                    <div className="flex-1">
+                      {(item.stock_quantity !== undefined && item.stock_quantity !== null) && (
+                        <div className="flex items-center gap-1.5 bg-gradient-to-r from-[var(--accent)]/15 to-[var(--accent)]/5 px-2.5 py-1.5 rounded-lg border border-[var(--accent)]/30 w-fit">
+                          <Box size={11} className="text-[var(--accent)] flex-shrink-0" strokeWidth={2.5} />
+                          <span className="text-[9px] font-black text-[var(--accent)] uppercase tracking-[0.1em]">
+                            {item.stock_quantity} Units
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1">
-                       <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" title="Edit"><Pencil size={14} /></button>
-                       <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"><Trash2 size={14} /></button>
+                    <div className="flex items-center gap-2">
+                       <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] hover:bg-[var(--nav-hover)] rounded-lg transition-all" title="Edit"><Pencil size={14} /></button>
+                       <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -1268,6 +1273,16 @@ const buildFileUrl = (filePath) => {
                                 <span className="text-[17px] font-black text-[var(--text-main)]">{new Date(selectedItem?.created_at).toLocaleDateString()}</span>
                              </div>
                           </div>
+                          {(selectedItem?.category === 'PCB' || (!selectedItem?.category && type === 'PCB')) && (
+                            <div className="col-span-2 space-y-2">
+                               <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Stock Quantity</p>
+                               <div className="flex items-center gap-3">
+                                  <Box size={18} className="text-[var(--accent)]" />
+                                  <span className="text-[24px] font-black text-[var(--accent)]">{selectedItem?.stock_quantity ?? 0}</span>
+                                  <span className="text-[12px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Units in Stock</span>
+                               </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-4 py-2">
@@ -1355,6 +1370,10 @@ const buildFileUrl = (filePath) => {
                           <div className="grid grid-cols-2 gap-8">
                               <FormField label="PCB Type" name="pcb_type" placeholder="e.g. 4-Layer FR4" />
                               <FormField label="PCB Type Description" name="pcb_type_desc" placeholder="Details about construction..." />
+                          </div>
+                          <div className="grid grid-cols-2 gap-8">
+                              <FormField label="Processor Count" name="processor_count" type="number" placeholder="e.g. 1" />
+                              <FormField label="Stock Quantity" name="stock_quantity" type="number" placeholder="e.g. 10" />
                           </div>
                           <TextAreaField label="PCB Description" name="pcb_description" placeholder="Technical overview and purpose of this board..." />
                         </>

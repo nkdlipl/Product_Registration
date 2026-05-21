@@ -118,9 +118,9 @@ const createPCB = async (req, res, next) => {
 
     // 2. Create PCB
     const pcbResult = await db.query(
-      `INSERT INTO PCB_MASTER (pcb_name, pcb_type_id, part_no, description, processor_count) 
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [pcb_name, typeId, part_number, pcb_description || '', parseInt(processor_count) || 0]
+      `INSERT INTO PCB_MASTER (pcb_name, pcb_type_id, part_no, description, processor_count, stock_quantity) 
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [pcb_name, typeId, part_number, pcb_description || '', parseInt(processor_count) || 0, parseInt(req.body.stock_quantity) || 0]
     );
     const pcb = pcbResult.rows[0];
 
@@ -247,9 +247,9 @@ const updatePCB = async (req, res, next) => {
       // 2. Update PCB
       await db.query(
         `UPDATE PCB_MASTER 
-         SET pcb_name = $1, pcb_type_id = $2, part_no = $3, description = $4, processor_count = $5, updated_at = CURRENT_TIMESTAMP
-         WHERE pcb_id = $6`,
-        [pcb_name, typeId, part_number, pcb_description || '', parseInt(processor_count) || 0, id]
+         SET pcb_name = $1, pcb_type_id = $2, part_no = $3, description = $4, processor_count = $5, stock_quantity = $6, updated_at = CURRENT_TIMESTAMP
+         WHERE pcb_id = $7`,
+        [pcb_name, typeId, part_number, pcb_description || '', parseInt(processor_count) || 0, parseInt(req.body.stock_quantity) || 0, id]
       );
   
       // 3. Handle Processor

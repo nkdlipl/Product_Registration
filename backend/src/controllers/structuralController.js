@@ -164,7 +164,7 @@ const createStructuralPart = async (req, res, next) => {
         }
 
         // 1. Insert Master
-        const masterFields = ['part_category', 'part_name', 'part_number', 'internal_part_code', 'compatible_dispenser_model', 'assembly_group', 'part_position', 'part_description', 'manufacturer_fabricator', 'brand', 'status'];
+        const masterFields = ['part_category', 'part_name', 'part_number', 'internal_part_code', 'compatible_dispenser_model', 'assembly_group', 'part_position', 'part_description', 'manufacturer_fabricator', 'brand', 'status', 'stock_quantity'];
         const masterValues = masterFields.map(f => sanitizeValue(body[f]));
         const masterPlaceholders = masterFields.map((_, i) => `$${i + 1}`).join(', ');
         
@@ -285,7 +285,7 @@ const updateStructuralPart = async (req, res, next) => {
         }
 
         // 1. Update Master
-        const masterFields = ['part_category', 'part_name', 'part_number', 'internal_part_code', 'compatible_dispenser_model', 'assembly_group', 'part_position', 'part_description', 'manufacturer_fabricator', 'brand', 'status'];
+        const masterFields = ['part_category', 'part_name', 'part_number', 'internal_part_code', 'compatible_dispenser_model', 'assembly_group', 'part_position', 'part_description', 'manufacturer_fabricator', 'brand', 'status', 'stock_quantity'];
         let masterSetParts = masterFields.map((f, i) => `${f}=$${i+1}`);
         let masterValues = masterFields.map(f => sanitizeValue(body[f]));
         masterValues.push(id);
