@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import Swal from 'sweetalert2';
 
 const SupportTicketsPage = () => {
   const navigate = useNavigate();
@@ -122,7 +123,16 @@ const SupportTicketsPage = () => {
   };
 
   const handleDelete = async (ticket) => {
-    if (!window.confirm(`Are you sure you want to delete ticket ${ticket.ticket_id}?`)) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete ticket ${ticket.ticket_id}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteSupportTicket(ticket.id);
       toast.success('Ticket deleted successfully!');

@@ -3,8 +3,25 @@ const { sendSuccess, sendError } = require('../utils/response');
 
 const getCustomers = async (req, res, next) => {
   try {
-    const result = await db.query('SELECT * FROM customers ORDER BY created_at DESC');
-    sendSuccess(res, result.rows);
+    const result = await db.query(`
+      SELECT c.*, 
+        (
+          SELECT string_agg(DISTINCT p.product_name, ', ') 
+          FROM book_a_sale bas 
+          JOIN finished_goods fg ON bas.finished_good_id = fg.id 
+          JOIN products p ON fg.product_id = p.product_id 
+          WHERE bas.customer_id = c.customer_id
+        ) AS derived_product
+      FROM customers c 
+      ORDER BY c.created_at DESC
+    `);
+    
+    const rows = result.rows.map(row => ({
+      ...row,
+      product: row.derived_product || ''
+    }));
+    
+    sendSuccess(res, rows);
   } catch (error) {
     next(error);
   }
@@ -13,11 +30,27 @@ const getCustomers = async (req, res, next) => {
 const getCustomerById = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const result = await db.query('SELECT * FROM customers WHERE customer_id = $1', [id]);
+    const result = await db.query(`
+      SELECT c.*, 
+        (
+          SELECT string_agg(DISTINCT p.product_name, ', ') 
+          FROM book_a_sale bas 
+          JOIN finished_goods fg ON bas.finished_good_id = fg.id 
+          JOIN products p ON fg.product_id = p.product_id 
+          WHERE bas.customer_id = c.customer_id
+        ) AS derived_product
+      FROM customers c 
+      WHERE c.customer_id = $1
+    `, [id]);
+    
     if (result.rows.length === 0) {
       return sendError(res, 'NOT_FOUND', 'Customer not found', 404);
     }
-    sendSuccess(res, result.rows[0]);
+    
+    const row = result.rows[0];
+    row.product = row.derived_product || '';
+    
+    sendSuccess(res, row);
   } catch (error) {
     next(error);
   }

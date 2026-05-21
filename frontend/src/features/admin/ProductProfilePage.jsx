@@ -4,6 +4,7 @@ import { getProductById, deleteProduct, getProductBom, getBomOptions } from '../
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import { Loader2, Box, Droplet, LayoutGrid, Activity, FileText, Eye, Download, CheckCircle, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const ProductProfilePage = () => {
   const { id } = useParams();
@@ -115,7 +116,16 @@ const ProductProfilePage = () => {
   };
 
   const handleDeleteClick = async () => {
-    if (!window.confirm(`Are you sure you want to delete "${selectedProduct.product_name}"?`)) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete "${selectedProduct.product_name}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteProduct(selectedProduct.product_id);
       toast.success('Product deleted successfully!');

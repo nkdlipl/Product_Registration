@@ -14,6 +14,7 @@ import { getCompanies } from '../../api/companies';
 import CompanyModal from '../../components/shared/CompanyModal';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import Swal from 'sweetalert2';
 
 // Register custom line height format in Quill
 const Quill = ReactQuill.Quill;
@@ -489,7 +490,16 @@ const ProductListPage = () => {
   };
 
   const handleRemoveAsset = async (url, type) => {
-    if (!window.confirm('Are you sure you want to delete this asset?')) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this asset?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
     try {
       await removeAsset(selectedProduct.product_id, url, type);
       toast.success('Asset removed');
@@ -521,7 +531,16 @@ const ProductListPage = () => {
   };
 
   const handleDelete = async (product) => {
-    if (!window.confirm(`Are you sure you want to delete "${product.product_name}"?`)) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete "${product.product_name}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteProduct(product.product_id);
       toast.success(`Product deleted successfully!`);

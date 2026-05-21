@@ -7,6 +7,7 @@ import Sidebar from '../components/shared/Sidebar';
 import Breadcrumbs from '../components/shared/Breadcrumbs';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy } from 'lucide-react';
 
 const IconMap = {
@@ -191,8 +192,18 @@ const DashboardLayout = () => {
   };
 
   // Function to clear all tabs
-  const handleClearAllTabs = () => {
-    if (window.confirm("Would you like to delete the tabs?")) {
+  const handleClearAllTabs = async () => {
+    const result = await Swal.fire({
+      title: 'Clear all tabs?',
+      text: "Would you like to close all open tabs?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, clear them!'
+    });
+    
+    if (result.isConfirmed) {
       const dashboardTab = { 
         fullPath: user?.role_name ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
         label: 'Overview', 

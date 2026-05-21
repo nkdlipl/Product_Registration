@@ -8,6 +8,7 @@ import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, Sh
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
+import Swal from 'sweetalert2';
 
 const UserListPage = ({ initialRole = '' }) => {
   const navigate = useNavigate();
@@ -144,7 +145,16 @@ const UserListPage = ({ initialRole = '' }) => {
   };
 
   const handleDelete = async (user) => {
-    if (!window.confirm(`Are you sure you want to delete "${user.full_name}"? This will also remove their profile records.`)) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete "${user.full_name}"? This will also remove their profile records.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteUser(user.user_id);
       toast.success('User deleted successfully');

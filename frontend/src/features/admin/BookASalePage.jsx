@@ -22,6 +22,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const BookASalePage = () => {
   const [sales, setSales] = useState([]);
@@ -192,7 +193,16 @@ const BookASalePage = () => {
   };
 
   const handleDelete = async (row) => {
-    if (!window.confirm('Are you sure you want to cancel this sale? Quantity will be restored.')) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to cancel this sale? Quantity will be restored.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, cancel it!'
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteBookedSale(row.id);
       toast.success('Sale cancelled and quantity restored');

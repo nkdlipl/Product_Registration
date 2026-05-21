@@ -10,6 +10,7 @@ import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import Swal from 'sweetalert2';
 
 const TeamsPage = () => {
   const [searchParams] = useSearchParams();
@@ -162,7 +163,16 @@ const TeamsPage = () => {
   };
 
   const handleDelete = async (team) => {
-    if (!window.confirm(`Are you sure you want to delete "${team.team_name}"? This action will unlink associated projects.`)) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete "${team.team_name}"? This action will unlink associated projects.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
     try {
       // await deleteTeam(team.team_id);
       toast.success('Team deleted successfully');

@@ -5,6 +5,7 @@ import Modal from '../../components/shared/Modal';
 import { Search, Plus, Loader2, Cpu, Code, Trash2, Edit3, Eye, Hash, Info, CheckCircle2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const FeatureMappingPage = () => {
   const [mappings, setMappings] = useState([]);
@@ -91,7 +92,16 @@ const FeatureMappingPage = () => {
   };
 
   const handleDelete = async (mapping) => {
-    if (!window.confirm(`Are you sure you want to delete ${mapping.mapping_name}?`)) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete ${mapping.mapping_name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteFeatureMapping(mapping.mapping_id);
       toast.success('Feature Mapping deleted successfully');

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '../../api/customers';
-import { getProducts } from '../../api/products';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { Search, Plus, Loader2, Users, Mail, Phone, MapPin, Building, Globe, Hash, ShieldCheck, Trash2, Edit3, Edit2, Check, Eye, FileText, Briefcase, CreditCard, PenTool } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const CustomerListPage = () => {
   const [customers, setCustomers] = useState([]);
@@ -21,7 +21,6 @@ const CustomerListPage = () => {
   const [accountsContacts, setAccountsContacts] = useState([]);
   const [qaQcContacts, setQaQcContacts] = useState([]);
   const [otherContacts, setOtherContacts] = useState([]);
-  const [availableProducts, setAvailableProducts] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [isPersonnelModalOpen, setIsPersonnelModalOpen] = useState(false);
   const [personnelType, setPersonnelType] = useState('technical');
@@ -46,18 +45,8 @@ const CustomerListPage = () => {
     }
   };
 
-  const fetchProductsData = async () => {
-    try {
-      const res = await getProducts({ limit: 1000 });
-      setAvailableProducts(res.data?.data || res.data || []);
-    } catch (error) {
-      console.error('Failed to fetch products:', error);
-    }
-  };
-
   useEffect(() => {
     fetchCustomers();
-    fetchProductsData();
   }, []);
 
   const filteredCustomers = customers.filter(customer =>
@@ -281,8 +270,7 @@ const CustomerListPage = () => {
       email: '',
       gst_no: '',
       status: 'Active',
-      company_type: '',
-      product: ''
+      company_type: ''
     });
     setIsModalOpen(true);
   };
@@ -316,7 +304,16 @@ const CustomerListPage = () => {
   };
 
   const handleDelete = async (customer) => {
-    if (!window.confirm(`Are you sure you want to delete ${customer.customer_name}?`)) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete ${customer.customer_name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteCustomer(customer.customer_id);
       toast.success('Customer deleted successfully');
@@ -716,15 +713,6 @@ const CustomerListPage = () => {
                           <option value="Limited Liability Partnership(LLP)">LLP</option>
                         </select>
                       </div>
-                      <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Product</label>
-                      <select {...register('product')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px] appearance-none">
-                        <option value="">Select Product</option>
-                        {availableProducts.map(p => (
-                          <option key={p.product_id} value={p.product_name}>{p.product_name}</option>
-                        ))}
-                      </select>
-                    </div>
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">GST Number</label>
                         <input {...register('gst_no')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]" />

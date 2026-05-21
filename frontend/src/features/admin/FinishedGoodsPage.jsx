@@ -26,6 +26,7 @@ import {
     Pencil
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import MultiSelectDropdown from '../../components/shared/MultiSelectDropdown';
 
 const FinishedGoodsPage = () => {
@@ -202,7 +203,16 @@ const FinishedGoodsPage = () => {
     };
 
     const handleDelete = async (row) => {
-        if (!window.confirm('Are you sure you want to delete this finished good?')) return;
+        const result = await Swal.fire({
+          title: 'Are you sure?',
+          text: 'Are you sure you want to delete this finished good?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: 'var(--accent)',
+          cancelButtonColor: '#ef4444',
+          confirmButtonText: 'Yes, delete it!'
+        });
+        if (!result.isConfirmed) return;
         try {
             await deleteFinishedGood(row.id || row.finished_good_id || row.id);
             toast.success('Finished Good deleted');

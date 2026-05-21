@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { X } from 'lucide-react';
+import Draggable from 'react-draggable';
 
 const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', headerActions }) => {
+  const nodeRef = useRef(null);
   if (!isOpen) return null;
 
   return (
@@ -14,16 +16,17 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', header
       />
 
       {/* Modal Content */}
-      <div
-        className={`relative w-full ${maxWidth} rounded-2xl shadow-2xl p-0 overflow-hidden animate-scale-in flex flex-col max-h-[90vh]`}
-        style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-color)',
-        }}
-      >
-        {/* Header */}
-        <div
-          className="px-6 py-4 flex items-center justify-between flex-shrink-0"
+      <Draggable nodeRef={nodeRef} handle=".modal-header">
+        <div ref={nodeRef} className="w-full" style={{ maxWidth: maxWidth === 'max-w-lg' ? '32rem' : maxWidth === 'max-w-xl' ? '36rem' : maxWidth === 'max-w-2xl' ? '42rem' : maxWidth === 'max-w-4xl' ? '56rem' : maxWidth === 'max-w-6xl' ? '72rem' : '100%', margin: '0 auto' }}>
+          <div
+            className={`relative w-full rounded-2xl shadow-2xl p-0 overflow-hidden animate-scale-in flex flex-col max-h-[90vh] bg-[var(--bg-card)]`}
+            style={{
+              border: '1px solid var(--border-color)',
+            }}
+          >
+          {/* Header */}
+          <div
+            className="modal-header px-6 py-4 flex items-center justify-between flex-shrink-0 cursor-move"
           style={{
             background: 'var(--grad-header)',
             borderBottom: '1px solid var(--border-color)',
@@ -57,7 +60,9 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', header
         >
           {children}
         </div>
-      </div>
+        </div>
+        </div>
+      </Draggable>
     </div>
   );
 };

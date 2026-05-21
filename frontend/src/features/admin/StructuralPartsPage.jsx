@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import { STRUCTURAL_SPEC_FIELDS, STRUCTURAL_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
 
 const CATEGORY_CONFIG = STRUCTURAL_CATEGORY_CONFIG;
@@ -332,7 +333,16 @@ const StructuralPartsPage = () => {
   };
 
   const handleDelete = async (item) => {
-    if (window.confirm(`Are you sure you want to delete Part: ${item.part_name}?`)) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete Part: ${item.part_name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (result.isConfirmed) {
       try {
         await deleteStructuralPart(item.part_id);
         toast.success('Part deleted successfully');
@@ -361,7 +371,16 @@ const StructuralPartsPage = () => {
   };
 
   const handleDeleteFile = async (field) => {
-    if (window.confirm(`Are you sure you want to delete this file?`)) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this file?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (result.isConfirmed) {
       try {
         await deleteStructuralFile(selectedItem.part_id, field);
         toast.success('File deleted successfully');
@@ -371,7 +390,16 @@ const StructuralPartsPage = () => {
   };
 
   const handleDeleteImage = async (imageUrl) => {
-    if (window.confirm(`Are you sure you want to delete this image?`)) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this image?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (result.isConfirmed) {
       try {
         await deleteStructuralImage(selectedItem.part_id, imageUrl);
         toast.success('Image deleted successfully');

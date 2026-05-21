@@ -348,7 +348,16 @@ const ElectricalPartsPage = () => {
   };
 
   const handleDelete = async (item) => {
-    if (window.confirm(`Are you sure you want to delete ${item.part_name}?`)) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete ${item.part_name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (result.isConfirmed) {
       try {
         await deleteElectricalPart(item.part_id);
         toast.success('Part deleted successfully');
@@ -360,7 +369,16 @@ const ElectricalPartsPage = () => {
   };
 
   const handleRemoveImage = async (imageUrl) => {
-    if (window.confirm('Are you sure you want to remove this image?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to remove this image?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, remove it!'
+    });
+    if (result.isConfirmed) {
         try {
             await deleteElectricalImage(selectedItem.part_id, imageUrl);
             toast.success('Image removed successfully');
@@ -389,7 +407,16 @@ const ElectricalPartsPage = () => {
     const dbField = fieldMapping[fieldName];
     if (!dbField) return;
 
-    if (window.confirm('Are you sure you want to delete this file?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this file?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (result.isConfirmed) {
         try {
             await deleteElectricalFile(selectedItem.part_id, dbField);
             toast.success('File removed successfully');

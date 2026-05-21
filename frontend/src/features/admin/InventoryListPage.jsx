@@ -52,6 +52,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
+import Swal from 'sweetalert2';
 
 const InventoryListPage = ({ type = '' }) => {
   const navigate = useNavigate();
@@ -581,7 +582,16 @@ const buildFileUrl = (filePath) => {
 
   const handleDelete = async (item) => {
     const itemType = item.category || 'PCB';
-    if (window.confirm(`Are you sure you want to delete ${itemType}: ${item.pcb_name}?`)) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete ${itemType}: ${item.pcb_name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (result.isConfirmed) {
       try {
         if (itemType === 'PCB') {
             await deletePCB(item.pcb_id);
@@ -602,7 +612,16 @@ const buildFileUrl = (filePath) => {
   };
 
   const handleRemoveImage = async (imageUrl) => {
-    if (window.confirm('Are you sure you want to remove this image?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to remove this image?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, remove it!'
+    });
+    if (result.isConfirmed) {
         try {
             const category = selectedItem?.category;
             const id = selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id;
@@ -699,7 +718,16 @@ const buildFileUrl = (filePath) => {
 
     if (!dbField || !deleteApi) return;
 
-    if (window.confirm('Are you sure you want to delete this file?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this file?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (result.isConfirmed) {
         try {
             await deleteApi(id, dbField);
             toast.success('File removed successfully');

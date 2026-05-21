@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   getCategories,
   getSubCategories,
@@ -11,8 +11,10 @@ import {
 } from '../../api/categories';
 import { Plus, X, ChevronRight, Edit2, Trash2, ArrowLeft, Loader2, Folder, Subtitles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Draggable from 'react-draggable';
 
 const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCategory = null }) => {
+  const nodeRef = useRef(null);
   const [view, setView] = useState('categories');
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
@@ -139,9 +141,11 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 transition-opacity" onClick={onClose} />
 
-      <div className="relative w-full max-w-md bg-[var(--bg-card)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-[var(--border-color)]">
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-workspace)]/50">
+      <Draggable nodeRef={nodeRef} handle=".modal-header">
+        <div ref={nodeRef} className="w-full max-w-md" style={{ margin: '0 auto' }}>
+          <div className="relative w-full bg-[var(--bg-card)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-[var(--border-color)]">
+          {/* Header */}
+          <div className="modal-header px-6 py-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-workspace)]/50 cursor-move">
           <div className="flex items-center gap-4">
             {view === 'sub_categories' && (
               <button 
@@ -273,7 +277,9 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
           <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Select an item to synchronize</p>
           <button onClick={onClose} className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest hover:opacity-80 transition-colors">Dismiss</button>
         </div>
-      </div>
+        </div>
+        </div>
+      </Draggable>
     </div>
   );
 };

@@ -376,7 +376,16 @@ const buildFileUrl = (filePath) => {
   };
 
   const handleDelete = async (item) => {
-    if (window.confirm(`Are you sure you want to delete Part: ${item.part_name}?`)) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Are you sure you want to delete Part: ${item.part_name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (result.isConfirmed) {
       try {
         await deleteElectronicsPart(item.part_id);
         toast.success('Part deleted successfully');
@@ -404,7 +413,16 @@ const buildFileUrl = (filePath) => {
     const dbField = fieldMapping[fieldName];
     if (!dbField) return;
 
-    if (window.confirm('Are you sure you want to delete this file?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this file?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (result.isConfirmed) {
         try {
             await deleteElectronicsFile(selectedItem.part_id, dbField);
             toast.success('File removed successfully');
