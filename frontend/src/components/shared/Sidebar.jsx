@@ -24,7 +24,8 @@ import {
   Building2,
   CircuitBoard,
   Plug,
-  LifeBuoy
+  LifeBuoy,
+  MessageSquare
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose }) => {
@@ -542,6 +543,9 @@ const Sidebar = ({ role, isOpen, onClose }) => {
             <div className="animate-entrance-right" style={{ animationDelay: '750ms' }}>
               <NavItem to="/admin/support-tickets" label="Support Center" icon={LifeBuoy} />
             </div>
+            <div className="animate-entrance-right" style={{ animationDelay: '800ms' }}>
+              <NavItem to="/admin/chat" label="Chat" icon={MessageSquare} />
+            </div>
           </div>
         )}
 
@@ -553,14 +557,25 @@ const Sidebar = ({ role, isOpen, onClose }) => {
             >
               Workspace
             </p>
-            {isDesigner && <NavItem to="/designer/dashboard" label="Workstation" icon={Layers} />}
+            {isDesigner && (
+              <>
+                <NavItem to="/designer/dashboard" label="Workstation" icon={Layers} />
+                <NavItem to="/designer/chat" label="Chat" icon={MessageSquare} />
+              </>
+            )}
             {isSales && (
               <>
                 <NavItem to="/sales/dashboard" label="Dashboard" icon={LayoutDashboard} />
                 <NavItem to="/sales/opportunities" label="Pipeline" icon={ShoppingBag} />
+                <NavItem to="/sales/chat" label="Chat" icon={MessageSquare} />
               </>
             )}
-            {isMaintenance && <NavItem to="/maintenance/dashboard" label="Service Console" icon={Wrench} />}
+            {isMaintenance && (
+              <>
+                <NavItem to="/maintenance/dashboard" label="Service Console" icon={Wrench} />
+                <NavItem to="/maintenance/chat" label="Chat" icon={MessageSquare} />
+              </>
+            )}
           </div>
         )}
 

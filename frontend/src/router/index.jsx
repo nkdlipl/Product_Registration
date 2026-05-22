@@ -8,7 +8,7 @@ import Breadcrumbs from '../components/shared/Breadcrumbs';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy } from 'lucide-react';
+import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare } from 'lucide-react';
 
 const IconMap = {
   Home,
@@ -21,7 +21,8 @@ const IconMap = {
   Cpu,
   LayoutGrid,
   Package,
-  LifeBuoy
+  LifeBuoy,
+  MessageSquare
 };
 
 const getTabMetadata = (pathname, search) => {
@@ -88,6 +89,10 @@ const getTabMetadata = (pathname, search) => {
     return { label: 'Structural Parts', iconType: 'Box' };
   }
   
+  if (pathname.includes('/chat')) {
+    return { label: 'Chat', iconType: 'MessageSquare' };
+  }
+  
   // Default fallback
   return { label: 'System Page', iconType: 'Briefcase' };
 };
@@ -108,6 +113,7 @@ const StructuralPartsPage = lazy(() => import('../features/admin/StructuralParts
 const BookASalePage = lazy(() => import('../features/admin/BookASalePage'));
 const SupportTicketsPage = lazy(() => import('../features/admin/SupportTicketsPage'));
 const SupportTicketProfilePage = lazy(() => import('../features/admin/SupportTicketProfilePage'));
+const ChatPage = lazy(() => import('../features/chat/ChatPage'));
 
 
 const PageLoader = () => (
@@ -297,6 +303,7 @@ const Router = () => {
           <Route path="/admin/book-a-sale" element={<BookASalePage />} />
           <Route path="/admin/support-tickets" element={<SupportTicketsPage />} />
           <Route path="/admin/support-tickets/:id" element={<SupportTicketProfilePage />} />
+          <Route path="/admin/chat" element={<ChatPage />} />
 
         </Route>
 
@@ -304,6 +311,7 @@ const Router = () => {
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Designer']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/designer" element={<Navigate to="/designer/dashboard" />} />
           <Route path="/designer/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Designer Dashboard Initialization...</div>} />
+          <Route path="/designer/chat" element={<ChatPage />} />
         </Route>
 
         {/* Sales Routes */}
@@ -311,12 +319,14 @@ const Router = () => {
           <Route path="/sales" element={<Navigate to="/sales/dashboard" />} />
           <Route path="/sales/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Sales Dashboard Initialization...</div>} />
           <Route path="/sales/opportunities" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Opportunities Pipeline...</div>} />
+          <Route path="/sales/chat" element={<ChatPage />} />
         </Route>
 
         {/* Maintenance Routes */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Maintenance']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/maintenance" element={<Navigate to="/maintenance/dashboard" />} />
           <Route path="/maintenance/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Maintenance Dashboard Initialization...</div>} />
+          <Route path="/maintenance/chat" element={<ChatPage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/admin/dashboard" />} />

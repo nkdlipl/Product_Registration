@@ -141,8 +141,8 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 transition-opacity" onClick={onClose} />
 
-      <Draggable nodeRef={nodeRef} handle=".modal-header">
-        <div ref={nodeRef} className="w-full max-w-md" style={{ margin: '0 auto' }}>
+      <Draggable nodeRef={nodeRef} handle=".modal-header" bounds="parent">
+        <div ref={nodeRef} className="w-full max-w-md">
           <div className="relative w-full bg-[var(--bg-card)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-[var(--border-color)]">
           {/* Header */}
           <div className="modal-header px-6 py-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-workspace)]/50 cursor-move">

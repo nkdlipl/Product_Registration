@@ -1,0 +1,33 @@
+import api from './axiosInstance';
+
+export const chatApi = {
+  // Get all active users to chat with
+  getChatUsers: async () => {
+    const response = await api.get('/chat/users');
+    return response.data;
+  },
+
+  // Get total unread message count
+  getUnreadCount: async () => {
+    const response = await api.get('/chat/unread-count');
+    return response.data;
+  },
+
+  // Get chat history with a specific user
+  getChatHistory: async (userId) => {
+    const response = await api.get(`/chat/messages/${userId}`);
+    return response.data;
+  },
+
+  // Send a message
+  sendMessage: async (data) => {
+    const response = await api.post('/chat/messages', data);
+    return response.data;
+  },
+
+  // Mark messages from a specific user as read
+  markAsRead: async (userId) => {
+    const response = await api.put(`/chat/messages/read/${userId}`);
+    return response.data;
+  }
+};

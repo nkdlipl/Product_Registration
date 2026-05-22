@@ -21,6 +21,7 @@ const inventoryRoutes = require('./src/routes/inventory');
 const finishedGoodsRoutes = require('./src/routes/finishedGoodsRoutes');
 const bookASaleRoutes = require('./src/routes/bookASaleRoutes');
 const supportTicketsRoutes = require('./src/routes/supportTicketsRoutes');
+const chatRoutes = require('./src/routes/chatRoutes');
 
 const app = express();
 
@@ -90,6 +91,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/finished-goods', finishedGoodsRoutes);
 app.use('/api/book-a-sale', bookASaleRoutes);
 app.use('/api/support-tickets', supportTicketsRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));
