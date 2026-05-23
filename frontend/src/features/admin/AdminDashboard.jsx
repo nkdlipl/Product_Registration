@@ -56,7 +56,7 @@ const AdminDashboard = () => {
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--text-muted)] mb-0.5">{title}</p>
+          <p className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{title}</p>
           <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">
             {loading ? '...' : value}
           </h3>
@@ -69,8 +69,8 @@ const AdminDashboard = () => {
         </div>
       </div>
       <div className="mt-3 flex items-center gap-1 group/link">
-        <span className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--accent)]">View details</span>
-        <ChevronRight size={12} className="text-[var(--accent)] transition-transform duration-300 group-hover/link:translate-x-1" />
+        <span className="text-[11px] font-bold tracking-wide text-[var(--accent)]">View details</span>
+        <ChevronRight size={14} className="text-[var(--accent)] transition-transform duration-300 group-hover/link:translate-x-1" />
       </div>
     </div>
   );
@@ -83,7 +83,7 @@ const AdminDashboard = () => {
       <div className="w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-dim)] group-hover:border-[var(--accent)] group-hover:text-[var(--accent)] transition-all shadow-sm">
         <Icon size={16} strokeWidth={2.5} />
       </div>
-      <span className="text-[12px] font-black uppercase tracking-[0.1em] text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors">{title}</span>
+      <span className="text-[13px] font-bold tracking-wide text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors">{title}</span>
     </button>
   );
 
@@ -109,12 +109,12 @@ const AdminDashboard = () => {
             <LayoutDashboard size={24} className="md:w-[28px] md:h-[28px] group-hover:scale-110 transition-transform duration-300 text-[var(--accent)]" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
                Dashboard
             </h1>
-            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+            {/* <p className="text-[12px] text-[var(--text-muted)] font-semibold mt-2 tracking-wide opacity-80">
               System Overview & Analytics Hub
-            </p>
+            </p> */}
           </div>
         </div>
       </div>

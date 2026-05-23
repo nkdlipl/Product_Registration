@@ -4,7 +4,7 @@ import { getUsers, createUser, updateUser, deleteUser, getAdminStats, getTeams }
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
-import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown } from 'lucide-react';
+import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -209,46 +209,52 @@ const UserListPage = ({ initialRole = '' }) => {
   const StatCard = ({ title, count, icon: Icon, to }) => {
     const roleStyles = {
       Designers: {
-        accent: 'var(--accent)',
+        accentBg: 'var(--badge-admin-bg)',
+        accentText: 'var(--accent)',
       },
       Sales: {
-        accent: 'var(--badge-sales-text)',
+        accentBg: 'var(--badge-sales-bg)',
+        accentText: 'var(--badge-sales-text)',
       },
       Maintenance: {
-        accent: 'var(--badge-maint-text)',
+        accentBg: 'var(--badge-maint-bg)',
+        accentText: 'var(--badge-maint-text)',
       },
       Teams: {
-        accent: 'var(--badge-teams-text)',
+        accentBg: 'var(--badge-teams-bg)',
+        accentText: 'var(--badge-teams-text)',
       }
     };
 
     const style = roleStyles[title] || roleStyles.Teams;
+    // Map team variations to use the base role style
+    if (title.includes('Designer Teams')) { style.accentBg = roleStyles.Teams.accentBg; style.accentText = roleStyles.Teams.accentText; }
+    else if (title.includes('Sales Teams')) { style.accentBg = roleStyles.Teams.accentBg; style.accentText = roleStyles.Teams.accentText; }
+    else if (title.includes('Maintenance Teams')) { style.accentBg = roleStyles.Teams.accentBg; style.accentText = roleStyles.Teams.accentText; }
 
     return (
       <div
         onClick={() => navigate(to)}
-        className="workspace-card p-6 flex items-center justify-between group cursor-pointer overflow-hidden relative border border-[var(--border-color)] bg-[var(--bg-card)] transition-all duration-300 hover:shadow-lg"
+        className="workspace-card p-4 border border-[var(--border-color)] group cursor-pointer hover:shadow-md transition-all duration-300 outline-none"
       >
-        {/* Subtle Side Accent */}
-        <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: style.accent }} />
-
-        <div className="space-y-1 relative z-10">
-          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">{title}</p>
-          <h3 className="text-3xl font-black text-[var(--text-main)] tracking-tight group-hover:text-[var(--accent)] transition-colors duration-300">{count}</h3>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{title}</p>
+            <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">
+              {loading ? '...' : count}
+            </h3>
+          </div>
+          <div 
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm"
+            style={{ background: style.accentBg, color: style.accentText }}
+          >
+            <Icon size={18} strokeWidth={2.5} />
+          </div>
         </div>
-
-        <div 
-          className="p-4 rounded-2xl transition-all duration-400 relative z-10 group-hover:scale-110 group-hover:rotate-6"
-          style={{ background: 'var(--nav-hover)' }}
-        >
-          <Icon size={24} style={{ color: style.accent }} strokeWidth={2.5} />
+        <div className="mt-3 flex items-center gap-1 group/link">
+          <span className="text-[11px] font-bold tracking-wide text-[var(--accent)]">View details</span>
+          <ChevronRight size={14} className="text-[var(--accent)] transition-transform duration-300 group-hover/link:translate-x-1" />
         </div>
-
-        {/* Subtle Background Glow on Hover */}
-        <div 
-          className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full blur-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-500" 
-          style={{ background: style.accent }} 
-        />
       </div>
     );
   };
@@ -262,13 +268,13 @@ const UserListPage = ({ initialRole = '' }) => {
             {React.cloneElement(getRoleIcon(), { size: 24, className: "md:w-[28px] md:h-[28px] group-hover:scale-110 transition-transform duration-300" })}
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">
               {initialRole ? (initialRole === 'Sales' ? initialRole : `${initialRole}s`) : 'User Personnel'}
             </h1>
 
-            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+            {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
               Operational Records and Access Management
-            </p>
+            </p> */}
           </div>
         </div>
 

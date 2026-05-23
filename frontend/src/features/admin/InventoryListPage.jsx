@@ -771,18 +771,25 @@ const buildFileUrl = (filePath) => {
   const StatCard = ({ title, count, icon: Icon, to, colorAccent }) => (
     <div
       onClick={() => navigate(to)}
-      className="workspace-card p-6 flex items-center justify-between group cursor-pointer overflow-hidden relative border border-[var(--border-color)] bg-[var(--bg-card)] transition-all duration-300 hover:shadow-lg"
+      className="workspace-card p-4 border border-[var(--border-color)] group cursor-pointer hover:shadow-md transition-all duration-300 outline-none"
     >
-      <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: colorAccent }} />
-      <div className="space-y-1 relative z-10">
-        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">{title}</p>
-        <h3 className="text-3xl font-black text-[var(--text-main)] tracking-tight group-hover:text-[var(--accent)] transition-colors duration-300">{count}</h3>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{title}</p>
+          <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">
+            {loading ? '...' : count}
+          </h3>
+        </div>
+        <div 
+          className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm"
+          style={{ background: 'var(--nav-hover)', color: colorAccent }}
+        >
+          <Icon size={18} strokeWidth={2.5} />
+        </div>
       </div>
-      <div 
-        className="p-4 rounded-2xl transition-all duration-400 relative z-10 group-hover:scale-110 group-hover:rotate-6"
-        style={{ background: 'var(--nav-hover)' }}
-      >
-        <Icon size={24} style={{ color: colorAccent }} strokeWidth={2.5} />
+      <div className="mt-3 flex items-center gap-1 group/link">
+        <span className="text-[11px] font-bold tracking-wide text-[var(--accent)]">View details</span>
+        <ChevronRight size={14} className="text-[var(--accent)] transition-transform duration-300 group-hover/link:translate-x-1" />
       </div>
     </div>
   );
@@ -1010,12 +1017,12 @@ const buildFileUrl = (filePath) => {
             {getTypeIcon()}
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">
               {type ? `${type} Inventory` : 'Inventory Overview'}
             </h1>
-            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+            {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
               {type ? `Central ${type} Registry & Specification Management` : 'Central Hardware & Components Registry'}
-            </p>
+            </p> */}
           </div>
         </div>
         {type && (

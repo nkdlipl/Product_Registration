@@ -625,12 +625,12 @@ const ElectricalPartsPage = () => {
             <Plug size={24} className="text-[#f59e0b] group-hover:scale-110 transition-transform duration-300" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">
               Electrical Parts
             </h1>
-            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+            {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
               Electrical Inventory & Specifications Management
-            </p>
+            </p> */}
           </div>
         </div>
         <button 

@@ -358,12 +358,12 @@ const ProductListPage = () => {
             <Box className="text-blue-600" />
           </div>
           <div>
-            <h1 className="text-[26px] font-black text-[var(--text-main)] tracking-tighter uppercase leading-none">
+            <h1 className="text-[26px] font-black text-[var(--text-main)] tracking-tighter leading-none">
               Products Catalogue
             </h1>
-            <p className="text-[12px] text-[var(--text-muted)] font-bold mt-1.5 uppercase tracking-[0.15em]">
+            {/* <p className="text-[12px] text-[var(--text-muted)] font-bold mt-1.5 uppercase tracking-[0.15em]">
               INVENTORY AND PRODUCT SPECIFICATIONS
-            </p>
+            </p> */}
           </div>
         </div>
         

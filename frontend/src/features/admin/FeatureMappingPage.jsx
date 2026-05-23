@@ -161,10 +161,10 @@ const FeatureMappingPage = () => {
             <Cpu size={28} className="text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">Feature Mapping</h1>
-            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">Feature Mapping</h1>
+            {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
               Manage Hardware & Software Feature Configurations
-            </p>
+            </p> */}
           </div>
         </div>
 

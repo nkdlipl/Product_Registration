@@ -77,7 +77,7 @@ const ProductListPage = () => {
   const [bomItems, setBomItems] = useState([]);
   const [bomLoading, setBomLoading] = useState(false);
   const [isSavingBom, setIsSavingBom] = useState(false);
-  const [bomExpandedSection, setBomExpandedSection] = useState(null);
+  const [bomExpandedSection, setBomExpandedSection] = useState('pcb');
 
   useEffect(() => {
     if (modalMode !== 'view') return;
@@ -613,8 +613,8 @@ const ProductListPage = () => {
             <Zap size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">Product Catalogue</h1>
-            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Inventory & Specifications Management</p>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">Product Catalogue</h1>
+            {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Inventory & Specifications Management</p> */}
           </div>
         </div>
         <button 
@@ -958,108 +958,115 @@ const ProductListPage = () => {
                   </div>
 
                   {/* Component Selector Sections */}
-                  <div className="space-y-4">
+                  <div className="flex border-b border-[var(--border-color)] overflow-x-auto no-scrollbar gap-2 mb-6">
                     {[
-                      { type: 'pcb', label: 'PCB', icon: Cpu, color: '#00d2ff', bgColor: 'rgba(0, 210, 255, 0.08)' },
-                      { type: 'electrical', label: 'Electrical Parts', icon: Zap, color: '#fbbf24', bgColor: 'rgba(251, 191, 36, 0.08)' },
-                      { type: 'electronics', label: 'Electronics Parts', icon: CircuitBoard, color: '#34d399', bgColor: 'rgba(52, 211, 153, 0.08)' },
-                      { type: 'structural', label: 'Structural Parts', icon: Layers, color: '#a78bfa', bgColor: 'rgba(167, 139, 250, 0.08)' }
-                    ].map(({ type, label, icon: Icon, color, bgColor }) => {
-                      const isOpen = bomExpandedSection === type;
+                      { type: 'pcb', label: 'PCB', icon: Cpu },
+                      { type: 'electrical', label: 'Electrical Parts', icon: Zap },
+                      { type: 'electronics', label: 'Electronics Parts', icon: CircuitBoard },
+                      { type: 'structural', label: 'Structural Parts', icon: Layers }
+                    ].map(({ type, label, icon: Icon }) => {
+                      const isActive = bomExpandedSection === type;
+                      const count = bomItems.filter(i => i.component_type === type).length;
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setBomExpandedSection(type)}
+                          className={`px-5 py-3 text-[11px] font-black uppercase tracking-[0.1em] transition-all relative rounded-t-xl -mb-[1px] cursor-pointer flex items-center gap-2 flex-shrink-0 ${
+                            isActive
+                              ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-[var(--accent)]/5'
+                              : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--nav-hover)]'
+                          }`}
+                        >
+                          <Icon size={14} />
+                          <span>{label}</span>
+                          {count > 0 && (
+                            <span className={`ml-1.5 inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[9px] font-black ${isActive ? 'bg-[var(--accent)] text-white shadow-sm' : 'bg-[var(--border-color)] text-[var(--text-main)]'}`}>
+                              {count}
+                            </span>
+                          )}
+                          {isActive && (
+                            <div className="absolute bottom-0 left-6 right-6 h-0.5 bg-[var(--accent)] rounded-t-full shadow-[0_-4px_12px_var(--border-glow)]" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Tab Content */}
+                  <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-workspace)]/30">
+                    {[
+                      { type: 'pcb', label: 'PCB' },
+                      { type: 'electrical', label: 'Electrical Parts' },
+                      { type: 'electronics', label: 'Electronics Parts' },
+                      { type: 'structural', label: 'Structural Parts' }
+                    ].map(({ type, label }) => {
+                      if (bomExpandedSection !== type) return null;
                       const sectionItems = bomItems.filter(i => i.component_type === type);
                       const opts = bomOptions[type] || [];
 
                       return (
-                        <div key={type} className="border border-[var(--border-color)] rounded-2xl overflow-hidden transition-all duration-300" style={{ borderColor: isOpen ? color + '55' : undefined }}>
-                          {/* Accordion Header */}
-                          <button
-                            type="button"
-                            onClick={() => setBomExpandedSection(isOpen ? null : type)}
-                            className="w-full flex items-center justify-between px-5 py-4 transition-all group"
-                            style={{ background: isOpen ? bgColor : undefined }}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm" style={{ background: bgColor, color }}>
-                                <Icon size={16} strokeWidth={2.5} />
-                              </div>
-                              <div className="text-left">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Component Group</p>
-                                <h4 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-tight">{label}</h4>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {sectionItems.length > 0 && (
-                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest" style={{ background: bgColor, color }}>
-                                  {sectionItems.length} selected
-                                </span>
+                        <div key={type} className="animate-in fade-in duration-300">
+                          <div className="p-5 md:p-6 space-y-6">
+                            {/* Selector */}
+                            <div>
+                              <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">Add {label} to BOM</label>
+                              <select
+                                className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] font-bold text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--border-glow)] focus:border-[var(--accent)] transition-all appearance-none cursor-pointer"
+                                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+                                onChange={(e) => {
+                                  const opt = opts.find(o => String(o.id) === e.target.value);
+                                  if (opt) addBomItem(type, opt.id, opt.name);
+                                  e.target.value = '';
+                                }}
+                                defaultValue=""
+                              >
+                                <option value="">— Select {label} to add —</option>
+                                {opts.map(o => (
+                                  <option key={o.id} value={o.id}>{o.name}</option>
+                                ))}
+                              </select>
+                              {opts.length === 0 && (
+                                <p className="text-[10px] text-[var(--text-dim)] italic mt-2 ml-1">No active {label} found in inventory.</p>
                               )}
-                              <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} style={{ color }} />
                             </div>
-                          </button>
 
-                          {/* Dropdown Content */}
-                          {isOpen && (
-                            <div className="px-5 pb-5 space-y-4 border-t border-[var(--border-color)]/40">
-                              {/* Selector */}
-                              <div className="pt-4">
-                                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">Add component</label>
-                                <select
-                                  className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] font-bold text-[var(--text-main)] outline-none focus:ring-2 transition-all appearance-none cursor-pointer"
-                                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
-                                  onChange={(e) => {
-                                    const opt = opts.find(o => String(o.id) === e.target.value);
-                                    if (opt) addBomItem(type, opt.id, opt.name);
-                                    e.target.value = '';
-                                  }}
-                                  defaultValue=""
-                                >
-                                  <option value="">— Select {label} to add —</option>
-                                  {opts.map(o => (
-                                    <option key={o.id} value={o.id}>{o.name}</option>
-                                  ))}
-                                </select>
-                                {opts.length === 0 && (
-                                  <p className="text-[10px] text-[var(--text-dim)] italic mt-2 ml-1">No active {label} found in inventory.</p>
-                                )}
-                              </div>
-
-                              {/* Selected items */}
-                              {sectionItems.length > 0 && (
-                                <div className="space-y-2">
-                                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Selected ({sectionItems.length})</label>
-                                  <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
-                                    {sectionItems.map((item, idx) => {
-                                      const globalIdx = bomItems.findIndex(b => b.component_type === type && String(b.component_id) === String(item.component_id));
-                                      return (
-                                        <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-workspace)]/60 group hover:border-[var(--accent)]/30 transition-all">
-                                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                                          <span className="flex-1 text-[12px] font-bold text-[var(--text-main)] truncate">{item.name}</span>
-                                          <div className="flex items-center gap-2">
-                                            <label className="text-[9px] font-black text-[var(--text-muted)] uppercase">Qty</label>
-                                            <input
-                                              type="number"
-                                              min="1"
-                                              value={item.quantity}
-                                              onChange={(e) => updateBomItem(globalIdx, 'quantity', parseInt(e.target.value) || 1)}
-                                              className="w-14 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-2 py-1 text-[12px] font-black text-center text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all"
-                                            />
-                                          </div>
-                                          <button
-                                            type="button"
-                                            onClick={() => removeBomItem(globalIdx)}
-                                            className="p-1.5 text-[var(--text-dim)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all flex-shrink-0"
-                                            title="Remove"
-                                          >
-                                            <X size={12} />
-                                          </button>
+                            {/* Selected items */}
+                            {sectionItems.length > 0 && (
+                              <div className="space-y-3 pt-4 border-t border-[var(--border-color)]/40">
+                                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Selected Components ({sectionItems.length})</label>
+                                <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-2">
+                                  {sectionItems.map((item, idx) => {
+                                    const globalIdx = bomItems.findIndex(b => b.component_type === type && String(b.component_id) === String(item.component_id));
+                                    return (
+                                      <div key={idx} className="flex items-center gap-3 p-3.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] group hover:border-[var(--accent)]/50 hover:shadow-sm transition-all">
+                                        <div className="w-2 h-2 rounded-full flex-shrink-0 bg-[var(--accent)]" />
+                                        <span className="flex-1 text-[13px] font-bold text-[var(--text-main)] truncate">{item.name}</span>
+                                        <div className="flex items-center gap-2">
+                                          <label className="text-[9px] font-black text-[var(--text-muted)] uppercase">Qty</label>
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            value={item.quantity}
+                                            onChange={(e) => updateBomItem(globalIdx, 'quantity', parseInt(e.target.value) || 1)}
+                                            className="w-16 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg px-2 py-1.5 text-[12px] font-black text-center text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all"
+                                          />
                                         </div>
-                                      );
-                                    })}
-                                  </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => removeBomItem(globalIdx)}
+                                          className="p-2 text-[var(--text-dim)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all flex-shrink-0 ml-1"
+                                          title="Remove"
+                                        >
+                                          <X size={14} strokeWidth={2.5} />
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              )}
-                            </div>
-                          )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -1071,11 +1078,7 @@ const ProductListPage = () => {
                       <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">BOM Summary — {bomItems.length} component{bomItems.length !== 1 ? 's' : ''}</p>
                       <div className="flex flex-wrap gap-2">
                         {bomItems.map((item, i) => (
-                          <span key={i} className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider" style={{
-                            borderColor: item.component_type === 'pcb' ? '#00d2ff44' : item.component_type === 'electrical' ? '#fbbf2444' : item.component_type === 'electronics' ? '#34d39944' : '#a78bfa44',
-                            color: item.component_type === 'pcb' ? '#00d2ff' : item.component_type === 'electrical' ? '#fbbf24' : item.component_type === 'electronics' ? '#34d399' : '#a78bfa',
-                            background: item.component_type === 'pcb' ? 'rgba(0,210,255,0.08)' : item.component_type === 'electrical' ? 'rgba(251,191,36,0.08)' : item.component_type === 'electronics' ? 'rgba(52,211,153,0.08)' : 'rgba(167,139,250,0.08)'
-                          }}>
+                          <span key={i} className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] font-bold uppercase tracking-wider">
                             <span className="opacity-60">{item.component_type}:</span>
                             <span>{item.name}</span>
                             {item.quantity > 1 && <span className="opacity-60">×{item.quantity}</span>}

@@ -80,7 +80,7 @@ const LoginPage = () => {
 
       {/* Floating Logo Container */}
       <div className="bg-white px-8 py-4 rounded-[20px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-8 relative z-10 flex flex-col items-center">
-        <h1 className="text-3xl font-black uppercase tracking-[0.25em] text-[#4a2e24] leading-none mb-1.5 flex items-center">
+        <h1 className="text-3xl font-black tracking-[0.25em] text-[#4a2e24] leading-none mb-1.5 flex items-center">
           CRUD<span className="text-[#f06532]">EX</span>
         </h1>
         <p className="text-[8px] font-black text-[#967f76] uppercase tracking-[0.3em]">
@@ -158,7 +158,7 @@ const LoginPage = () => {
           <button
             disabled={isLoading}
             type="submit"
-            className="w-full h-[52px] mt-2 rounded-[16px] bg-gradient-to-r from-[#f06532] to-[#fc9c71] shadow-[0_8px_20px_rgba(240,101,50,0.3)] hover:shadow-[0_12px_25px_rgba(240,101,50,0.4)] flex items-center justify-center text-white transition-all transform hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group"
+            className="w-full h-[52px] mt-2 rounded-[16px] bg-gradient-to-r from-[#f06532] to-[#fc9c71] shadow-[0_8px_20px_rgba(240,101,50,0.3)] hover:shadow-[0_12px_25px_rgba(240,101,50,0.4)] flex items-center justify-center text-white transition-all transform hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group cursor-pointer disabled:cursor-not-allowed"
           >
             {/* Inner Glow Rings mimicking the screenshot */}
             <div className="absolute inset-0 flex items-center justify-center opacity-30">

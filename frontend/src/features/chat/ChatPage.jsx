@@ -178,7 +178,7 @@ const ChatPage = () => {
         <div>
           <h1 className="text-[28px] font-black tracking-tight text-[var(--text-main)] flex items-center gap-3">
             <MessageSquare className="text-[var(--accent)]" size={32} />
-            CHAT
+            Chat
           </h1>
           <p className="text-[14px] text-[var(--text-muted)] mt-1 font-medium tracking-wide">
             Internal messaging and collaboration network

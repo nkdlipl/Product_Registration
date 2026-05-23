@@ -192,8 +192,8 @@ const SupportTicketsPage = () => {
             <LifeBuoy size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">Support Center</h1>
-            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Manage and track all support tickets</p>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">Support Center</h1>
+            {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Manage and track all support tickets</p> */}
           </div>
         </div>
         <button 
@@ -206,24 +206,28 @@ const SupportTicketsPage = () => {
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-entrance-up">
-        <div className="workspace-card p-5 border-l-4 border-l-amber-500">
-          <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Open</p>
-          <h3 className="text-2xl font-black text-amber-500">{stats.open}</h3>
-        </div>
-        <div className="workspace-card p-5 border-l-4 border-l-blue-500">
-          <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">In Progress</p>
-          <h3 className="text-2xl font-black text-blue-500">{stats.inProgress}</h3>
-        </div>
-        <div className="workspace-card p-5 border-l-4 border-l-emerald-500">
-          <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Solved</p>
-          <h3 className="text-2xl font-black text-emerald-500">{stats.solved}</h3>
-        </div>
-        <div className="workspace-card p-5 border-l-4 border-l-rose-500">
-          <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">High Priority</p>
-          <h3 className="text-2xl font-black text-rose-500">{stats.highPriority}</h3>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-entrance-up">
+        {[
+          { title: 'Open Tickets', value: stats.open, icon: AlertCircle, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+          { title: 'In Progress', value: stats.inProgress, icon: Clock, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+          { title: 'Solved', value: stats.solved, icon: CheckCircle, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
+          { title: 'High Priority', value: stats.highPriority, icon: Zap, color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.1)' }
+        ].map((stat, idx) => (
+          <div key={idx} className="workspace-card p-4 border border-[var(--border-color)] group hover:shadow-md transition-all duration-300 outline-none rounded-2xl">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{stat.title}</p>
+                <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">{stat.value}</h3>
+              </div>
+              <div 
+                className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm"
+                style={{ background: stat.bg, color: stat.color }}
+              >
+                <stat.icon size={18} strokeWidth={2.5} />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Filters */}

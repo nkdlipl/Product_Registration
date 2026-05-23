@@ -682,12 +682,12 @@ const buildFileUrl = (filePath) => {
             <CircuitBoard size={24} className="text-[var(--accent)]" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">
               Electronics Parts
             </h1>
-            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+            {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
               Electronic Components & Assemblies Registry
-            </p>
+            </p> */}
           </div>
         </div>
         <button 

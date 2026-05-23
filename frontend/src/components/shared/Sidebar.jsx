@@ -50,7 +50,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
       }
     });
   };
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, AVAILABLE_THEMES } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [openMenus, setOpenMenus] = useState({
@@ -60,6 +60,19 @@ const Sidebar = ({ role, isOpen, onClose }) => {
     maintenance: false,
     inventory: false
   });
+  
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsDropdownRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (settingsDropdownRef.current && !settingsDropdownRef.current.contains(event.target)) {
+        setIsSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleNavigate = (path) => {
     navigate(path);
@@ -199,7 +212,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
         </div>
 
       {/* USER PROFILE */}
-      <div className="p-6" style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--nav-hover)' }}>
+      <div className="p-6 relative z-50" style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--nav-hover)' }}>
         <div className="flex flex-col items-center">
           <div className="relative group">
             {/* Avatar */}
@@ -216,12 +229,60 @@ const Sidebar = ({ role, isOpen, onClose }) => {
 
             {/* Settings Cog */}
             <div
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition-transform"
+              ref={settingsDropdownRef}
+              className="absolute bottom-0 right-0 w-8 h-8 rounded-full shadow-md cursor-pointer hover:scale-110 transition-transform"
               style={{ background: 'var(--bg-workspace)', border: '1px solid var(--border-color)' }}
+              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="hover:stroke-[var(--accent)] transition-colors">
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
-              </svg>
+              <div className="w-full h-full flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="hover:stroke-[var(--accent)] transition-colors">
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </div>
+
+              {/* Settings Dropdown */}
+              {isSettingsOpen && (
+                <div 
+                  className="absolute top-[120%] left-1/2 -translate-x-1/2 w-48 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 p-2 animate-in fade-in zoom-in-95 duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex flex-col gap-2">
+                    <div>
+                      <div className="px-1 mb-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                        Appearance
+                      </div>
+                      <select
+                        value={theme}
+                        onChange={(e) => {
+                          setTheme(e.target.value);
+                          setIsSettingsOpen(false);
+                        }}
+                        className="w-full appearance-none py-2 pl-3 pr-8 rounded-lg border border-[var(--border-color)] bg-[var(--bg-workspace)] text-[var(--text-main)] font-bold text-[11px] outline-none cursor-pointer hover:border-[var(--accent)] transition-all"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                          backgroundSize: '1.2em',
+                          backgroundPosition: 'right 0.4rem center',
+                          backgroundRepeat: 'no-repeat',
+                        }}
+                      >
+                        {AVAILABLE_THEMES.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="h-px bg-[var(--border-color)]" />
+                    
+                    <button
+                      onClick={() => { setIsSettingsOpen(false); handleLogout(); }}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-[11px] font-bold text-rose-500 hover:bg-rose-500/10 transition-all"
+                    >
+                      <LogOut size={14} />
+                      <span className="uppercase tracking-widest font-black text-[9px]">Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -601,32 +662,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
 
       </div>
 
-      {/* FOOTER ACTIONS */}
-      <div className="py-5 px-6" style={{ borderTop: '1px solid var(--border-color)', background: 'var(--bg-elevated)' }}>
-        <div className="flex items-center justify-between gap-4">
-          <button
-            onClick={handleLogout}
-            className="flex-1 flex items-center gap-3 py-2.5 transition-all text-[10px] font-black uppercase tracking-[0.2em] group"
-            style={{ color: 'var(--text-secondary)' }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
-          >
-            <LogOut size={16} className="opacity-50 group-hover:opacity-100 transition-opacity" />
-            <span>Sign Out</span>
-          </button>
 
-          <button
-            onClick={toggleTheme}
-            className="p-2.5 rounded-xl transition-all border border-[var(--border-color)] bg-[var(--bg-workspace)] group shadow-sm"
-            style={{ color: 'var(--accent)' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
-          >
-            {theme === 'light' ? <Moon size={18} className="fill-current" /> : <Sun size={18} className="fill-current" />}
-          </button>
-        </div>
-      </div>
       </aside>
     </>
   );

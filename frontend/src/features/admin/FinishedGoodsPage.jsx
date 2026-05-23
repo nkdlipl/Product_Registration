@@ -312,8 +312,8 @@ const FinishedGoodsPage = () => {
                         <Box size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
                     </div>
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">Finished Goods</h1>
-                        <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Manage assembled products and serial numbers</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">Finished Goods</h1>
+                        {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Manage assembled products and serial numbers</p> */}
                     </div>
                 </div>
 
@@ -335,16 +335,18 @@ const FinishedGoodsPage = () => {
                     { title: 'Non-IoT Devices', value: items.filter(i => !i.is_iot).length, icon: Binary, color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.1)' },
                     { title: 'Components Integrated', value: totalComponentsUsed, icon: Wrench, color: '#a78bfa', bg: 'rgba(167, 139, 250, 0.1)' }
                 ].map((stat, idx) => (
-                    <div key={idx} className="workspace-card p-5 border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group">
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--text-dim)] mb-1">{stat.title}</p>
-                            <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">{loading ? '...' : stat.value}</h3>
-                        </div>
-                        <div 
-                            className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-sm"
-                            style={{ background: stat.bg, color: stat.color }}
-                        >
-                            <stat.icon size={20} strokeWidth={2.5} />
+                    <div key={idx} className="workspace-card p-4 border border-[var(--border-color)] group hover:shadow-md transition-all duration-300 outline-none rounded-2xl">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{stat.title}</p>
+                                <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">{loading ? '...' : stat.value}</h3>
+                            </div>
+                            <div 
+                                className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm"
+                                style={{ background: stat.bg || 'var(--nav-hover)', color: stat.color || 'var(--accent)' }}
+                            >
+                                <stat.icon size={18} strokeWidth={2.5} />
+                            </div>
                         </div>
                     </div>
                 ))}
