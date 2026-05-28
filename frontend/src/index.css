@@ -2,7 +2,7 @@
 
 @theme {
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-heading: "Outfit", "IBM Plex Sans", sans-serif;
+  --font-heading: "DM Sans", "Outfit", "IBM Plex Sans", sans-serif;
 
   /* Theme tokens exposed to Tailwind */
   --color-primary:        var(--primary);
