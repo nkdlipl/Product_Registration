@@ -92,8 +92,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
     location.pathname === '/admin/users' ||
     location.pathname === '/admin/maintenance' ||
     location.pathname === '/admin/sales' ||
-    location.pathname === '/admin/designers' ||
-    location.pathname.includes('/admin/teams')
+    location.pathname === '/admin/designers'
   );
   
   const isInventorySection = (
@@ -108,27 +107,14 @@ const Sidebar = ({ role, isOpen, onClose }) => {
     location.pathname.includes('/admin/book-a-sale')
   );
 
-  const isDesignersActive = (
-    location.pathname === '/admin/designers' ||
-    (location.pathname.includes('/admin/teams') && (location.search.includes('role=Designer') || (!location.search.includes('role=Sales') && !location.search.includes('role=Maintenance'))))
-  );
-
-  const isSalesActive = (
-    location.pathname === '/admin/sales' ||
-    (location.pathname.includes('/admin/teams') && location.search.includes('role=Sales'))
-  );
-
-  const isMaintenanceActive = (
-    location.pathname === '/admin/maintenance' ||
-    (location.pathname.includes('/admin/teams') && location.search.includes('role=Maintenance'))
-  );
+  const isMaintenanceActive = location.pathname === '/admin/maintenance';
 
   const NavItem = ({ to, label, icon: Icon, isSubItem = false }) => (
     <button
       onClick={() => handleNavigate(to)}
       className={`w-full flex items-center gap-4 px-8 py-3.5 transition-all duration-300 relative group ${
         location.pathname === to
-          ? 'font-black'
+          ? 'font-bold'
           : 'hover:bg-[var(--nav-hover)]'
       } ${isSubItem ? 'pl-10 pr-4 py-2.5' : ''}`}
       style={{
@@ -158,7 +144,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
         )}
       </div>
       <span
-        className="text-[12px] font-black tracking-[0.1em] uppercase relative z-10 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)] whitespace-nowrap"
+        className="text-[12px] font-bold tracking-wider uppercase relative z-10 transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap"
         style={{ fontSize: isSubItem ? '11px' : undefined }}
       >
         {label}
@@ -205,7 +191,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
         {/* LOGO */}
         <div className="h-[52px] flex items-center justify-center flex-shrink-0" style={{ borderBottom: '1px solid var(--border-color)' }}>
           <div className="flex items-center gap-2">
-            <span className="text-[22px] font-black uppercase tracking-[0.2em] text-[var(--text-main)]">
+            <span className="text-[22px] font-bold uppercase tracking-widest text-[var(--text-main)]">
               CRUD<span className="text-[var(--accent)]">EX</span>
             </span>
           </div>
@@ -217,7 +203,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
           <div className="relative group">
             {/* Avatar */}
             <div
-              className="w-24 h-24 rounded-full p-0.5 overflow-hidden shadow-xl transition-all duration-500 animate-float"
+              className="w-24 h-24 rounded-full p-0.5 overflow-hidden shadow-xl transition-all duration-500"
               style={{ border: '2px solid var(--accent)', background: 'var(--bg-elevated)' }}
             >
               <img
@@ -248,7 +234,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                 >
                   <div className="flex flex-col gap-2">
                     <div>
-                      <div className="px-1 mb-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                      <div className="px-1 mb-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                         Appearance
                       </div>
                       <select
@@ -278,7 +264,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                       className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-[11px] font-bold text-rose-500 hover:bg-rose-500/10 transition-all"
                     >
                       <LogOut size={14} />
-                      <span className="uppercase tracking-widest font-black text-[9px]">Sign Out</span>
+                      <span className="uppercase tracking-widest font-bold text-[9px]">Sign Out</span>
                     </button>
                   </div>
                 </div>
@@ -287,7 +273,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
           </div>
 
           <div className="mt-5 text-center">
-            <p className="text-base font-black tracking-tight leading-tight uppercase" style={{ color: 'var(--text-main)' }}>
+            <p className="text-base font-bold tracking-tight leading-tight uppercase" style={{ color: 'var(--text-main)' }}>
               {user?.full_name}
             </p>
             <p className="text-[12px] font-bold mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -340,7 +326,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                     />
                   </div>
                   <span
-                    className="text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
+                    className="text-[12px] font-bold uppercase tracking-wider transition-all duration-300 group-hover:text-[var(--text-main)]"
                   >
                     Users
                   </span>
@@ -364,174 +350,19 @@ const Sidebar = ({ role, isOpen, onClose }) => {
               <SubMenu isOpen={openMenus.users}>
                 <div className="space-y-0.5 py-1">
                   {/* Designers row */}
-                  <div
-                    className="flex items-center justify-between pl-10 pr-4 py-2.5 transition-all duration-300 relative group cursor-pointer"
-                    style={{
-                      color: isDesignersActive ? 'var(--accent)' : 'var(--text-muted)',
-                      background: isDesignersActive ? 'var(--nav-active)' : undefined,
-                      borderLeft: location.pathname === '/admin/designers' ? '3px solid var(--accent)' : '3px solid transparent',
-                    }}
-                    onMouseEnter={e => {
-                      if (location.pathname !== '/admin/designers') {
-                        e.currentTarget.style.background = 'var(--nav-hover)';
-                        e.currentTarget.style.color = 'var(--text-main)';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = isDesignersActive ? 'var(--nav-active)' : '';
-                      e.currentTarget.style.color = isDesignersActive ? 'var(--accent)' : 'var(--text-muted)';
-                    }}
-                  >
-                    <div
-                      onClick={() => navigate('/admin/designers')}
-                      className="flex items-center gap-4 cursor-pointer flex-1"
-                    >
-                      <div className="w-6 flex justify-center">
-                        <PenTool
-                          size={18}
-                          className="transition-colors duration-300 group-hover:text-[var(--accent)]"
-                          style={{ color: location.pathname === '/admin/designers' ? 'var(--accent)' : 'var(--text-dim)' }}
-                        />
-                      </div>
-                      <span className="text-[12px] font-black tracking-[0.1em] uppercase transition-all duration-300 group-hover:text-[var(--text-main)] group-hover:translate-x-1">
-                        Designers
-                      </span>
-                    </div>
-                    <div
-                      onClick={(e) => { e.stopPropagation(); toggleMenu('designers'); }}
-                      className="cursor-pointer p-1 rounded-lg transition-all"
-                    >
-                      <ChevronDown
-                        size={12}
-                        className="transition-transform duration-500"
-                        style={{
-                          transform: openMenus.designers ? 'rotate(180deg)' : 'rotate(0deg)',
-                          color: openMenus.designers ? 'var(--accent)' : 'var(--text-dim)',
-                        }}
-                        strokeWidth={3}
-                      />
-                    </div>
-                  </div>
-
-                  <SubMenu isOpen={openMenus.designers}>
-                    <div className="space-y-0.5 mb-2">
-                      <NavItem to="/admin/teams?role=Designer" label="Teams" isSubItem />
-                    </div>
-                  </SubMenu>
+                  <NavItem to="/admin/designers" label="Designers" icon={PenTool} isSubItem />
 
                   {/* Maintenance row */}
-                  <div
-                    className="flex items-center justify-between pl-10 pr-4 py-2.5 transition-all duration-300 relative group cursor-pointer"
-                    style={{
-                      color: isMaintenanceActive ? 'var(--accent)' : 'var(--text-muted)',
-                      background: isMaintenanceActive ? 'var(--nav-active)' : undefined,
-                      borderLeft: location.pathname === '/admin/maintenance' ? '3px solid var(--accent)' : '3px solid transparent',
-                    }}
-                    onMouseEnter={e => {
-                      if (location.pathname !== '/admin/maintenance') {
-                        e.currentTarget.style.background = 'var(--nav-hover)';
-                        e.currentTarget.style.color = 'var(--text-main)';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = isMaintenanceActive ? 'var(--nav-active)' : '';
-                      e.currentTarget.style.color = isMaintenanceActive ? 'var(--accent)' : 'var(--text-muted)';
-                    }}
-                  >
-                    <div
-                      onClick={() => navigate('/admin/maintenance')}
-                      className="flex items-center gap-4 cursor-pointer flex-1"
-                    >
-                      <div className="w-6 flex justify-center">
-                        <Wrench
-                          size={18}
-                          className="transition-colors duration-300 group-hover:text-[var(--accent)]"
-                          style={{ color: location.pathname === '/admin/maintenance' ? 'var(--accent)' : 'var(--text-dim)' }}
-                        />
-                      </div>
-                      <span className="text-[12px] font-black tracking-[0.1em] uppercase transition-all duration-300 group-hover:text-[var(--text-main)] group-hover:translate-x-1">
-                        Maintenance
-                      </span>
-                    </div>
-                    <div
-                      onClick={(e) => { e.stopPropagation(); toggleMenu('maintenance'); }}
-                      className="cursor-pointer p-1 rounded-lg transition-all"
-                    >
-                      <ChevronDown
-                        size={12}
-                        className="transition-transform duration-500"
-                        style={{
-                          transform: openMenus.maintenance ? 'rotate(180deg)' : 'rotate(0deg)',
-                          color: openMenus.maintenance ? 'var(--accent)' : 'var(--text-dim)',
-                        }}
-                        strokeWidth={3}
-                      />
-                    </div>
-                  </div>
-
-                  <SubMenu isOpen={openMenus.maintenance}>
-                    <div className="space-y-0.5 mb-2">
-                      <NavItem to="/admin/teams?role=Maintenance" label="Teams" isSubItem />
-                    </div>
-                  </SubMenu>
+                  <NavItem to="/admin/maintenance" label="Maintenance" icon={Wrench} isSubItem />
 
                   {/* Sales row */}
-                  <div
-                    className="flex items-center justify-between pl-10 pr-4 py-2.5 transition-all duration-300 relative group cursor-pointer"
-                    style={{
-                      color: isSalesActive ? 'var(--accent)' : 'var(--text-muted)',
-                      background: isSalesActive ? 'var(--nav-active)' : undefined,
-                      borderLeft: location.pathname === '/admin/sales' ? '3px solid var(--accent)' : '3px solid transparent',
-                    }}
-                    onMouseEnter={e => {
-                      if (location.pathname !== '/admin/sales') {
-                        e.currentTarget.style.background = 'var(--nav-hover)';
-                        e.currentTarget.style.color = 'var(--text-main)';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = isSalesActive ? 'var(--nav-active)' : '';
-                      e.currentTarget.style.color = isSalesActive ? 'var(--accent)' : 'var(--text-muted)';
-                    }}
-                  >
-                    <div
-                      onClick={() => navigate('/admin/sales')}
-                      className="flex items-center gap-4 cursor-pointer flex-1"
-                    >
-                      <div className="w-6 flex justify-center">
-                        <ShoppingBag
-                          size={18}
-                          className="transition-colors duration-300 group-hover:text-[var(--accent)]"
-                          style={{ color: location.pathname === '/admin/sales' ? 'var(--accent)' : 'var(--text-dim)' }}
-                        />
-                      </div>
-                      <span className="text-[12px] font-black tracking-[0.1em] uppercase transition-all duration-300 group-hover:text-[var(--text-main)] group-hover:translate-x-1">
-                        Sales
-                      </span>
-                    </div>
-                    <div
-                      onClick={(e) => { e.stopPropagation(); toggleMenu('sales'); }}
-                      className="cursor-pointer p-1 rounded-lg transition-all"
-                    >
-                      <ChevronDown
-                        size={12}
-                        className="transition-transform duration-500"
-                        style={{
-                          transform: openMenus.sales ? 'rotate(180deg)' : 'rotate(0deg)',
-                          color: openMenus.sales ? 'var(--accent)' : 'var(--text-dim)',
-                        }}
-                        strokeWidth={3}
-                      />
-                    </div>
-                  </div>
-
-                  <SubMenu isOpen={openMenus.sales}>
-                    <div className="space-y-0.5 mb-2">
-                      <NavItem to="/admin/teams?role=Sales" label="Teams" isSubItem />
-                    </div>
-                  </SubMenu>
+                  <NavItem to="/admin/sales" label="Sales" icon={ShoppingBag} isSubItem />
                 </div>
               </SubMenu>
+            </div>
+
+            <div className="animate-entrance-right" style={{ animationDelay: '250ms' }}>
+              <NavItem to="/admin/teams" label="Teams" icon={Layers} />
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '300ms' }}>
@@ -581,7 +412,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                     />
                   </div>
                   <span
-                    className="text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
+                    className="text-[12px] font-bold uppercase tracking-wider transition-all duration-300 group-hover:text-[var(--text-main)]"
                   >
                     Inventory
                   </span>
@@ -612,9 +443,6 @@ const Sidebar = ({ role, isOpen, onClose }) => {
               </SubMenu>
             </div>
 
-            <div className="animate-entrance-right" style={{ animationDelay: '600ms' }}>
-              <NavItem to="/admin/feature-mapping" label="Feature Mapping" icon={Cpu} />
-            </div>
             <div className="animate-entrance-right" style={{ animationDelay: '650ms' }}>
               <NavItem to="/admin/finished-goods" label="Finished Goods" icon={Package} />
             </div>

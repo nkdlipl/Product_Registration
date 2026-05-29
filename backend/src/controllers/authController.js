@@ -98,10 +98,34 @@ const refresh = async (req, res, next) => {
   }
 };
 
-const logout = (req, res) => {
+const { redisClient } = require('../config/redis');
+
+const logout = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    
+    if (redisClient.isOpen) {
+      try {
+        const decoded = jwt.decode(token);
+        if (decoded && decoded.exp) {
+          // Calculate remaining time in seconds
+          const currentTime = Math.floor(Date.now() / 1000);
+          const timeToExpire = decoded.exp - currentTime;
+          
+          if (timeToExpire > 0) {
+            // Add to blacklist with a TTL matching the remaining token life
+            await redisClient.setEx(`bl_${token}`, timeToExpire, 'true');
+          }
+        }
+      } catch (err) {
+        console.error('Error blacklisting token:', err);
+      }
+    }
+  }
+
   sendSuccess(res, { message: 'Logged out' });
 };
-
 module.exports = {
   login,
   refresh,

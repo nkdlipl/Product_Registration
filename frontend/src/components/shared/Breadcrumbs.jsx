@@ -18,8 +18,7 @@ const Breadcrumbs = ({ items = [] }) => {
     'teams': 'Teams',
     'products': 'Products',
     'customers': 'Customers',
-    'feature-mapping': 'Feature Mapping',
-    'dashboard': 'Overview',
+    'dashboard': 'Dashboard',
     'designer': 'Designer',
     'opportunities': 'Opportunities'
   };
@@ -35,11 +34,7 @@ const Breadcrumbs = ({ items = [] }) => {
     '/admin/designers': ['admin', 'users'],
     '/admin/maintenance': ['admin', 'users'],
     '/admin/sales': ['admin', 'users'],
-    '/admin/teams': role.toLowerCase() === 'sales'
-      ? ['admin', 'users', 'sales']
-      : role.toLowerCase() === 'maintenance'
-        ? ['admin', 'users', 'maintenance']
-        : ['admin', 'users', 'designers']
+    '/admin/teams': ['admin']
   };
 
   const currentPath = location.pathname;

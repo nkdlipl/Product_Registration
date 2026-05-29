@@ -4,7 +4,7 @@ const ThemeContext = createContext();
 
 export const AVAILABLE_THEMES = [
   { id: 'light', name: 'Light (Default)' },
-  { id: 'dark', name: 'Dark (Default)' },
+  { id: 'dark', name: 'Dark' },
   { id: 'cyberpunk', name: 'Cyberpunk' },
   { id: 'retro', name: 'Retro' },
   { id: 'modified-retro', name: 'Modified Retro' },

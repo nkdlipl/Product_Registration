@@ -138,7 +138,11 @@ const SupportTicketProfilePage = () => {
               {/* Query Details */}
               <div className="space-y-4">
                 <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">Query Details</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
+                    <p className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest mb-1">Product</p>
+                    <p className="text-[13px] font-bold text-[var(--text-main)]">{ticket.product_name || 'N/A'}</p>
+                  </div>
                   <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
                     <p className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest mb-1">Query Type</p>
                     <p className="text-[13px] font-bold text-[var(--text-main)]">{ticket.query_type}</p>

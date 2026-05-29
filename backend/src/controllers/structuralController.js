@@ -160,13 +160,18 @@ const createStructuralPart = async (req, res, next) => {
         await db.query('BEGIN');
 
         // Ensure part_category is populated from category_name if missing
-        if (!body.part_category && body.category_name) {
-            body.part_category = body.category_name;
+        if (!body.part_category) {
+            body.part_category = body.category_name || 'Uncategorized';
         }
 
         // 1. Insert Master
         const masterFields = ['part_category', 'part_name', 'part_number', 'internal_part_code', 'compatible_dispenser_model', 'assembly_group', 'part_position', 'part_description', 'manufacturer_fabricator', 'brand', 'status', 'stock_quantity'];
-        const masterValues = masterFields.map(f => sanitizeValue(body[f]));
+        const masterValues = masterFields.map(f => {
+            let val = sanitizeValue(body[f]);
+            if (f === 'status' && !val) return 'Active';
+            if (f === 'stock_quantity' && (val === null || val === '')) return 0;
+            return val;
+        });
         const masterPlaceholders = masterFields.map((_, i) => `$${i + 1}`).join(', ');
         
         try {
@@ -193,7 +198,7 @@ const createStructuralPart = async (req, res, next) => {
 
             // 3. Category Spec & Specialized Routing
             if (category_name) {
-            const parsedData = typeof spec_data === 'string' ? JSON.parse(spec_data) : spec_data;
+            const parsedData = typeof spec_data === 'string' ? JSON.parse(spec_data) : (spec_data || {});
             
             try {
                 await db.query(
@@ -298,14 +303,19 @@ const updateStructuralPart = async (req, res, next) => {
         await db.query('BEGIN');
 
         // Ensure part_category is populated from category_name if missing
-        if (!body.part_category && body.category_name) {
-            body.part_category = body.category_name;
+        if (!body.part_category) {
+            body.part_category = body.category_name || 'Uncategorized';
         }
 
         // 1. Update Master
         const masterFields = ['part_category', 'part_name', 'part_number', 'internal_part_code', 'compatible_dispenser_model', 'assembly_group', 'part_position', 'part_description', 'manufacturer_fabricator', 'brand', 'status', 'stock_quantity'];
         let masterSetParts = masterFields.map((f, i) => `${f}=$${i+1}`);
-        let masterValues = masterFields.map(f => sanitizeValue(body[f]));
+        let masterValues = masterFields.map(f => {
+            let val = sanitizeValue(body[f]);
+            if (f === 'status' && !val) return 'Active';
+            if (f === 'stock_quantity' && (val === null || val === '')) return 0;
+            return val;
+        });
         masterValues.push(id);
 
         try {
@@ -335,11 +345,11 @@ const updateStructuralPart = async (req, res, next) => {
 
         // 3. Update Category Spec & Specialized Table
         if (category_name) {
-            const parsedData = typeof spec_data === 'string' ? JSON.parse(spec_data) : spec_data;
+            const parsedData = typeof spec_data === 'string' ? JSON.parse(spec_data) : (spec_data || {});
             try {
                 await db.query(
                     `UPDATE STRUCTURAL_CATEGORY_SPEC SET spec_data=$1 WHERE part_id=$2`,
-                    [JSON.stringify(parsedData || {}), id]
+                    [JSON.stringify(parsedData), id]
                 );
             } catch (err) {
                 console.error('--- ERROR UPDATING CATEGORY SPEC ---', err);

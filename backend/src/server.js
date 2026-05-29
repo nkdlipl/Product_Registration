@@ -3,12 +3,14 @@ const env = require('./config/env');
 const migrate = require('../migrate_categories');
 const migrateFinishedGoods = require('../migrate_finished_goods');
 const migrateChat = require('../migrate_chat');
+const { connectRedis } = require('./config/redis');
 // Trigger restart
 
 const PORT = env.PORT || 3000;
 
 const startServer = async () => {
   try {
+    await connectRedis();
     console.log('--- PRODUCTION SYNC: RUNNING MIGRATIONS ---');
     await migrate();
     await migrateFinishedGoods();
@@ -29,3 +31,5 @@ const startServer = async () => {
 };
 
 startServer();
+
+// Triggered restart

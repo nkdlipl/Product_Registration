@@ -4,8 +4,10 @@ const { sendError, sendSuccess } = require('../utils/response');
 const getTickets = async (req, res, next) => {
     try {
         const result = await db.query(`
-            SELECT * FROM support_tickets 
-            ORDER BY created_at DESC
+            SELECT st.*, p.product_name 
+            FROM support_tickets st
+            LEFT JOIN products p ON st.product_id = p.product_id
+            ORDER BY st.created_at DESC
         `);
         return sendSuccess(res, result.rows, 'Support tickets retrieved successfully');
     } catch (error) {
@@ -19,9 +21,19 @@ const getTicketById = async (req, res, next) => {
         // Find by either numeric ID or TCK-XXX ticket_id
         let result;
         if (isNaN(id)) {
-            result = await db.query('SELECT * FROM support_tickets WHERE ticket_id = $1', [id]);
+            result = await db.query(`
+                SELECT st.*, p.product_name 
+                FROM support_tickets st
+                LEFT JOIN products p ON st.product_id = p.product_id
+                WHERE st.ticket_id = $1
+            `, [id]);
         } else {
-            result = await db.query('SELECT * FROM support_tickets WHERE id = $1', [id]);
+            result = await db.query(`
+                SELECT st.*, p.product_name 
+                FROM support_tickets st
+                LEFT JOIN products p ON st.product_id = p.product_id
+                WHERE st.id = $1
+            `, [id]);
         }
 
         if (result.rows.length === 0) {
@@ -39,7 +51,7 @@ const createTicket = async (req, res, next) => {
         const { 
             creator_name, query_date, last_date, resolved_date, 
             query_type, query_description, troubleshooting_steps, 
-            steps_followed, priority, status, assigned_to 
+            steps_followed, priority, status, assigned_to, product_id 
         } = req.body;
 
         const creator_id = req.user.user_id;
@@ -60,14 +72,15 @@ const createTicket = async (req, res, next) => {
             INSERT INTO support_tickets (
                 ticket_id, creator_id, creator_name, query_date, last_date, resolved_date,
                 query_type, query_description, troubleshooting_steps, steps_followed,
-                priority, status, assigned_to, attachments
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                priority, status, assigned_to, attachments, product_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             RETURNING *
         `;
         const values = [
             ticket_id, creator_id, final_creator_name, query_date || new Date(), last_date || null, resolved_date || null,
             query_type, query_description, troubleshooting_steps, steps_followed === 'true' || steps_followed === true,
-            priority || 'Normal', status || 'Pending', assigned_to || 'Unassigned', JSON.stringify(attachments)
+            priority || 'Normal', status || 'Pending', assigned_to || 'Unassigned', JSON.stringify(attachments),
+            product_id || null
         ];
 
         const result = await db.query(query, values);
@@ -84,7 +97,7 @@ const updateTicket = async (req, res, next) => {
         const { 
             query_date, last_date, resolved_date, 
             query_type, query_description, troubleshooting_steps, 
-            steps_followed, priority, status, assigned_to 
+            steps_followed, priority, status, assigned_to, product_id 
         } = req.body;
 
         const existingRes = await db.query('SELECT * FROM support_tickets WHERE id = $1', [id]);
@@ -114,15 +127,16 @@ const updateTicket = async (req, res, next) => {
                 status = COALESCE($9, status),
                 assigned_to = COALESCE($10, assigned_to),
                 attachments = $11,
+                product_id = COALESCE($12, product_id),
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = $12
+            WHERE id = $13
             RETURNING *
         `;
         const values = [
             query_date || null, last_date || null, resolved_date || null,
             query_type, query_description, troubleshooting_steps, 
             steps_followed !== undefined ? (steps_followed === 'true' || steps_followed === true) : existing.steps_followed,
-            priority, status, assigned_to, JSON.stringify(attachments), id
+            priority, status, assigned_to, JSON.stringify(attachments), product_id || null, id
         ];
 
         const result = await db.query(query, values);

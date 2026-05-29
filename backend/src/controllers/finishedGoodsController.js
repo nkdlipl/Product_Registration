@@ -6,7 +6,7 @@ const hardwareInventoryConfig = {
     pcb: {
         table: 'PCB_MASTER',
         idColumn: 'pcb_id',
-        nameExpression: "COALESCE(NULLIF(TRIM(part_no), ''), NULLIF(TRIM(pcb_name), ''), 'Unnamed PCB')"
+        nameExpression: "COALESCE(NULLIF(TRIM(pcb_name), ''), NULLIF(TRIM(part_no), ''), 'Unnamed PCB')"
     },
     electrical: {
         table: 'electrical_part_master',
@@ -202,12 +202,12 @@ const getComponentOptions = async (req, res, next) => {
     try {
         const products = await db.query('SELECT product_id as id, product_name as name FROM products WHERE is_active = TRUE ORDER BY product_name');
         
-        // PCB Master (Distinct by part_no)
+        // PCB Master (Distinct by pcb_name)
         const pcbs = await db.query(`
-            SELECT DISTINCT ON (LOWER(TRIM(part_no))) pcb_id as id, TRIM(part_no) as name, COALESCE(stock_quantity, 0) AS stock_quantity 
+            SELECT DISTINCT ON (LOWER(TRIM(pcb_name))) pcb_id as id, TRIM(pcb_name) as name, COALESCE(stock_quantity, 0) AS stock_quantity 
             FROM PCB_MASTER 
-            WHERE is_active = TRUE AND part_no IS NOT NULL AND TRIM(part_no) != ''
-            ORDER BY LOWER(TRIM(part_no))
+            WHERE is_active = TRUE AND pcb_name IS NOT NULL AND TRIM(pcb_name) != ''
+            ORDER BY LOWER(TRIM(pcb_name))
         `);
         
         // Electrical Parts (Distinct by part_name and part_number)

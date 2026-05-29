@@ -30,7 +30,7 @@ const getTabMetadata = (pathname, search) => {
   const role = params.get('role') || '';
   
   if (pathname === '/admin/dashboard' || pathname === '/designer/dashboard' || pathname === '/sales/dashboard' || pathname === '/maintenance/dashboard') {
-    return { label: 'Overview', iconType: 'Home' };
+    return { label: 'Dashboard', iconType: 'Home' };
   }
   if (pathname === '/admin/users') {
     return { label: 'Users', iconType: 'Users' };
@@ -45,9 +45,7 @@ const getTabMetadata = (pathname, search) => {
     return { label: 'Sales', iconType: 'ShoppingBag' };
   }
   if (pathname === '/admin/teams') {
-    if (role.toLowerCase() === 'sales') return { label: 'Sales Teams', iconType: 'ShoppingBag' };
-    if (role.toLowerCase() === 'maintenance') return { label: 'Maintenance Teams', iconType: 'Wrench' };
-    return { label: 'Designer Teams', iconType: 'Users' };
+    return { label: 'Teams', iconType: 'Users' };
   }
   if (pathname === '/admin/products') {
     return { label: 'Products', iconType: 'Box' };
@@ -57,9 +55,6 @@ const getTabMetadata = (pathname, search) => {
   }
   if (pathname === '/admin/customers') {
     return { label: 'Customers', iconType: 'Layers' };
-  }
-  if (pathname === '/admin/feature-mapping') {
-    return { label: 'Feature Mapping', iconType: 'LayoutGrid' };
   }
   if (pathname === '/admin/finished-goods') {
     return { label: 'Finished Goods', iconType: 'Package' };
@@ -104,7 +99,6 @@ const TeamsPage = lazy(() => import('../features/admin/TeamsPage'));
 const ProductListPage = lazy(() => import('../features/admin/ProductListPage'));
 const ProductProfilePage = lazy(() => import('../features/admin/ProductProfilePage'));
 const CustomerListPage = lazy(() => import('../features/admin/CustomerListPage'));
-const FeatureMappingPage = lazy(() => import('../features/admin/FeatureMappingPage'));
 const FinishedGoodsPage = lazy(() => import('../features/admin/FinishedGoodsPage'));
 const InventoryListPage = lazy(() => import('../features/admin/InventoryListPage'));
 const ElectronicsPartsPage = lazy(() => import('../features/admin/ElectronicsPartsPage'));
@@ -142,7 +136,7 @@ const DashboardLayout = () => {
     // Default tab
     return [{ 
       fullPath: user?.role_name ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
-      label: 'Overview', 
+      label: 'Dashboard', 
       iconType: 'Home' 
     }];
   });
@@ -212,7 +206,7 @@ const DashboardLayout = () => {
     if (result.isConfirmed) {
       const dashboardTab = { 
         fullPath: user?.role_name ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
-        label: 'Overview', 
+        label: 'Dashboard', 
         iconType: 'Home' 
       };
       setTabs([dashboardTab]);
@@ -294,7 +288,6 @@ const Router = () => {
           <Route path="/admin/products" element={<ProductListPage />} />
           <Route path="/admin/products/:id" element={<ProductProfilePage />} />
           <Route path="/admin/customers" element={<CustomerListPage />} />
-          <Route path="/admin/feature-mapping" element={<FeatureMappingPage />} />
           <Route path="/admin/finished-goods" element={<FinishedGoodsPage />} />
           <Route path="/admin/inventory" element={<InventoryListPage />} />
           <Route path="/admin/inventory/pcb" element={<InventoryListPage type="PCB" />} />

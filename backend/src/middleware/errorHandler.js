@@ -1,7 +1,15 @@
 const { sendError } = require('../utils/response');
 
+const fs = require('fs');
+const path = require('path');
+
 const errorHandler = (err, req, res, next) => {
   console.error(err);
+  try {
+    fs.appendFileSync(path.join(__dirname, '../../error_log.txt'), new Date().toISOString() + ' - ' + err.stack + '\n\n');
+  } catch (e) {
+    // Ignore logging errors
+  }
 
   // express-validator errors are usually handled in the controller
   // but if they leak here:

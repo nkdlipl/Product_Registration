@@ -509,7 +509,7 @@ const CustomerListPage = () => {
                         <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
                           <div>
                             <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
-                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                            {c.designation && <span className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest block mt-0.5">{c.designation}</span>}
                           </div>
                           <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
                             {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
@@ -529,7 +529,7 @@ const CustomerListPage = () => {
                         <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
                           <div>
                             <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
-                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                            {c.designation && <span className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest block mt-0.5">{c.designation}</span>}
                           </div>
                           <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
                             {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
@@ -549,7 +549,7 @@ const CustomerListPage = () => {
                         <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
                           <div>
                             <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
-                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                            {c.designation && <span className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest block mt-0.5">{c.designation}</span>}
                           </div>
                           <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
                             {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
@@ -569,7 +569,7 @@ const CustomerListPage = () => {
                         <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
                           <div>
                             <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
-                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                            {c.designation && <span className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest block mt-0.5">{c.designation}</span>}
                           </div>
                           <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
                             {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
@@ -589,7 +589,7 @@ const CustomerListPage = () => {
                         <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
                           <div>
                             <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
-                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                            {c.designation && <span className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest block mt-0.5">{c.designation}</span>}
                           </div>
                           <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
                             {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
@@ -609,7 +609,7 @@ const CustomerListPage = () => {
                         <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
                           <div>
                             <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
-                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                            {c.designation && <span className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest block mt-0.5">{c.designation}</span>}
                           </div>
                           <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
                             {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
@@ -787,175 +787,175 @@ const CustomerListPage = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                     {/* Technical Personnel */}
-                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Technical Personnel</span>
-                        <button type="button" onClick={() => handleOpenPersonnelModal('technical')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Technical Personnel</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('technical')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
                       </div>
                       <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
                         {techContacts.map((c, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
                             <div className="min-w-0 flex-1">
                               <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
-                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              {c.designation && <p className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest truncate">{c.designation}</p>}
                               <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
-                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
-                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-[var(--accent)]/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-[var(--accent)]/60" /> {c.email}</p>}
                               </div>
                             </div>
                             <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
-                              <button type="button" onClick={() => handleOpenPersonnelModal('technical', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => handleOpenPersonnelModal('technical', idx)} className="p-1.5 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded transition-all"><Edit2 size={13} /></button>
                               <button type="button" onClick={() => setTechContacts(techContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
                             </div>
                           </div>
                         ))}
                         {techContacts.length === 0 && (
-                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No technical personnel added</div>
+                          <div className="py-4 text-center border border-dashed border-[var(--border-color)] rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-[var(--accent)]">No technical personnel added</div>
                         )}
                       </div>
                     </div>
 
                     {/* Purchase Personnel */}
-                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Purchase Personnel</span>
-                        <button type="button" onClick={() => handleOpenPersonnelModal('sales')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Purchase Personnel</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('sales')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
                       </div>
                       <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
                         {salesContacts.map((c, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
                             <div className="min-w-0 flex-1">
                               <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
-                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              {c.designation && <p className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest truncate">{c.designation}</p>}
                               <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
-                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
-                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-[var(--accent)]/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-[var(--accent)]/60" /> {c.email}</p>}
                               </div>
                             </div>
                             <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
-                              <button type="button" onClick={() => handleOpenPersonnelModal('sales', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => handleOpenPersonnelModal('sales', idx)} className="p-1.5 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded transition-all"><Edit2 size={13} /></button>
                               <button type="button" onClick={() => setSalesContacts(salesContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
                             </div>
                           </div>
                         ))}
                         {salesContacts.length === 0 && (
-                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No purchase personnel added</div>
+                          <div className="py-4 text-center border border-dashed border-[var(--border-color)] rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-[var(--accent)]">No purchase personnel added</div>
                         )}
                       </div>
                     </div>
 
                     {/* Company Owner */}
-                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Company Owner</span>
-                        <button type="button" onClick={() => handleOpenPersonnelModal('owner')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Company Owner</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('owner')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
                       </div>
                       <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
                         {ownerContacts.map((c, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
                             <div className="min-w-0 flex-1">
                               <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
-                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              {c.designation && <p className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest truncate">{c.designation}</p>}
                               <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
-                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
-                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-[var(--accent)]/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-[var(--accent)]/60" /> {c.email}</p>}
                               </div>
                             </div>
                             <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
-                              <button type="button" onClick={() => handleOpenPersonnelModal('owner', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => handleOpenPersonnelModal('owner', idx)} className="p-1.5 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded transition-all"><Edit2 size={13} /></button>
                               <button type="button" onClick={() => setOwnerContacts(ownerContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
                             </div>
                           </div>
                         ))}
                         {ownerContacts.length === 0 && (
-                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No owner added</div>
+                          <div className="py-4 text-center border border-dashed border-[var(--border-color)] rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-[var(--accent)]">No owner added</div>
                         )}
                       </div>
                     </div>
 
                     {/* Accounts */}
-                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Accounts</span>
-                        <button type="button" onClick={() => handleOpenPersonnelModal('accounts')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Accounts</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('accounts')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
                       </div>
                       <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
                         {accountsContacts.map((c, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
                             <div className="min-w-0 flex-1">
                               <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
-                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              {c.designation && <p className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest truncate">{c.designation}</p>}
                               <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
-                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
-                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-[var(--accent)]/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-[var(--accent)]/60" /> {c.email}</p>}
                               </div>
                             </div>
                             <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
-                              <button type="button" onClick={() => handleOpenPersonnelModal('accounts', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => handleOpenPersonnelModal('accounts', idx)} className="p-1.5 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded transition-all"><Edit2 size={13} /></button>
                               <button type="button" onClick={() => setAccountsContacts(accountsContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
                             </div>
                           </div>
                         ))}
                         {accountsContacts.length === 0 && (
-                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No accounts added</div>
+                          <div className="py-4 text-center border border-dashed border-[var(--border-color)] rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-[var(--accent)]">No accounts added</div>
                         )}
                       </div>
                     </div>
 
                     {/* QA/QC */}
-                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">QA/QC</span>
-                        <button type="button" onClick={() => handleOpenPersonnelModal('qa_qc')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">QA/QC</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('qa_qc')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
                       </div>
                       <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
                         {qaQcContacts.map((c, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
                             <div className="min-w-0 flex-1">
                               <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
-                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              {c.designation && <p className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest truncate">{c.designation}</p>}
                               <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
-                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
-                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-[var(--accent)]/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-[var(--accent)]/60" /> {c.email}</p>}
                               </div>
                             </div>
                             <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
-                              <button type="button" onClick={() => handleOpenPersonnelModal('qa_qc', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => handleOpenPersonnelModal('qa_qc', idx)} className="p-1.5 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded transition-all"><Edit2 size={13} /></button>
                               <button type="button" onClick={() => setQaQcContacts(qaQcContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
                             </div>
                           </div>
                         ))}
                         {qaQcContacts.length === 0 && (
-                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No QA/QC added</div>
+                          <div className="py-4 text-center border border-dashed border-[var(--border-color)] rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-[var(--accent)]">No QA/QC added</div>
                         )}
                       </div>
                     </div>
 
                     {/* Other Personnel */}
-                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Other Personnel</span>
-                        <button type="button" onClick={() => handleOpenPersonnelModal('other')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Other Personnel</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('other')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
                       </div>
                       <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
                         {otherContacts.map((c, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
                             <div className="min-w-0 flex-1">
                               <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
-                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              {c.designation && <p className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest truncate">{c.designation}</p>}
                               <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
-                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
-                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-[var(--accent)]/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-[var(--accent)]/60" /> {c.email}</p>}
                               </div>
                             </div>
                             <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
-                              <button type="button" onClick={() => handleOpenPersonnelModal('other', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => handleOpenPersonnelModal('other', idx)} className="p-1.5 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded transition-all"><Edit2 size={13} /></button>
                               <button type="button" onClick={() => setOtherContacts(otherContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
                             </div>
                           </div>
                         ))}
                         {otherContacts.length === 0 && (
-                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No other personnel added</div>
+                          <div className="py-4 text-center border border-dashed border-[var(--border-color)] rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-[var(--accent)]">No other personnel added</div>
                         )}
                       </div>
                     </div>

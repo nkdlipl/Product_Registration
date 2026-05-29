@@ -771,11 +771,11 @@ const buildFileUrl = (filePath) => {
   const StatCard = ({ title, count, icon: Icon, to, colorAccent }) => (
     <div
       onClick={() => navigate(to)}
-      className="workspace-card p-4 border border-[var(--border-color)] group cursor-pointer hover:shadow-md transition-all duration-300 outline-none"
+      className="workspace-card px-4 py-3 border border-[var(--border-color)] group cursor-pointer hover:shadow-md transition-all duration-300 outline-none"
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{title}</p>
+          <p className="text-[13px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{title}</p>
           <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">
             {loading ? '...' : count}
           </h3>
@@ -787,7 +787,7 @@ const buildFileUrl = (filePath) => {
           <Icon size={18} strokeWidth={2.5} />
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-1 group/link">
+      <div className="mt-2 flex items-center gap-1 group/link">
         <span className="text-[11px] font-bold tracking-wide text-[var(--accent)]">View details</span>
         <ChevronRight size={14} className="text-[var(--accent)] transition-transform duration-300 group-hover/link:translate-x-1" />
       </div>
@@ -1227,7 +1227,11 @@ const buildFileUrl = (filePath) => {
                     {(() => {
                         const allImages = selectedItem?.pcb_images && selectedItem.pcb_images.length > 0 
                             ? selectedItem.pcb_images 
-                            : (selectedItem?.part_images && selectedItem.part_images.length > 0 ? selectedItem.part_images : (selectedItem?.image_url ? [selectedItem.image_url] : []));
+                            : (selectedItem?.part_images && selectedItem.part_images.length > 0 
+                                ? selectedItem.part_images 
+                                : (selectedItem?.images && selectedItem.images.length > 0 
+                                    ? selectedItem.images 
+                                    : (selectedItem?.image_url ? [selectedItem.image_url] : [])));
                         const currentUrl = allImages[activeImageIdx] || allImages[0];
                         
                         return (

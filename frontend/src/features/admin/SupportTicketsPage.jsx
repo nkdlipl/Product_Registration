@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSupportTickets, createSupportTicket, updateSupportTicket, deleteSupportTicket } from '../../api/supportTickets';
+import { getProducts } from '../../api/products';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { Search, Plus, Loader2, Tag, CheckCircle, Trash2, LayoutGrid, List, Eye, Zap, Pencil, LifeBuoy, AlertCircle, Clock, Calendar, Check } from 'lucide-react';
@@ -15,6 +16,7 @@ const SupportTicketsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tickets, setTickets] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -33,7 +35,17 @@ const SupportTicketsPage = () => {
 
   useEffect(() => {
     fetchTickets();
+    fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const res = await getProducts({ limit: 1000 });
+      setProducts(res.data.data || []);
+    } catch (error) {
+      console.error('Failed to fetch products', error);
+    }
+  };
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -60,7 +72,8 @@ const SupportTicketsPage = () => {
       troubleshooting_steps: '',
       steps_followed: false,
       priority: 'Normal',
-      status: 'Pending'
+      status: 'Pending',
+      product_id: ''
     });
     setPendingFiles([]);
     setIsModalOpen(true);
@@ -160,6 +173,7 @@ const SupportTicketsPage = () => {
 
   const columns = [
     { key: 'ticket_id', label: 'Ticket ID' },
+    { key: 'product_name', label: 'Product', render: (row) => row.product_name || 'N/A' },
     { key: 'query_type', label: 'Category' },
     { 
       key: 'priority', label: 'Priority',
@@ -216,7 +230,7 @@ const SupportTicketsPage = () => {
           <div key={idx} className="workspace-card p-4 border border-[var(--border-color)] group hover:shadow-md transition-all duration-300 outline-none rounded-2xl">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{stat.title}</p>
+                <p className="text-[13px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{stat.title}</p>
                 <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">{stat.value}</h3>
               </div>
               <div 
@@ -279,6 +293,9 @@ const SupportTicketsPage = () => {
             <div key={ticket.id} onClick={() => handleView(ticket)} className="workspace-card p-5 group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer">
               <div className="flex justify-between items-start mb-3">
                 <span className="text-[13px] font-black text-[var(--accent)] tracking-widest">{ticket.ticket_id}</span>
+                <span className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5 block">{ticket.product_name || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between items-start mb-3">
                 <div className="flex gap-2">
                   <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${ticket.priority === 'High' ? 'bg-rose-500/10 text-rose-500' : ticket.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
                     {ticket.priority || 'Normal'}
@@ -358,7 +375,16 @@ const SupportTicketsPage = () => {
                 <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-widest">Query Details</h3>
               </div>
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div>
+                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product</label>
+                    <select {...register('product_id')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold appearance-none">
+                      <option value="">Select Product...</option>
+                      {products.map(p => (
+                        <option key={p.product_id} value={p.product_id}>{p.product_name}</option>
+                      ))}
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Query Type</label>
                     <select {...register('query_type')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold appearance-none">

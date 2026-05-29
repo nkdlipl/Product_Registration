@@ -2,17 +2,19 @@ const express = require('express');
 const router = express.Router();
 const companyController = require('../controllers/companyController');
 const { verifyToken } = require('../middleware/auth');
+const cache = require('../middleware/cache');
+const clearCache = require('../middleware/clearCache');
 
 router.use(verifyToken);
 
-router.get('/', companyController.getCompanies);
-router.post('/', companyController.createCompany);
-router.put('/:id', companyController.updateCompany);
-router.delete('/:id', companyController.deleteCompany);
+router.get('/', cache(60), companyController.getCompanies);
+router.post('/', clearCache('/api/companies'), companyController.createCompany);
+router.put('/:id', clearCache('/api/companies'), companyController.updateCompany);
+router.delete('/:id', clearCache('/api/companies'), companyController.deleteCompany);
 
-router.get('/:companyId/sub', companyController.getSubCompanies);
-router.post('/:companyId/sub', companyController.createSubCompany);
-router.put('/sub/:id', companyController.updateSubCompany);
-router.delete('/sub/:id', companyController.deleteSubCompany);
+router.get('/:companyId/sub', cache(60), companyController.getSubCompanies);
+router.post('/:companyId/sub', clearCache('/api/companies'), companyController.createSubCompany);
+router.put('/sub/:id', clearCache('/api/companies'), companyController.updateSubCompany);
+router.delete('/sub/:id', clearCache('/api/companies'), companyController.deleteSubCompany);
 
 module.exports = router;
