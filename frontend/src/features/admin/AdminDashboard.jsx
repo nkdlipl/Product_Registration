@@ -52,23 +52,23 @@ const AdminDashboard = () => {
   const StatCard = ({ title, value, icon: Icon, path, accentBg, accentText }) => (
     <div
       onClick={() => navigate(path)}
-      className="workspace-card p-4 border border-[var(--border-color)] group cursor-pointer hover:shadow-md transition-all duration-300 outline-none"
+      className="workspace-card px-4 py-3 border border-[var(--border-color)] group cursor-pointer hover:shadow-md transition-all duration-300 outline-none"
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{title}</p>
-          <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">
+          <p className="text-[13px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{title}</p>
+          <h3 className="text-2xl font-bold text-[var(--text-main)] tracking-tight">
             {loading ? '...' : value}
           </h3>
         </div>
         <div 
-          className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm"
+          className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-300 shadow-sm"
           style={{ background: accentBg, color: accentText }}
         >
           <Icon size={18} strokeWidth={2.5} />
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-1 group/link">
+      <div className="mt-2 flex items-center gap-1 group/link">
         <span className="text-[11px] font-bold tracking-wide text-[var(--accent)]">View details</span>
         <ChevronRight size={14} className="text-[var(--accent)] transition-transform duration-300 group-hover/link:translate-x-1" />
       </div>
@@ -105,11 +105,11 @@ const AdminDashboard = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0 animate-entrance-down">
         <div className="flex items-center gap-5">
-          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
-            <LayoutDashboard size={24} className="md:w-[28px] md:h-[28px] group-hover:scale-110 transition-transform duration-300 text-[var(--accent)]" />
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
+            <LayoutDashboard size={24} className="md:w-[28px] md:h-[28px] transition-transform duration-300 text-[var(--accent)]" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-main)] tracking-tight leading-none">
                Dashboard
             </h1>
             {/* <p className="text-[12px] text-[var(--text-muted)] font-semibold mt-2 tracking-wide opacity-80">
@@ -192,7 +192,7 @@ const AdminDashboard = () => {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[1000px] lg:min-h-0 items-stretch animate-entrance-up pb-2" style={{ animationDelay: '0.1s' }}>
         {/* Inventory Chart */}
         <div className="workspace-card p-6 h-full flex flex-col">
-          <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.1em] mb-5 flex items-center gap-2">
+          <h3 className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.1em] mb-5 flex items-center gap-2">
             <Box size={14} className="text-[var(--accent)]" /> Inventory Distribution
           </h3>
           <div className="flex-1 min-h-0 relative">
@@ -237,7 +237,7 @@ const AdminDashboard = () => {
 
         {/* Personnel Chart */}
         <div className="workspace-card p-6 h-full flex flex-col">
-          <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.1em] mb-5 flex items-center gap-2">
+          <h3 className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.1em] mb-5 flex items-center gap-2">
             <Users size={14} className="text-[var(--accent)]" /> Department Staffing
           </h3>
           <div className="flex-1 min-h-0">
@@ -262,7 +262,7 @@ const AdminDashboard = () => {
 
         {/* Quick Actions */}
         <div className="workspace-card p-6 h-full flex flex-col">
-          <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.1em] mb-5 flex items-center gap-2">
+          <h3 className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.1em] mb-5 flex items-center gap-2">
             <Activity size={14} className="text-[var(--accent)]" /> Quick actions
           </h3>
           <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">
