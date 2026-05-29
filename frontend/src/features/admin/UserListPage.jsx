@@ -235,11 +235,11 @@ const UserListPage = ({ initialRole = '' }) => {
     return (
       <div
         onClick={() => navigate(to)}
-        className="workspace-card p-4 border border-[var(--border-color)] group cursor-pointer hover:shadow-md transition-all duration-300 outline-none"
+        className="workspace-card px-4 py-3 border border-[var(--border-color)] group cursor-pointer hover:shadow-md transition-all duration-300 outline-none"
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{title}</p>
+            <p className="text-[13px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{title}</p>
             <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">
               {loading ? '...' : count}
             </h3>
@@ -251,7 +251,7 @@ const UserListPage = ({ initialRole = '' }) => {
             <Icon size={18} strokeWidth={2.5} />
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-1 group/link">
+        <div className="mt-2 flex items-center gap-1 group/link">
           <span className="text-[11px] font-bold tracking-wide text-[var(--accent)]">View details</span>
           <ChevronRight size={14} className="text-[var(--accent)] transition-transform duration-300 group-hover/link:translate-x-1" />
         </div>
@@ -290,16 +290,7 @@ const UserListPage = ({ initialRole = '' }) => {
         )}
       </div>
 
-      {!initialRole && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <StatCard title="Designers" count={stats.designers} icon={PenTool} to="/admin/designers" />
-          <StatCard title="Designer Teams" count={stats.designerTeams || 0} icon={Users} to="/admin/teams?role=Designer" />
-          <StatCard title="Maintenance" count={stats.maintenance} icon={Wrench} to="/admin/maintenance" />
-          <StatCard title="Maintenance Teams" count={stats.maintenanceTeams || 0} icon={Users} to="/admin/teams?role=Maintenance" />
-          <StatCard title="Sales" count={stats.sales} icon={ShoppingBag} to="/admin/sales" />
-          <StatCard title="Sales Teams" count={stats.salesTeams || 0} icon={Users} to="/admin/teams?role=Sales" />
-        </div>
-      )}
+
 
       <div className="workspace-card p-3.5 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)]">
         <div className="relative flex-1 group w-full">

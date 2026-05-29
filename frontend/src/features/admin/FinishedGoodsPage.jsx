@@ -338,7 +338,7 @@ const FinishedGoodsPage = () => {
                     <div key={idx} className="workspace-card p-4 border border-[var(--border-color)] group hover:shadow-md transition-all duration-300 outline-none rounded-2xl">
                         <div className="flex items-start justify-between">
                             <div>
-                                <p className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{stat.title}</p>
+                                <p className="text-[13px] font-bold tracking-wider text-[var(--text-muted)] mb-0.5">{stat.title}</p>
                                 <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">{loading ? '...' : stat.value}</h3>
                             </div>
                             <div 

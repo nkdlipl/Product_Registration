@@ -2,6 +2,7 @@ const express = require('express');
 const adminController = require('../controllers/adminController');
 const { verifyToken } = require('../middleware/auth');
 const { requireRole } = require('../middleware/rbac');
+const cache = require('../middleware/cache');
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ router.use(requireRole('Admin'));
 const utilityController = require('../controllers/adminUtilityController');
 const adminTeamController = require('../controllers/adminTeamController');
 
-router.get('/stats', adminController.getAdminStats);
+router.get('/stats', cache(60), adminController.getAdminStats);
 router.get('/users', adminController.getUsers);
 router.post('/users', adminController.createUser);
 router.put('/users/:userId', adminController.updateUser);

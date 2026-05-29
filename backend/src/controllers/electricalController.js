@@ -10,6 +10,13 @@ const getElectricalParts = async (req, res, next) => {
       let queryText = `
         SELECT p.*, 
         (SELECT image_url FROM electrical_images WHERE part_id = p.part_id LIMIT 1) as image_url,
+        (SELECT part_images_gallery FROM pump_specs WHERE part_id = p.part_id) as pump_images,
+        (SELECT part_images_gallery FROM nozzle_specs WHERE part_id = p.part_id) as nozzle_images,
+        (SELECT part_images_gallery FROM solenoid_valve_specs WHERE part_id = p.part_id) as solenoid_images,
+        (SELECT part_images_gallery FROM relay_box_specs WHERE part_id = p.part_id) as relay_images,
+        (SELECT part_images_gallery FROM transformer_specs WHERE part_id = p.part_id) as transformer_images,
+        (SELECT part_images_gallery FROM rccb_specs WHERE part_id = p.part_id) as rccb_images,
+        (SELECT part_images_gallery FROM spd_specs WHERE part_id = p.part_id) as spd_images,
         COUNT(*) OVER() as total_count 
         FROM electrical_part_master p
         WHERE p.is_active = TRUE
@@ -26,7 +33,36 @@ const getElectricalParts = async (req, res, next) => {
       const result = await db.query(queryText, params);
       const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
   
-      sendSuccess(res, result.rows.map(({ total_count, ...rest }) => rest), { page, limit, total });
+      const processedData = result.rows.map(row => {
+          const { 
+              total_count, 
+              pump_images, nozzle_images, solenoid_images, relay_images, transformer_images, rccb_images, spd_images,
+              ...rest 
+          } = row;
+          
+          let first_gallery_image = null;
+          const galleries = [pump_images, nozzle_images, solenoid_images, relay_images, transformer_images, rccb_images, spd_images];
+          for (let g of galleries) {
+              if (g) {
+                  try {
+                      let parsed = typeof g === 'string' ? JSON.parse(g) : g;
+                      if (parsed && parsed.length > 0) {
+                          first_gallery_image = parsed[0];
+                          break;
+                      }
+                  } catch (e) {
+                      // ignore parse errors
+                  }
+              }
+          }
+
+          return {
+              ...rest,
+              image_url: rest.image_url || first_gallery_image
+          };
+      });
+
+      sendSuccess(res, processedData, { page, limit, total });
     } catch (error) {
       next(error);
     }

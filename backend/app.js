@@ -5,6 +5,7 @@ const compression = require('compression');
 const env = require('./src/config/env');
 const requestLogger = require('./src/middleware/requestLogger');
 const errorHandler = require('./src/middleware/errorHandler');
+const { apiLimiter } = require('./src/middleware/rateLimiter');
 
 // Route imports
 const authRoutes = require('./src/routes/auth');
@@ -15,7 +16,6 @@ const maintenanceRoutes = require('./src/routes/maintenance');
 const productRoutes = require('./src/routes/products');
 const categoryRoutes = require('./src/routes/categories');
 const customerRoutes = require('./src/routes/customers');
-const featureMappingRoutes = require('./src/routes/featureMappingRoutes');
 const companyRoutes = require('./src/routes/companies');
 const inventoryRoutes = require('./src/routes/inventory');
 const finishedGoodsRoutes = require('./src/routes/finishedGoodsRoutes');
@@ -75,6 +75,8 @@ app.use(cors({
 
 app.use(requestLogger);
 
+// Apply rate limiter to all /api routes
+app.use('/api/', apiLimiter);
 
 // Routes
 app.use('/api/categories', categoryRoutes);
@@ -86,7 +88,6 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/customers', customerRoutes);
-app.use('/api/feature-mappings', featureMappingRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/finished-goods', finishedGoodsRoutes);
 app.use('/api/book-a-sale', bookASaleRoutes);
