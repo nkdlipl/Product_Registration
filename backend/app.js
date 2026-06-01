@@ -24,6 +24,7 @@ const supportTicketsRoutes = require('./src/routes/supportTicketsRoutes');
 const chatRoutes = require('./src/routes/chatRoutes');
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (necessary for Secure cookies behind Render/Heroku load balancers)
 
 const fs = require('fs');
 const uploadDir = path.join(__dirname, 'uploads');

@@ -50,7 +50,8 @@ const login = async (req, res, next) => {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     await db.query('UPDATE users SET refresh_token = $1 WHERE user_id = $2', [hashedRefreshToken, user.user_id]);
 
-    const isProduction = env.NODE_ENV === 'production';
+    // Ensure we use secure cookies in deployed environments even if NODE_ENV is forgotten
+    const isProduction = env.NODE_ENV === 'production' || (env.FRONTEND_URL && env.FRONTEND_URL.includes('https://'));
 
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
@@ -116,7 +117,8 @@ const refresh = async (req, res, next) => {
       { expiresIn: '15m' }
     );
 
-    const isProduction = env.NODE_ENV === 'production';
+    // Ensure we use secure cookies in deployed environments even if NODE_ENV is forgotten
+    const isProduction = env.NODE_ENV === 'production' || (env.FRONTEND_URL && env.FRONTEND_URL.includes('https://'));
 
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
@@ -135,7 +137,7 @@ const { redisClient } = require('../config/redis');
 
 const logout = async (req, res) => {
   // Clear cookies
-  const isProduction = env.NODE_ENV === 'production';
+  const isProduction = env.NODE_ENV === 'production' || (env.FRONTEND_URL && env.FRONTEND_URL.includes('https://'));
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction,
