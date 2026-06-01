@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUsers, createUser, updateUser, deleteUser, getAdminStats, getTeams } from '../../api/admin';
+import { useUsers, useAdminStats, useCreateUser, useUpdateUser, useDeleteUser } from '../../hooks/useUsers';
+import { useTeams } from '../../hooks/useTeams';
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
@@ -12,14 +13,35 @@ import Swal from 'sweetalert2';
 
 const UserListPage = ({ initialRole = '' }) => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
-  const [stats, setStats] = useState({ designers: 0, sales: 0, maintenance: 0, teams: 0, designerTeams: 0, salesTeams: 0, maintenanceTeams: 0 });
-  const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState(initialRole);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  const [teams, setTeams] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
+
+  const queryParams = {
+    page: pagination.page,
+    limit: pagination.limit,
+    role: roleFilter || undefined
+  };
+
+  const { data: usersData, isLoading: usersLoading } = useUsers(queryParams);
+  const { data: statsData } = useAdminStats();
+  const { data: teamsData } = useTeams();
+
+  const createUserMutation = useCreateUser();
+  const updateUserMutation = useUpdateUser();
+  const deleteUserMutation = useDeleteUser();
+
+  const users = usersData?.data || [];
+  const loading = usersLoading;
+  const stats = statsData?.data || { designers: 0, sales: 0, maintenance: 0, teams: 0, designerTeams: 0, salesTeams: 0, maintenanceTeams: 0 };
+  const teams = teamsData?.data || [];
+
+  useEffect(() => {
+    if (usersData?.meta) {
+      setPagination(prev => ({ ...prev, total: usersData.meta.total }));
+    }
+  }, [usersData?.meta]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,53 +60,6 @@ const UserListPage = ({ initialRole = '' }) => {
     setPagination(prev => ({ ...prev, page: 1 }));
   }, [initialRole]);
 
-  const fetchStats = async () => {
-    try {
-      const res = await getAdminStats();
-      setStats(res.data.data);
-    } catch (error) {
-      console.error('Stats fetch error', error);
-    }
-  };
-
-  const fetchTeams = async () => {
-    try {
-      const teamsRes = await getTeams();
-      setTeams(teamsRes.data.data);
-    } catch (error) {
-      console.error('Teams fetch error', error);
-    }
-  };
-
-  useEffect(() => {
-    if (!initialRole) {
-      fetchStats();
-    }
-    fetchTeams();
-  }, [initialRole]);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const params = {
-        page: pagination.page,
-        limit: pagination.limit,
-        role: roleFilter || undefined
-      };
-      const res = await getUsers(params);
-      setUsers(res.data.data);
-      setPagination(prev => ({ ...prev, total: res.data.meta.total }));
-    } catch (error) {
-      toast.error('Failed to fetch users');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, [roleFilter, pagination.page]);
-
   const onSubmit = async (data) => {
     if (modalMode === 'view') return;
     setIsSubmitting(true);
@@ -94,10 +69,10 @@ const UserListPage = ({ initialRole = '' }) => {
         team_ids: selectedTeamIds
       };
       if (modalMode === 'create') {
-        await createUser(payload);
+        await createUserMutation.mutateAsync(payload);
         toast.success('User created successfully!');
       } else {
-        await updateUser(selectedUser.user_id, payload);
+        await updateUserMutation.mutateAsync({ id: selectedUser.user_id, data: payload });
         toast.success('User updated successfully!');
       }
       setIsModalOpen(false);
@@ -105,7 +80,6 @@ const UserListPage = ({ initialRole = '' }) => {
       setSelectedTeamIds([]);
       setIsDropdownOpen(false);
       setTeamSearch('');
-      fetchUsers();
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Action failed');
     } finally {
@@ -156,9 +130,8 @@ const UserListPage = ({ initialRole = '' }) => {
     });
     if (!result.isConfirmed) return;
     try {
-      await deleteUser(user.user_id);
+      await deleteUserMutation.mutateAsync(user.user_id);
       toast.success('User deleted successfully');
-      fetchUsers();
     } catch (error) {
       toast.error('Failed to delete user');
     }

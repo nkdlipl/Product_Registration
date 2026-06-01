@@ -1,11 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  getBookASaleOptions,
-  getBookedSales,
-  createBookedSale,
-  deleteBookedSale,
-  updateBookedSale,
-} from '../../api/bookASale';
+import { useSales, useSaleOptions, useCreateSale, useUpdateSale, useDeleteSale } from '../../hooks/useSales';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import {
@@ -25,17 +19,32 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 const BookASalePage = () => {
-  const [sales, setSales] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
   const [searchTerm, setSearchTerm] = useState('');
+
+  const queryParams = { page: pagination.page, limit: pagination.limit, search: searchTerm };
+  const { data: salesData, isLoading: salesLoading } = useSales(queryParams);
+  const { data: optionsData, isLoading: optionsLoading } = useSaleOptions();
+
+  const sales = salesData?.data || [];
+  const options = optionsData || { finishedGoods: [], customers: [] };
+  const loading = salesLoading || optionsLoading;
+
+  useEffect(() => {
+    if (salesData?.meta) {
+      setPagination(prev => ({ ...prev, total: salesData?.meta?.total || 0 }));
+    }
+  }, [salesData?.meta]);
+
+  const createSaleMutation = useCreateSale();
+  const updateSaleMutation = useUpdateSale();
+  const deleteSaleMutation = useDeleteSale();
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
-  const [options, setOptions] = useState({ finishedGoods: [], customers: [] });
   const [selectedFinishedGood, setSelectedFinishedGood] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -49,39 +58,6 @@ const BookASalePage = () => {
   const isSameFG = editItem && String(editItem.finished_good_id) === String(selectedFinishedGood);
   const maxQty = selectedFG ? parseInt(selectedFG.quantity, 10) + (isSameFG ? parseInt(editItem.quantity, 10) : 0) : 0;
 
-  const fetchSales = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getBookedSales({
-        page: pagination.page,
-        limit: pagination.limit,
-        search: searchTerm,
-      });
-      setSales(data.data || []);
-      setPagination((prev) => ({ ...prev, total: data.meta?.total || 0 }));
-    } catch (error) {
-      toast.error('Failed to fetch sales records');
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.page, pagination.limit, searchTerm]);
-
-  const fetchOptions = useCallback(async () => {
-    try {
-      const data = await getBookASaleOptions();
-      setOptions(data);
-    } catch (error) {
-      toast.error('Failed to fetch options');
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSales();
-  }, [fetchSales]);
-
-  useEffect(() => {
-    fetchOptions();
-  }, [fetchOptions]);
 
   const resetForm = () => {
     setSelectedFinishedGood('');
@@ -170,17 +146,15 @@ const BookASalePage = () => {
       };
 
       if (editItem) {
-        await updateBookedSale(editItem.id, payload);
+        await updateSaleMutation.mutateAsync({ id: editItem.id, data: payload });
         toast.success('Sale updated successfully!');
       } else {
-        await createBookedSale(payload);
+        await createSaleMutation.mutateAsync(payload);
         toast.success('Sale booked successfully!');
       }
 
       setIsModalOpen(false);
       resetForm();
-      fetchSales();
-      fetchOptions(); // Refresh quantities
     } catch (error) {
       const msg =
         error?.message ||
@@ -204,10 +178,8 @@ const BookASalePage = () => {
     });
     if (!result.isConfirmed) return;
     try {
-      await deleteBookedSale(row.id);
+      await deleteSaleMutation.mutateAsync(row.id);
       toast.success('Sale cancelled and quantity restored');
-      fetchSales();
-      fetchOptions();
     } catch (err) {
       toast.error('Failed to cancel sale');
     }

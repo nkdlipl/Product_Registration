@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '../../api/customers';
+import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '../../hooks/useCustomers';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { Search, Plus, Loader2, Users, Mail, Phone, MapPin, Building, Globe, Hash, ShieldCheck, Trash2, Edit3, Edit2, Check, Eye, FileText, Briefcase, CreditCard, PenTool } from 'lucide-react';
@@ -8,9 +8,14 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 const CustomerListPage = () => {
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const { data: customersData, isLoading: loading } = useCustomers();
+  const customers = customersData || [];
+
+  const createCustomerMutation = useCreateCustomer();
+  const updateCustomerMutation = useUpdateCustomer();
+  const deleteCustomerMutation = useDeleteCustomer();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -31,23 +36,6 @@ const CustomerListPage = () => {
   const [tempAddress, setTempAddress] = useState(null);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
-
-  const fetchCustomers = async () => {
-    setLoading(true);
-    try {
-      const data = await getCustomers();
-      console.log('Fetched Customers:', data);
-      setCustomers(data);
-    } catch (error) {
-      toast.error('Failed to fetch customers');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
 
   const filteredCustomers = customers.filter(customer =>
     customer.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,14 +101,13 @@ const CustomerListPage = () => {
       };
 
       if (modalMode === 'create') {
-        await createCustomer(payload);
+        await createCustomerMutation.mutateAsync(payload);
         toast.success('Customer added successfully');
       } else {
-        await updateCustomer(selectedCustomer.customer_id, payload);
+        await updateCustomerMutation.mutateAsync({ id: selectedCustomer.customer_id, data: payload });
         toast.success('Customer updated successfully');
       }
       setIsModalOpen(false);
-      fetchCustomers();
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Action failed');
     } finally {
@@ -315,9 +302,8 @@ const CustomerListPage = () => {
     });
     if (!result.isConfirmed) return;
     try {
-      await deleteCustomer(customer.customer_id);
+      await deleteCustomerMutation.mutateAsync(customer.customer_id);
       toast.success('Customer deleted successfully');
-      fetchCustomers();
     } catch (error) {
       toast.error('Failed to delete customer');
     }

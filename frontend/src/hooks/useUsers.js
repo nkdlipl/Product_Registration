@@ -1,0 +1,55 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getUsers, createUser, updateUser, deleteUser, getAdminStats } from '../api/admin';
+
+export const useUsers = (params) => {
+  return useQuery({
+    queryKey: ['users', params],
+    queryFn: async () => {
+      const response = await getUsers(params);
+      return response.data;
+    },
+    keepPreviousData: true,
+  });
+};
+
+export const useAdminStats = () => {
+  return useQuery({
+    queryKey: ['adminStats'],
+    queryFn: async () => {
+      const response = await getAdminStats();
+      return response.data;
+    },
+  });
+};
+
+export const useCreateUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['adminStats'] });
+    },
+  });
+};
+
+export const useUpdateUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => updateUser(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};
+
+export const useDeleteUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['adminStats'] });
+    },
+  });
+};

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getAdminStats } from '../../api/admin';
+import { getProducts } from '../../api/products';
+import { useAdminStats } from '../../hooks/useAdminStats';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Users,
   Zap,
@@ -31,23 +33,68 @@ import {
 } from 'recharts';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: statsData, isLoading: loading } = useAdminStats();
+  const stats = statsData?.data || null;
+
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await getAdminStats();
-        setStats(response.data.data);
-      } catch (error) {
-        toast.error('Failed to load dashboard statistics');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, []);
+    // Background Prefetch for Products list
+    queryClient.prefetchQuery({
+      queryKey: ['products', { page: 1, limit: 20 }],
+      queryFn: async () => {
+        const response = await getProducts({ page: 1, limit: 20 });
+        return response.data;
+      },
+    });
+
+    // Background Prefetch for Users and Teams
+    import('../../api/admin').then(({ getUsers, getTeams }) => {
+      queryClient.prefetchQuery({
+        queryKey: ['users', { page: 1, limit: 20, role: undefined }],
+        queryFn: async () => {
+          const response = await getUsers({ page: 1, limit: 20 });
+          return response.data;
+        }
+      });
+      queryClient.prefetchQuery({
+        queryKey: ['teams'],
+        queryFn: async () => {
+          const response = await getTeams();
+          return response.data;
+        }
+      });
+    });
+
+    // Background Prefetch for Customers, Finished Goods, and Sales
+    Promise.all([
+      import('../../api/customers'),
+      import('../../api/finishedGoods'),
+      import('../../api/bookASale')
+    ]).then(([{ getCustomers }, { getFinishedGoods }, { getBookedSales }]) => {
+      queryClient.prefetchQuery({
+        queryKey: ['customers'],
+        queryFn: async () => await getCustomers()
+      });
+      queryClient.prefetchQuery({
+        queryKey: ['finishedGoods', { page: 1, limit: 10, search: undefined }],
+        queryFn: async () => {
+          const res = await getFinishedGoods({ page: 1, limit: 10 });
+          return res.data;
+        }
+      });
+      queryClient.prefetchQuery({
+        queryKey: ['sales', { page: 1, limit: 10, search: undefined }],
+        queryFn: async () => {
+          const res = await getBookedSales({ page: 1, limit: 10 });
+          return res.data;
+        }
+      });
+    });
+  }, [queryClient]);
+
+
 
   const StatCard = ({ title, value, icon: Icon, path, accentBg, accentText }) => (
     <div

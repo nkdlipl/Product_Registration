@@ -3,6 +3,30 @@ const path = require('path');
 const fs = require('fs');
 const { sendSuccess } = require('../utils/response');
 const { parsePagination } = require('../utils/pagination');
+const { uploadQueue, queueEvents } = require('../queues/uploadQueue');
+
+const processUploads = async (files, type) => {
+  if (!files || files.length === 0) return [];
+  
+  const uploadPromises = files.map(async (file) => {
+    // If already a remote URL (for updates), keep it
+    if (file.path && file.path.startsWith('http')) return file.path;
+    if (typeof file === 'string' && file.startsWith('http')) return file;
+    if (file.url && file.url.startsWith('http')) return file.url;
+
+    const isImage = type === 'image';
+    const job = await uploadQueue.add('upload', {
+      filePath: file.path,
+      folder: isImage ? 'products/images' : 'products/documents',
+      resourceType: isImage ? 'image' : 'raw'
+    });
+    
+    const url = await job.waitUntilFinished(queueEvents);
+    return url;
+  });
+  
+  return Promise.all(uploadPromises);
+};
 
 const getProducts = async (req, res, next) => {
   const { page, limit, offset } = parsePagination(req);
@@ -94,14 +118,25 @@ const createProduct = async (req, res, next) => {
   const imageFiles = req.files['image'] || [];
   const documentFiles = req.files['document'] || [];
   
-  const images = JSON.stringify(imageFiles.map(f => formatFilePath(f)));
-  const documents = JSON.stringify(documentFiles.map(f => ({
-    url: formatFilePath(f),
-    name: req.body.document_label || f.originalname
+  let uploadedImageUrls = [];
+  let uploadedDocumentUrls = [];
+
+  try {
+    uploadedImageUrls = await processUploads(imageFiles, 'image');
+    uploadedDocumentUrls = await processUploads(documentFiles, 'document');
+  } catch (uploadError) {
+    console.error("Queue upload failed:", uploadError);
+    return res.status(500).json({ success: false, error: { message: 'Image upload failed. Please try again.' } });
+  }
+
+  const images = JSON.stringify(uploadedImageUrls);
+  const documents = JSON.stringify(uploadedDocumentUrls.map((url, idx) => ({
+    url: url,
+    name: req.body.document_label || documentFiles[idx].originalname
   })));
   
-  const image_url = imageFiles.length > 0 ? formatFilePath(imageFiles[0]) : null;
-  const document_url = documentFiles.length > 0 ? formatFilePath(documentFiles[0]) : null;
+  const image_url = uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : null;
+  const document_url = uploadedDocumentUrls.length > 0 ? uploadedDocumentUrls[0] : null;
 
   let faqs = [];
   try { if (req.body.faqs) faqs = JSON.parse(req.body.faqs); } catch(e) {}
@@ -222,10 +257,20 @@ const updateProduct = async (req, res, next) => {
     const newImageFiles = req.files['image'] || [];
     const newDocFiles = req.files['document'] || [];
 
-    const newImageUrls = newImageFiles.map(f => formatFilePath(f));
-    const newDocObjects = newDocFiles.map(f => ({
-      url: formatFilePath(f),
-      name: req.body.document_label || f.originalname
+    let newImageUrls = [];
+    let newDocUrls = [];
+
+    try {
+      newImageUrls = await processUploads(newImageFiles, 'image');
+      newDocUrls = await processUploads(newDocFiles, 'document');
+    } catch (uploadError) {
+      console.error("Queue upload failed:", uploadError);
+      return res.status(500).json({ success: false, error: { message: 'Image upload failed. Please try again.' } });
+    }
+
+    const newDocObjects = newDocUrls.map((url, idx) => ({
+      url: url,
+      name: req.body.document_label || newDocFiles[idx].originalname
     }));
 
     // Normalize old documents to object format

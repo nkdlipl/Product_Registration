@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getProducts, getProductById, createProduct, updateProduct, removeAsset, deleteProduct, getBomOptions, getProductBom, saveProductBom } from '../../api/products';
+import { useProducts } from '../../hooks/useProducts';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import CategoryModal from '../../components/shared/CategoryModal';
@@ -30,8 +31,6 @@ Quill.register(LineHeightStyle, true);
 const ProductListPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -39,6 +38,23 @@ const ProductListPage = () => {
   const [categories, setCategories] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
+
+  const queryParams = { 
+    page: pagination.page, 
+    limit: pagination.limit,
+    search: debouncedSearchTerm || undefined,
+    category: selectedCategory || undefined,
+    company: selectedCompany || undefined
+  };
+
+  const { data: productsData, isLoading: loading, refetch: fetchProducts } = useProducts(queryParams);
+  const products = productsData?.data || [];
+
+  useEffect(() => {
+    if (productsData?.meta) {
+      setPagination(prev => ({ ...prev, total: productsData.meta.total }));
+    }
+  }, [productsData?.meta]);
 
   const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
   const assetBaseURL = rawApiUrl.replace(/\/api$/, '');
@@ -244,26 +260,6 @@ const ProductListPage = () => {
     setIsCompanyModalOpen(true);
   };
 
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const params = { 
-        page: pagination.page, 
-        limit: pagination.limit,
-        search: searchTerm || undefined,
-        category: selectedCategory || undefined,
-        company: selectedCompany || undefined
-      };
-      const res = await getProducts(params);
-      setProducts(res.data.data);
-      setPagination(prev => ({ ...prev, total: res.data.meta.total }));
-    } catch (error) {
-      toast.error('Failed to fetch products');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchCategories = async () => {
     try {
       const res = await getCategories();
@@ -282,10 +278,6 @@ const ProductListPage = () => {
     fetchCategories(); 
     fetchCompanies();
   }, []);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [debouncedSearchTerm, selectedCategory, selectedCompany, pagination.page]);
 
   useEffect(() => {
     const editProductId = location.state?.editProductId;

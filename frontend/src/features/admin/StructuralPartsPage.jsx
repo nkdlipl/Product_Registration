@@ -5,8 +5,9 @@ import InventoryCard from '../../components/shared/InventoryCard';
 import Modal from '../../components/shared/Modal';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import {
-  getStructuralParts, createStructuralPart, getStructuralPartById, deleteStructuralPart, updateStructuralPart, deleteStructuralFile, deleteStructuralImage
+  getStructuralPartById, deleteStructuralFile, deleteStructuralImage
 } from '../../api/inventory';
+import { useStructuralParts, useCreateStructuralPart, useUpdateStructuralPart, useDeleteStructuralPart } from '../../hooks/useInventory';
 import { getProducts } from '../../api/products';
 import {
   Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers, LayoutGrid, List,
@@ -37,11 +38,22 @@ const StructuralPartsPage = () => {
     return `${baseUrl}/${filePath.startsWith('/') ? filePath.slice(1) : filePath}`;
   };
 
-  const [items, setItems] = useState([]);
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
+
+  const { data: structuralData, isLoading: loading } = useStructuralParts({ page: pagination.page, limit: pagination.limit, search: searchTerm });
+  const items = structuralData?.data || [];
+
+  useEffect(() => {
+    if (structuralData?.meta) {
+      setPagination(prev => ({ ...prev, page: structuralData.meta.page, total: structuralData.meta.total }));
+    }
+  }, [structuralData?.meta]);
+
+  const createStructuralMutation = useCreateStructuralPart();
+  const updateStructuralMutation = useUpdateStructuralPart();
+  const deleteStructuralMutation = useDeleteStructuralPart();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -201,22 +213,7 @@ const StructuralPartsPage = () => {
     setPendingImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const fetchItems = async () => {
-    setLoading(true);
-    try {
-      const res = await getStructuralParts({
-        page: pagination.page,
-        limit: pagination.limit,
-        search: searchTerm
-      });
-      setItems(res.data.data);
-      setPagination(prev => ({ ...prev, total: res.data.meta.total }));
-    } catch (error) {
-      toast.error('Failed to fetch Structural records');
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const fetchProducts = async () => {
     try {
@@ -289,10 +286,7 @@ const StructuralPartsPage = () => {
     }
   }, [location.state]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => fetchItems(), 300);
-    return () => clearTimeout(timer);
-  }, [pagination.page, searchTerm]);
+
 
   const onSubmit = async (data) => {
     if (modalMode === 'view') return;
@@ -332,16 +326,15 @@ const StructuralPartsPage = () => {
       }
 
       if (modalMode === 'create') {
-        await createStructuralPart(formData);
+        await createStructuralMutation.mutateAsync(formData);
         toast.success('Structural Part registered successfully!');
       } else if (modalMode === 'edit') {
-        await updateStructuralPart(selectedItem.part_id, formData);
+        await updateStructuralMutation.mutateAsync({ id: selectedItem.part_id, data: formData });
         toast.success('Structural Part updated!');
       }
 
       setIsModalOpen(false);
       reset();
-      fetchItems();
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Operation failed');
     } finally {
@@ -414,9 +407,8 @@ const StructuralPartsPage = () => {
     });
     if (result.isConfirmed) {
       try {
-        await deleteStructuralPart(item.part_id);
+        await deleteStructuralMutation.mutateAsync(item.part_id);
         toast.success('Part deleted successfully');
-        fetchItems();
       } catch (error) { toast.error('Failed to delete'); }
     }
   };

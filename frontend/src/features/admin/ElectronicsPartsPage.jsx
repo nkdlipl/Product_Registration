@@ -4,7 +4,8 @@ import DataTable from '../../components/shared/DataTable';
 import InventoryCard from '../../components/shared/InventoryCard';
 import Modal from '../../components/shared/Modal';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
-import { getElectronicsParts, createElectronicsPart, getElectronicsPartById, deleteElectronicsPart, updateElectronicsPart, deleteElectronicsFile, deleteElectronicsImage } from '../../api/inventory';
+import { getElectronicsPartById, deleteElectronicsFile, deleteElectronicsImage } from '../../api/inventory';
+import { useElectronicsParts, useCreateElectronicsPart, useUpdateElectronicsPart, useDeleteElectronicsPart } from '../../hooks/useInventory';
 import { getProducts } from '../../api/products';
 import { 
   Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers, LayoutGrid, List, Pencil, Package
@@ -36,11 +37,22 @@ const buildFileUrl = (filePath) => {
   return `${baseUrl}/${filePath.startsWith('/') ? filePath.slice(1) : filePath}`;
 };
 
-  const [items, setItems] = useState([]);
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
+
+  const { data: electronicsData, isLoading: loading } = useElectronicsParts({ page: pagination.page, limit: pagination.limit, search: searchTerm });
+  const items = electronicsData?.data || [];
+
+  useEffect(() => {
+    if (electronicsData?.meta) {
+      setPagination(prev => ({ ...prev, page: electronicsData.meta.page, total: electronicsData.meta.total }));
+    }
+  }, [electronicsData?.meta]);
+
+  const createElectronicsMutation = useCreateElectronicsPart();
+  const updateElectronicsMutation = useUpdateElectronicsPart();
+  const deleteElectronicsMutation = useDeleteElectronicsPart();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -243,22 +255,7 @@ const buildFileUrl = (filePath) => {
     setPendingImages([]);
   };
 
-  const fetchItems = async () => {
-    setLoading(true);
-    try {
-      const res = await getElectronicsParts({
-        page: pagination.page,
-        limit: pagination.limit,
-        search: searchTerm
-      });
-      setItems(res.data.data);
-      setPagination(prev => ({ ...prev, total: res.data.meta.total }));
-    } catch (error) {
-      toast.error('Failed to fetch Electronics records');
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const fetchProducts = async () => {
       try {
@@ -324,12 +321,7 @@ const buildFileUrl = (filePath) => {
     }
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-        fetchItems();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [pagination.page, searchTerm]);
+
   
   // Handle redirect from Inventory Overview for editing
   useEffect(() => {
@@ -383,16 +375,15 @@ const buildFileUrl = (filePath) => {
       }
 
       if (modalMode === 'create') {
-          await createElectronicsPart(formData);
+          await createElectronicsMutation.mutateAsync(formData);
           toast.success('Electronics Part registered successfully!');
       } else if (modalMode === 'edit') {
-          await updateElectronicsPart(selectedItem.part_id, formData);
+          await updateElectronicsMutation.mutateAsync({ id: selectedItem.part_id, data: formData });
           toast.success('Electronics Part updated!');
       }
 
       setIsModalOpen(false);
       reset();
-      fetchItems();
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Operation failed');
     } finally {
@@ -479,9 +470,8 @@ const buildFileUrl = (filePath) => {
     });
     if (result.isConfirmed) {
       try {
-        await deleteElectronicsPart(item.part_id);
+        await deleteElectronicsMutation.mutateAsync(item.part_id);
         toast.success('Part deleted successfully');
-        fetchItems();
       } catch (error) {
         toast.error('Failed to delete');
       }

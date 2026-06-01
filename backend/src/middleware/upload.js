@@ -1,31 +1,25 @@
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('../config/cloudinary');
 const path = require('path');
+const fs = require('fs');
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    const isImage = file.fieldname === 'image';
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
-    const ext = path.extname(file.originalname).toLowerCase(); // .pdf
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase(); // e.g. .pdf or .jpg
     const baseName = path
       .basename(file.originalname, ext)
       .replace(/[^a-zA-Z0-9]/g, '_');
 
-    return {
-      folder: isImage ? 'products/images' : 'products/documents',
-      resource_type: isImage ? 'image' : 'raw',
-      allowed_formats: isImage
-        ? ['jpg', 'jpeg', 'png', 'webp']
-        : ['pdf', 'doc', 'docx', 'xls', 'xlsx'],
-
-      // Important: keep extension for documents like PDF
-      public_id: isImage
-        ? `${baseName}_${Date.now()}`
-        : `${baseName}_${Date.now()}${ext}`,
-    };
-  },
+    cb(null, `${baseName}_${Date.now()}${ext}`);
+  }
 });
 
 const upload = multer({

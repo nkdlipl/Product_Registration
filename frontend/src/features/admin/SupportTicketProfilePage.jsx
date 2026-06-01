@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useOutletContext, useLocation } from 'react-router-dom';
-import { getSupportTicketById } from '../../api/supportTickets';
+import { useSupportTicket } from '../../hooks/useSupportTickets';
 import { ArrowLeft, Loader2, LifeBuoy, Clock, Calendar, Check, Box, MessageSquareOff, User, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
 
@@ -11,8 +12,8 @@ const SupportTicketProfilePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { updateTabLabel } = useOutletContext() || {};
-  const [ticket, setTicket] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const basePath = user?.role_name && user.role_name !== 'Admin' ? `/${user.role_name.toLowerCase()}` : '/admin';
 
   const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
   const assetBaseURL = rawApiUrl.replace(/\/api$/, '');
@@ -25,20 +26,15 @@ const SupportTicketProfilePage = () => {
     return `${base}/${cleanUrl}`;
   };
 
+  const { data: ticketData, isLoading: loading, isError } = useSupportTicket(id);
+  const ticket = ticketData?.data;
+
   useEffect(() => {
-    const fetchTicket = async () => {
-      try {
-        const res = await getSupportTicketById(id);
-        setTicket(res.data.data);
-      } catch (error) {
-        toast.error('Failed to fetch ticket details');
-        navigate('/admin/support-tickets');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTicket();
-  }, [id, navigate]);
+    if (isError) {
+      toast.error('Failed to fetch ticket details');
+      navigate(`${basePath}/support-tickets`);
+    }
+  }, [isError, navigate, basePath]);
 
   useEffect(() => {
     if (ticket?.ticket_id && updateTabLabel) {
@@ -62,8 +58,8 @@ const SupportTicketProfilePage = () => {
   } catch (e) {}
 
   const breadcrumbItems = [
-    { label: 'Support Center', path: '/admin/support-tickets' },
-    { label: ticket.ticket_id, path: `/admin/support-tickets/${id}`, active: true }
+    { label: 'Support Center', path: `${basePath}/support-tickets` },
+    { label: ticket.ticket_id, path: `${basePath}/support-tickets/${id}`, active: true }
   ];
 
   return (
@@ -94,7 +90,7 @@ const SupportTicketProfilePage = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/admin/support-tickets')} className="flex items-center gap-2 px-6 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] hover:border-[var(--accent)] rounded-xl text-[11px] font-black uppercase tracking-widest transition-all">
+          <button onClick={() => navigate(`${basePath}/support-tickets`)} className="flex items-center gap-2 px-6 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] hover:border-[var(--accent)] rounded-xl text-[11px] font-black uppercase tracking-widest transition-all">
             <ArrowLeft size={16} />
             Back
           </button>

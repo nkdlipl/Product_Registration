@@ -3,3 +3,13 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
     at async updateStructuralPart (D:\LIPL\Product_Registration\backend\src\controllers\structuralController.js:322:13)
 
+2026-05-30T09:02:17.030Z - error: update or delete on table "users" violates foreign key constraint "teams_team_lead_id_fkey" on table "teams"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async deleteUser (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:357:20)
+
+2026-05-30T09:02:50.856Z - error: update or delete on table "users" violates foreign key constraint "teams_client_handler_id_fkey" on table "teams"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async deleteUser (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:357:20)
+

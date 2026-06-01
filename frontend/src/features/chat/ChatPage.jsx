@@ -1,80 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { chatApi } from '../../api/chat';
+import { useChatUsers, useChatMessages, useSendMessage, useDeleteMessage, useClearChat } from '../../hooks/useChat';
 import { Search, Send, User, MessageSquare, Circle, CheckCheck, Loader2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 const ChatPage = () => {
   const { user } = useAuth();
-  const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
-  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [isSending, setIsSending] = useState(false);
   
   const messagesEndRef = useRef(null);
 
-  // Fetch users list
-  const fetchUsers = async () => {
-    try {
-      const response = await chatApi.getChatUsers();
-      if (response.success) {
-        setUsers(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch chat users:', error);
-      toast.error('Failed to load users');
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
-
-  // Fetch messages for selected user
-  const fetchMessages = async (userId, isPolling = false) => {
-    if (!isPolling) setIsLoadingMessages(true);
-    try {
-      const response = await chatApi.getChatHistory(userId);
-      if (response.success) {
-        setMessages(response.data);
-        if (!isPolling) {
-          // Mark as read when first loading
-          await chatApi.markAsRead(userId);
-          // Also update the unread count in the user list locally
-          setUsers(prevUsers => prevUsers.map(u => 
-            u.user_id === userId ? { ...u, unread_count: 0 } : u
-          ));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch messages:', error);
-      if (!isPolling) toast.error('Failed to load chat history');
-    } finally {
-      if (!isPolling) setIsLoadingMessages(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-    // Poll for users list (to get new unread badges) every 10 seconds
-    const intervalId = setInterval(fetchUsers, 10000);
-    return () => clearInterval(intervalId);
-  }, []);
-
-  useEffect(() => {
-    if (selectedUser) {
-      fetchMessages(selectedUser.user_id);
-      // Poll for new messages every 3 seconds
-      const intervalId = setInterval(() => {
-        fetchMessages(selectedUser.user_id, true);
-        chatApi.markAsRead(selectedUser.user_id);
-      }, 3000);
-      return () => clearInterval(intervalId);
-    }
-  }, [selectedUser]);
+  const { data: users = [], isLoading: isLoadingUsers } = useChatUsers();
+  const { data: messages = [], isLoading: isLoadingMessages } = useChatMessages(selectedUser?.user_id);
+  
+  const sendMessageMutation = useSendMessage();
+  const deleteMessageMutation = useDeleteMessage();
+  const clearChatMutation = useClearChat();
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -85,24 +29,16 @@ const ChatPage = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedUser || isSending) return;
+    if (!newMessage.trim() || !selectedUser || sendMessageMutation.isPending) return;
 
-    setIsSending(true);
     try {
-      const response = await chatApi.sendMessage({
+      await sendMessageMutation.mutateAsync({
         receiver_id: selectedUser.user_id,
         message: newMessage
       });
-
-      if (response.success) {
-        setMessages([...messages, response.data]);
-        setNewMessage('');
-      }
+      setNewMessage('');
     } catch (error) {
-      console.error('Failed to send message:', error);
       toast.error('Failed to send message');
-    } finally {
-      setIsSending(false);
     }
   };
 
@@ -120,13 +56,9 @@ const ChatPage = () => {
     if (!result.isConfirmed) return;
 
     try {
-      const response = await chatApi.deleteMessage(messageId);
-      if (response.success) {
-        setMessages(messages.filter(m => m.message_id !== messageId));
-        toast.success('Message deleted');
-      }
+      await deleteMessageMutation.mutateAsync({ messageId });
+      toast.success('Message deleted');
     } catch (error) {
-      console.error('Failed to delete message:', error);
       toast.error('Failed to delete message');
     }
   };
@@ -147,13 +79,9 @@ const ChatPage = () => {
     if (!result.isConfirmed) return;
     
     try {
-      const response = await chatApi.clearChat(selectedUser.user_id);
-      if (response.success) {
-        setMessages([]);
-        toast.success('Chat cleared');
-      }
+      await clearChatMutation.mutateAsync(selectedUser.user_id);
+      toast.success('Chat cleared');
     } catch (error) {
-      console.error('Failed to clear chat:', error);
       toast.error('Failed to clear chat');
     }
   };
@@ -353,10 +281,10 @@ const ChatPage = () => {
                   />
                   <button 
                     type="submit" 
-                    disabled={!newMessage.trim() || isSending}
+                    disabled={!newMessage.trim() || sendMessageMutation.isPending}
                     className="bg-[var(--accent)] text-white p-3 rounded-xl hover:opacity-90 disabled:opacity-50 transition-all shadow-md flex items-center justify-center min-w-[52px]"
                   >
-                    {isSending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} className="transform translate-x-0.5 -translate-y-0.5" />}
+                    {sendMessageMutation.isPending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} className="transform translate-x-0.5 -translate-y-0.5" />}
                   </button>
                 </form>
               </div>

@@ -469,19 +469,22 @@ const Sidebar = ({ role, isOpen, onClose }) => {
             {isDesigner && (
               <>
                 <NavItem to="/designer/dashboard" label="Workstation" icon={Layers} />
+                <NavItem to="/designer/support-tickets" label="Support Center" icon={LifeBuoy} />
                 <NavItem to="/designer/chat" label="Chat" icon={MessageSquare} />
               </>
             )}
             {isSales && (
               <>
                 <NavItem to="/sales/dashboard" label="Dashboard" icon={LayoutDashboard} />
-                <NavItem to="/sales/opportunities" label="Pipeline" icon={ShoppingBag} />
+                {/* <NavItem to="/sales/opportunities" label="Pipeline" icon={ShoppingBag} /> */}
+                <NavItem to="/sales/support-tickets" label="Support Center" icon={LifeBuoy} />
                 <NavItem to="/sales/chat" label="Chat" icon={MessageSquare} />
               </>
             )}
             {isMaintenance && (
               <>
                 <NavItem to="/maintenance/dashboard" label="Service Console" icon={Wrench} />
+                <NavItem to="/maintenance/support-tickets" label="Support Center" icon={LifeBuoy} />
                 <NavItem to="/maintenance/chat" label="Chat" icon={MessageSquare} />
               </>
             )}

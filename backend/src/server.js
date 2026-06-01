@@ -4,7 +4,9 @@ const migrate = require('../migrate_categories');
 const migrateFinishedGoods = require('../migrate_finished_goods');
 const migrateChat = require('../migrate_chat');
 const { connectRedis } = require('./config/redis');
-// Trigger restart
+
+// Import and start background workers
+require('./queues/uploadQueue');
 
 const PORT = env.PORT || 3000;
 

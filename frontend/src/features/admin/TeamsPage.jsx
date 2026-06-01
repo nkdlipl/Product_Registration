@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getTeams, createTeam, updateTeam, deleteTeam } from '../../api/adminTeams';
-import { getUsers } from '../../api/admin';
+import { useTeams, useCreateTeam, useUpdateTeam, useDeleteTeam } from '../../hooks/useTeams';
+import { useUsers } from '../../hooks/useUsers';
+import { useQuery } from '@tanstack/react-query';
 import axiosInstance from '../../api/axiosInstance';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
@@ -13,11 +14,36 @@ import 'react-quill-new/dist/quill.snow.css';
 import Swal from 'sweetalert2';
 
 const TeamsPage = () => {
-  const [data, setData] = useState([]);
   const [filterRole, setFilterRole] = useState('All');
-  const [allUsers, setAllUsers] = useState([]);
-  const [availableItems, setAvailableItems] = useState([]); 
-  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const { data: teamsRes, isLoading: teamsLoading } = useTeams();
+  const { data: usersRes, isLoading: usersLoading } = useUsers({ limit: 500 });
+  const { data: productsRes, isLoading: productsLoading } = useQuery({
+    queryKey: ['adminProducts'],
+    queryFn: async () => {
+      const res = await axiosInstance.get('/admin/products');
+      return res.data;
+    }
+  });
+
+  const createTeamMutation = useCreateTeam();
+  const updateTeamMutation = useUpdateTeam();
+  const deleteTeamMutation = useDeleteTeam();
+
+  const data = teamsRes?.data || [];
+  const rawUsers = usersRes?.data || [];
+  const dedup = (arr) => {
+    const seen = new Set();
+    return arr.filter(u => {
+      if (seen.has(u.user_id)) return false;
+      seen.add(u.user_id);
+      return true;
+    });
+  };
+  const allUsers = dedup(rawUsers);
+  const availableItems = productsRes?.data || [];
+  const loading = teamsLoading || usersLoading || productsLoading;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,7 +55,6 @@ const TeamsPage = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userSearch, setUserSearch] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
 
   const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm();
   const selectedRole = watch('role_name') || 'Designer';
@@ -44,37 +69,10 @@ const TeamsPage = () => {
     ],
   };
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const res = await getTeams();
-      setData(res.data.data);
-      const dedup = (arr) => {
-        const seen = new Set();
-        return arr.filter(u => {
-          if (seen.has(u.user_id)) return false;
-          seen.add(u.user_id);
-          return true;
-        });
-      };
-
-      const allUserRes = await getUsers({ limit: 500 });
-      setAllUsers(dedup(allUserRes.data.data));
-      
-      const itemRes = await axiosInstance.get('/admin/products');
-      setAvailableItems(itemRes.data.data);
-    } catch (error) {
-      toast.error(`Failed to fetch ${role} information`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchData();
     setSelectedMembers([]);
     setSelectedItems([]);
-  }, []);
+  }, [filterRole]);
 
   const onSubmit = async (formData) => {
     if (modalMode === 'view') return;
@@ -85,10 +83,10 @@ const TeamsPage = () => {
     setIsSubmitting(true);
     try {
       if (modalMode === 'create') {
-        await createTeam({ ...formData, member_ids: selectedMembers, project_ids: [], product_ids: selectedRole !== 'Designer' ? selectedItems : [] });
+        await createTeamMutation.mutateAsync({ ...formData, member_ids: selectedMembers, project_ids: [], product_ids: selectedRole !== 'Designer' ? selectedItems : [] });
         toast.success(`Team created successfully!`);
       } else {
-        await updateTeam(selectedTeam.team_id, { ...formData, member_ids: selectedMembers });
+        await updateTeamMutation.mutateAsync({ id: selectedTeam.team_id, data: { ...formData, member_ids: selectedMembers } });
         toast.success(`Team updated successfully!`);
       }
       setIsModalOpen(false);
@@ -97,7 +95,6 @@ const TeamsPage = () => {
       setSelectedItems([]);
       setIsDropdownOpen(false);
       setUserSearch('');
-      fetchData();
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Action failed');
     } finally {
@@ -174,9 +171,8 @@ const TeamsPage = () => {
     });
     if (!result.isConfirmed) return;
     try {
-      await deleteTeam(team.team_id);
+      await deleteTeamMutation.mutateAsync(team.team_id);
       toast.success('Team deleted successfully');
-      fetchData();
     } catch (error) {
       toast.error('Failed to delete team');
     }

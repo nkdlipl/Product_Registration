@@ -1,11 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-    getFinishedGoods, 
-    createFinishedGood, 
-    getFinishedGoodsOptions,
-    deleteFinishedGood,
-    updateFinishedGood
-} from '../../api/finishedGoods';
+import { useFinishedGoods, useFinishedGoodsOptions, useCreateFinishedGood, useUpdateFinishedGood, useDeleteFinishedGood } from '../../hooks/useFinishedGoods';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { 
@@ -30,14 +24,28 @@ import Swal from 'sweetalert2';
 import MultiSelectDropdown from '../../components/shared/MultiSelectDropdown';
 
 const FinishedGoodsPage = () => {
-    const [items, setItems] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
+    const { data: itemsData, isLoading: itemsLoading } = useFinishedGoods({ page: pagination.page, limit: pagination.limit, search: searchTerm });
+    const { data: optionsData, isLoading: optionsLoading } = useFinishedGoodsOptions();
+
+    const items = itemsData?.data || [];
+    const options = optionsData || { products: [], pcb: [], electrical: [], electronics: [], structural: [] };
+    const loading = itemsLoading || optionsLoading;
+
+    useEffect(() => {
+        if (itemsData?.meta) {
+            setPagination(prev => ({ ...prev, total: itemsData?.meta?.total || 0 }));
+        }
+    }, [itemsData?.meta]);
+
+    const createFinishedGoodMutation = useCreateFinishedGood();
+    const updateFinishedGoodMutation = useUpdateFinishedGood();
+    const deleteFinishedGoodMutation = useDeleteFinishedGood();
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [options, setOptions] = useState({ products: [], pcb: [], electrical: [], electronics: [], structural: [] });
 
     // Form state
     const [productId, setProductId] = useState('');
@@ -63,40 +71,6 @@ const FinishedGoodsPage = () => {
     const [editItem, setEditItem] = useState(null);
     const [inventoryError, setInventoryError] = useState('');
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const data = await getFinishedGoods({ 
-                page: pagination.page, 
-                limit: pagination.limit, 
-                search: searchTerm 
-            });
-            setItems(data.data);
-            setPagination(prev => ({ ...prev, total: data.meta?.total || 0 }));
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to fetch finished goods');
-        } finally {
-            setLoading(false);
-        }
-    }, [pagination.page, pagination.limit, searchTerm]);
-
-    const fetchOptions = useCallback(async () => {
-        try {
-            const data = await getFinishedGoodsOptions();
-            setOptions(data.data);
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to fetch options');
-        }
-    }, []);
-
-    useEffect(() => {
-        Promise.resolve().then(() => {
-            fetchData();
-            fetchOptions();
-        });
-    }, [fetchData, fetchOptions]);
 
     const [viewItem, setViewItem] = useState(null);
 
@@ -152,15 +126,14 @@ const FinishedGoodsPage = () => {
             };
 
             if (editItem) {
-                await updateFinishedGood(editItem.id || editItem.finished_good_id, payload);
+                await updateFinishedGoodMutation.mutateAsync({ id: editItem.id || editItem.finished_good_id, data: payload });
                 toast.success('Finished Good updated successfully');
             } else {
-                await createFinishedGood(payload);
+                await createFinishedGoodMutation.mutateAsync(payload);
                 toast.success('Finished Good created successfully');
             }
             setIsModalOpen(false);
             resetForm();
-            fetchData();
         } catch (error) {
             console.error(error);
             const errorMessage = error?.response?.data?.error?.message || error?.message || (editItem ? 'Failed to update finished good' : 'Failed to create finished good');
@@ -214,9 +187,8 @@ const FinishedGoodsPage = () => {
         });
         if (!result.isConfirmed) return;
         try {
-            await deleteFinishedGood(row.id || row.finished_good_id || row.id);
+            await deleteFinishedGoodMutation.mutateAsync(row.id || row.finished_good_id || row.id);
             toast.success('Finished Good deleted');
-            fetchData();
         } catch (err) {
             console.error(err);
             toast.error('Failed to delete finished good');

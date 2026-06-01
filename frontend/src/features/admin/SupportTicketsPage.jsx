@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSupportTickets, createSupportTicket, updateSupportTicket, deleteSupportTicket } from '../../api/supportTickets';
+import { useSupportTickets, useCreateSupportTicket, useUpdateSupportTicket, useDeleteSupportTicket } from '../../hooks/useSupportTickets';
 import { getProducts } from '../../api/products';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
@@ -15,9 +15,13 @@ import Swal from 'sweetalert2';
 const SupportTicketsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [tickets, setTickets] = useState([]);
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: ticketsData, isLoading: loading } = useSupportTickets();
+  const tickets = ticketsData?.data || [];
+
+  const createTicketMutation = useCreateSupportTicket();
+  const updateTicketMutation = useUpdateSupportTicket();
+  const deleteTicketMutation = useDeleteSupportTicket();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
@@ -34,7 +38,6 @@ const SupportTicketsPage = () => {
   const troubleshootingSteps = watch('troubleshooting_steps');
 
   useEffect(() => {
-    fetchTickets();
     fetchProducts();
   }, []);
 
@@ -44,18 +47,6 @@ const SupportTicketsPage = () => {
       setProducts(res.data.data || []);
     } catch (error) {
       console.error('Failed to fetch products', error);
-    }
-  };
-
-  const fetchTickets = async () => {
-    setLoading(true);
-    try {
-      const res = await getSupportTickets();
-      setTickets(res.data.data || []);
-    } catch (error) {
-      toast.error('Failed to fetch support tickets');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -116,14 +107,13 @@ const SupportTicketsPage = () => {
       }
 
       if (isEditing) {
-        await updateSupportTicket(currentTicketId, formData);
+        await updateTicketMutation.mutateAsync({ id: currentTicketId, data: formData });
         toast.success('Support ticket updated successfully!');
       } else {
-        await createSupportTicket(formData);
+        await createTicketMutation.mutateAsync(formData);
         toast.success('Support ticket created successfully!');
       }
       setIsModalOpen(false);
-      fetchTickets();
     } catch (error) {
       toast.error(error.message || (isEditing ? 'Failed to update ticket' : 'Failed to create ticket'));
     } finally {
@@ -132,7 +122,8 @@ const SupportTicketsPage = () => {
   };
 
   const handleView = (ticket) => {
-    navigate(`/admin/support-tickets/${ticket.id}`);
+    const basePath = user?.role_name && user.role_name !== 'Admin' ? `/${user.role_name.toLowerCase()}` : '/admin';
+    navigate(`${basePath}/support-tickets/${ticket.id}`);
   };
 
   const handleDelete = async (ticket) => {
@@ -147,9 +138,8 @@ const SupportTicketsPage = () => {
     });
     if (!result.isConfirmed) return;
     try {
-      await deleteSupportTicket(ticket.id);
+      await deleteTicketMutation.mutateAsync(ticket.id);
       toast.success('Ticket deleted successfully!');
-      fetchTickets();
     } catch (error) {
       toast.error('Failed to delete ticket');
     }

@@ -13,7 +13,8 @@ import { useAuth } from '../../context/AuthContext';
 import DataTable from '../../components/shared/DataTable';
 import InventoryCard from '../../components/shared/InventoryCard';
 import Modal from '../../components/shared/Modal';
-import { getElectricalParts, createElectricalPart, updateElectricalPart, deleteElectricalPart, getElectricalPartById, deleteElectricalImage, deleteElectricalFile } from '../../api/inventory';
+import { getElectricalPartById, deleteElectricalImage, deleteElectricalFile } from '../../api/inventory';
+import { useElectricalParts, useCreateElectricalPart, useUpdateElectricalPart, useDeleteElectricalPart } from '../../hooks/useInventory';
 import { getProducts } from '../../api/products';
 import { ELECTRICAL_SPEC_FIELDS, ELECTRICAL_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
 import { getCustomCategories, getCategoryFields, saveCategoryFields, deleteCustomCategory } from '../../api/customCategories';
@@ -40,10 +41,21 @@ const BASE_CATEGORIES = Object.keys(CATEGORY_CONFIG);
 const ElectricalPartsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
+
+  const { data: electricalData, isLoading: loading } = useElectricalParts({ page: pagination.page, limit: pagination.limit, search: searchTerm });
+  const items = electricalData?.data || [];
+
+  useEffect(() => {
+    if (electricalData?.meta) {
+      setPagination(prev => ({ ...prev, page: electricalData.meta.page, total: electricalData.meta.total }));
+    }
+  }, [electricalData?.meta]);
+
+  const createElectricalMutation = useCreateElectricalPart();
+  const updateElectricalMutation = useUpdateElectricalPart();
+  const deleteElectricalMutation = useDeleteElectricalPart();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedItem, setSelectedItem] = useState(null);
@@ -209,29 +221,6 @@ const ElectricalPartsPage = () => {
     setImagePreviews([]);
   };
 
-  const fetchItems = async (page = pagination.page) => {
-    setLoading(true);
-    try {
-      const res = await getElectricalParts({
-        page: page,
-        limit: pagination.limit,
-        search: searchTerm
-      });
-      setItems(res.data.data || []);
-      if (res.data.meta) {
-        setPagination(prev => ({
-          ...prev,
-          page: res.data.meta.page,
-          total: res.data.meta.total
-        }));
-      }
-    } catch (error) {
-      toast.error('Failed to fetch items');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchProducts = async () => {
     try {
         const res = await getProducts();
@@ -240,10 +229,6 @@ const ElectricalPartsPage = () => {
         console.error('Failed to fetch products for dropdown');
     }
   };
-
-  useEffect(() => {
-    fetchItems(1);
-  }, [searchTerm]);
 
   useEffect(() => {
       fetchProducts();
@@ -358,14 +343,13 @@ const ElectricalPartsPage = () => {
 
 
       if (modalMode === 'create') {
-        await createElectricalPart(formData);
+        await createElectricalMutation.mutateAsync(formData);
         toast.success('Electrical part registered successfully');
       } else {
-        await updateElectricalPart(selectedItem.part_id, formData);
+        await updateElectricalMutation.mutateAsync({ id: selectedItem.part_id, data: formData });
         toast.success('Specifications updated successfully');
       }
       setIsModalOpen(false);
-      fetchItems(pagination.page);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Operation failed');
     } finally {
@@ -438,9 +422,8 @@ const ElectricalPartsPage = () => {
     });
     if (result.isConfirmed) {
       try {
-        await deleteElectricalPart(item.part_id);
+        await deleteElectricalMutation.mutateAsync(item.part_id);
         toast.success('Part deleted successfully');
-        fetchItems();
       } catch (error) {
         toast.error('Failed to delete part');
       }

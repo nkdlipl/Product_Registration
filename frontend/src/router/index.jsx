@@ -62,10 +62,10 @@ const getTabMetadata = (pathname, search) => {
   if (pathname === '/admin/book-a-sale') {
     return { label: 'Book a Sale', iconType: 'ShoppingBag' };
   }
-  if (pathname === '/admin/support-tickets') {
+  if (pathname.endsWith('/support-tickets')) {
     return { label: 'Support Center', iconType: 'LifeBuoy' };
   }
-  if (pathname.startsWith('/admin/support-tickets/')) {
+  if (pathname.includes('/support-tickets/')) {
     return { label: 'Support Ticket', iconType: 'LifeBuoy' };
   }
   if (pathname === '/admin/inventory') {
@@ -305,6 +305,8 @@ const Router = () => {
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Designer']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/designer" element={<Navigate to="/designer/dashboard" />} />
           <Route path="/designer/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Designer Dashboard Initialization...</div>} />
+          <Route path="/designer/support-tickets" element={<SupportTicketsPage />} />
+          <Route path="/designer/support-tickets/:id" element={<SupportTicketProfilePage />} />
           <Route path="/designer/chat" element={<ChatPage />} />
         </Route>
 
@@ -312,7 +314,9 @@ const Router = () => {
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Sales']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/sales" element={<Navigate to="/sales/dashboard" />} />
           <Route path="/sales/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Sales Dashboard Initialization...</div>} />
-          <Route path="/sales/opportunities" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Opportunities Pipeline...</div>} />
+          {/* <Route path="/sales/opportunities" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Opportunities Pipeline...</div>} /> */}
+          <Route path="/sales/support-tickets" element={<SupportTicketsPage />} />
+          <Route path="/sales/support-tickets/:id" element={<SupportTicketProfilePage />} />
           <Route path="/sales/chat" element={<ChatPage />} />
         </Route>
 
@@ -320,6 +324,8 @@ const Router = () => {
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Maintenance']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/maintenance" element={<Navigate to="/maintenance/dashboard" />} />
           <Route path="/maintenance/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Maintenance Dashboard Initialization...</div>} />
+          <Route path="/maintenance/support-tickets" element={<SupportTicketsPage />} />
+          <Route path="/maintenance/support-tickets/:id" element={<SupportTicketProfilePage />} />
           <Route path="/maintenance/chat" element={<ChatPage />} />
         </Route>
 
