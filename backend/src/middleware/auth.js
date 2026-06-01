@@ -4,13 +4,18 @@ const { sendError } = require('../utils/response');
 const { redisClient } = require('../config/redis');
 
 const verifyToken = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  let token = req.cookies?.accessToken;
   
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return sendError(res, 'UNAUTHORIZED', 'No token provided', 401);
+  if (!token) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
   }
   
-  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return sendError(res, 'UNAUTHORIZED', 'No token provided', 401);
+  }
   
   try {
     // Check if token is blacklisted in Redis
@@ -33,4 +38,12 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-module.exports = { verifyToken };
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role_name === 'Admin') {
+    next();
+  } else {
+    return sendError(res, 'FORBIDDEN', 'Access denied. Admin role required.', 403);
+  }
+};
+
+module.exports = { verifyToken, isAdmin };

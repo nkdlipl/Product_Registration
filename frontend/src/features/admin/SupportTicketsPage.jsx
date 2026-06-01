@@ -6,6 +6,8 @@ import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { Search, Plus, Loader2, Tag, CheckCircle, Trash2, LayoutGrid, List, Eye, Zap, Pencil, LifeBuoy, AlertCircle, Clock, Calendar, Check } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { useDispatch, useStore } from 'react-redux';
+import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import ReactQuill from 'react-quill-new';
@@ -37,6 +39,27 @@ const SupportTicketsPage = () => {
   const queryDescription = watch('query_description');
   const troubleshootingSteps = watch('troubleshooting_steps');
 
+  const dispatch = useDispatch();
+  const store = useStore();
+
+  const formId = React.useMemo(() => {
+    if (!isModalOpen) return null;
+    return isEditing 
+      ? `ticket_edit_${currentTicketId || 'unknown'}` 
+      : `ticket_create`;
+  }, [isModalOpen, isEditing, currentTicketId]);
+
+  useEffect(() => {
+    if (!formId || !isModalOpen) return;
+    
+    const subscription = watch((value) => {
+      if (value && Object.keys(value).length > 0) {
+        dispatch(saveDraft({ formId, data: value }));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, formId, dispatch, isModalOpen]);
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -53,19 +76,25 @@ const SupportTicketsPage = () => {
   const handleOpenCreate = () => {
     setIsEditing(false);
     setCurrentTicketId(null);
-    reset({
-      creator_name: user?.full_name || '',
-      query_date: new Date().toISOString().split('T')[0],
-      last_date: '',
-      resolved_date: '',
-      query_type: '',
-      query_description: '',
-      troubleshooting_steps: '',
-      steps_followed: false,
-      priority: 'Normal',
-      status: 'Pending',
-      product_id: ''
-    });
+    const draftId = 'ticket_create';
+    const draft = store.getState().drafts[draftId];
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+    } else {
+      reset({
+        creator_name: user?.full_name || '',
+        query_date: new Date().toISOString().split('T')[0],
+        last_date: '',
+        resolved_date: '',
+        query_type: '',
+        query_description: '',
+        troubleshooting_steps: '',
+        steps_followed: false,
+        priority: 'Normal',
+        status: 'Pending',
+        product_id: ''
+      });
+    }
     setPendingFiles([]);
     setIsModalOpen(true);
   };
@@ -73,12 +102,19 @@ const SupportTicketsPage = () => {
   const handleEdit = (ticket) => {
     setIsEditing(true);
     setCurrentTicketId(ticket.id);
-    reset({
+    const resetData = {
       ...ticket,
       query_date: ticket.query_date ? ticket.query_date.split('T')[0] : '',
       last_date: ticket.last_date ? ticket.last_date.split('T')[0] : '',
       resolved_date: ticket.resolved_date ? ticket.resolved_date.split('T')[0] : '',
-    });
+    };
+    const draftId = `ticket_edit_${ticket.id}`;
+    const draft = store.getState().drafts[draftId];
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+    } else {
+      reset(resetData);
+    }
     setPendingFiles([]);
     setIsModalOpen(true);
   };
@@ -114,6 +150,10 @@ const SupportTicketsPage = () => {
         toast.success('Support ticket created successfully!');
       }
       setIsModalOpen(false);
+      reset();
+      if (formId) {
+        dispatch(clearDraft({ formId }));
+      }
     } catch (error) {
       toast.error(error.message || (isEditing ? 'Failed to update ticket' : 'Failed to create ticket'));
     } finally {

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, useOutletContext } from 'react-router-dom';
 import { getProductById, deleteProduct, getProductBom, getBomOptions } from '../../api/products';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
-import { Loader2, Box, Droplet, LayoutGrid, Activity, FileText, Eye, Download, CheckCircle, Pencil, Trash2 } from 'lucide-react';
+import Lightbox from '../../components/shared/Lightbox';
+import { Loader2, Box, Droplet, LayoutGrid, Activity, FileText, Eye, Download, CheckCircle, Pencil, Trash2, Maximize2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
@@ -15,6 +16,7 @@ const ProductProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('description');
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [bomItems, setBomItems] = useState([]);
   const [bomOptionsMap, setBomOptionsMap] = useState({ pcb: [], electrical: [], electronics: [], structural: [] });
 
@@ -66,12 +68,12 @@ const ProductProfilePage = () => {
     const allImages = selectedProduct?.images && selectedProduct.images.length > 1
       ? selectedProduct.images
       : null;
-    if (!allImages) return;
+    if (!allImages || isLightboxOpen) return;
     const timer = setInterval(() => {
       setActiveImageIdx(i => (i + 1) % allImages.length);
     }, 3500);
     return () => clearInterval(timer);
-  }, [selectedProduct, activeImageIdx]);
+  }, [selectedProduct, activeImageIdx, isLightboxOpen]);
 
   useEffect(() => {
     if (selectedProduct?.product_name && updateTabLabel) {
@@ -165,8 +167,16 @@ const ProductProfilePage = () => {
             const currentUrl = allImages[activeImageIdx] || allImages[0];
             return (
               <div className="bg-[var(--bg-card)] rounded-3xl border border-[var(--border-color)] p-5 shadow-sm space-y-4 max-w-[340px] mx-auto">
-                <div className="aspect-square w-full bg-[var(--bg-workspace)] rounded-2xl border border-[var(--border-color)]/50 overflow-hidden group relative flex items-center justify-center">
-                  {currentUrl ? ( <img src={getFullUrl(currentUrl)} className="w-full h-full object-contain p-6 animate-in fade-in zoom-in-95" alt="Main Product" /> ) : ( <Box size={80} className="text-[var(--text-dim)] opacity-20" /> )}
+                <div 
+                  className="aspect-square w-full bg-[var(--bg-workspace)] rounded-2xl border border-[var(--border-color)]/50 overflow-hidden group relative flex items-center justify-center cursor-zoom-in hover:border-[var(--accent)]/50 transition-colors"
+                  onClick={() => { if(currentUrl) setIsLightboxOpen(true); }}
+                >
+                  {currentUrl && (
+                    <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl pointer-events-none z-10 translate-y-2 group-hover:translate-y-0">
+                      <Maximize2 size={18} />
+                    </div>
+                  )}
+                  {currentUrl ? ( <img src={getFullUrl(currentUrl)} className="w-full h-full object-contain p-6 animate-in fade-in zoom-in-95 group-hover:scale-105 transition-transform duration-500 pointer-events-none" alt="Main Product" /> ) : ( <Box size={80} className="text-[var(--text-dim)] opacity-20" /> )}
                   {allImages.length > 1 && (
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                       {allImages.map((_, i) => ( <button key={i} onClick={() => setActiveImageIdx(i)} className={`w-1.5 h-1.5 rounded-full transition-all ${i === activeImageIdx ? 'bg-[var(--accent)] w-6' : 'bg-[var(--text-muted)] opacity-30'}`} /> ))}
@@ -180,6 +190,17 @@ const ProductProfilePage = () => {
                 )}
               </div>
             );
+          })()}
+          {(() => {
+             const allImages = selectedProduct?.images && selectedProduct.images.length > 0 ? selectedProduct.images : (selectedProduct?.image_url ? [selectedProduct.image_url] : []);
+             return (
+               <Lightbox 
+                 images={allImages} 
+                 initialIndex={activeImageIdx} 
+                 isOpen={isLightboxOpen} 
+                 onClose={() => setIsLightboxOpen(false)} 
+               />
+             );
           })()}
         </div>
         <div className="lg:col-span-8 space-y-6 py-2">

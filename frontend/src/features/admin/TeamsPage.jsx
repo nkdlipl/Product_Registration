@@ -8,6 +8,8 @@ import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { Briefcase, ShoppingBag, Wrench, Layout, Plus, Loader2, Check, Box, Users, Info, ChevronDown, Search } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
+import { useDispatch, useStore } from 'react-redux';
+import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import toast from 'react-hot-toast';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -59,6 +61,27 @@ const TeamsPage = () => {
   const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm();
   const selectedRole = watch('role_name') || 'Designer';
 
+  const dispatch = useDispatch();
+  const store = useStore();
+
+  const formId = React.useMemo(() => {
+    if (!isModalOpen || modalMode === 'view') return null;
+    return modalMode === 'create' 
+      ? `team_create` 
+      : `team_edit_${selectedTeam?.team_id || 'unknown'}`;
+  }, [isModalOpen, modalMode, selectedTeam]);
+
+  useEffect(() => {
+    if (!formId || !isModalOpen) return;
+    
+    const subscription = watch((value) => {
+      if (value && Object.keys(value).length > 0) {
+        dispatch(saveDraft({ formId, data: value }));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, formId, dispatch, isModalOpen]);
+
   const quillModules = {
     toolbar: [
       ['bold', 'italic', 'underline', 'strike'],
@@ -91,6 +114,9 @@ const TeamsPage = () => {
       }
       setIsModalOpen(false);
       reset();
+      if (formId) {
+        dispatch(clearDraft({ formId }));
+      }
       setSelectedMembers([]);
       setSelectedItems([]);
       setIsDropdownOpen(false);
@@ -109,15 +135,23 @@ const TeamsPage = () => {
     setSelectedItems([]);
     setIsDropdownOpen(false);
     setUserSearch('');
-    reset({ 
-      team_name: '', 
-      role_name: 'Designer',
-      description: '', 
-      product_name: '', 
-      product_description: '', 
-      team_lead_id: '', 
-      client_handler_id: '' 
-    });
+    
+    const draftId = 'team_create';
+    const draft = store.getState().drafts[draftId];
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+    } else {
+      reset({ 
+        team_name: '', 
+        role_name: 'Designer',
+        description: '', 
+        product_name: '', 
+        product_description: '', 
+        team_lead_id: '', 
+        client_handler_id: '' 
+      });
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -143,7 +177,7 @@ const TeamsPage = () => {
   const handleEdit = (team) => {
     setModalMode('edit');
     setSelectedTeam(team);
-    reset({ 
+    const resetData = { 
       team_name: team.team_name, 
       role_name: team.role_name || 'Designer',
       description: team.description || '',
@@ -151,7 +185,15 @@ const TeamsPage = () => {
       product_description: team.product_description || '',
       team_lead_id: team.team_lead_id || '',
       client_handler_id: team.client_handler_id || ''
-    });
+    };
+    const draftId = `team_edit_${team.team_id}`;
+    const draft = store.getState().drafts[draftId];
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+    } else {
+      reset(resetData);
+    }
+    
     setSelectedMembers(team.member_ids || []); 
     setSelectedItems([]);
     setIsDropdownOpen(false);
@@ -200,18 +242,18 @@ const TeamsPage = () => {
         </div>
       )
     },
-    { 
-      key: 'active_projects', 
-      label: 'Assignments / Targets', 
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <span className="w-8 h-8 rounded-full bg-[var(--bg-workspace)] flex items-center justify-center text-[12px] font-black text-[var(--text-main)] border border-[var(--border-color)]">
-            {row.active_projects || 0}
-          </span>
-          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-50">Active</span>
-        </div>
-      ) 
-    }
+    // { 
+    //   key: 'active_projects', 
+    //   label: 'Assignments / Targets', 
+    //   render: (row) => (
+    //     <div className="flex items-center gap-2">
+    //       <span className="w-8 h-8 rounded-full bg-[var(--bg-workspace)] flex items-center justify-center text-[12px] font-black text-[var(--text-main)] border border-[var(--border-color)]">
+    //         {row.active_projects || 0}
+    //       </span>
+    //       <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-50">Active</span>
+    //     </div>
+    //   ) 
+    // }
   ];
 
   const getRoleIcon = () => {
@@ -287,7 +329,7 @@ const TeamsPage = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={modalMode === 'create' ? `Add Team` : modalMode === 'edit' ? `Update Team` : `Team Profile`}
-        maxWidth="max-w-5xl"
+        maxWidth="max-w-2xl"
         headerActions={modalMode !== 'view' && (
           <button
             form="team-form"
@@ -369,7 +411,7 @@ const TeamsPage = () => {
             </div>
           ) : (
             <form id="team-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Designation</label>
                   <input {...register('team_name', { required: 'Team name is required' })} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] text-[var(--text-main)]" placeholder="e.g. Unit Alpha" />
@@ -382,7 +424,7 @@ const TeamsPage = () => {
                     <option value="Maintenance">Maintenance</option>
                   </select>
                 </div>
-                <div className="relative">
+                <div className="relative md:col-span-2">
                   <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Selection</label>
                   <div className="relative">
                     <select {...register('product_name')} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] text-[var(--text-main)] appearance-none cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>

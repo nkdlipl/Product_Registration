@@ -15,8 +15,8 @@ let frontendUrls = frontendUrlsEnv
 
 const env = {
   DATABASE_URL: process.env.DATABASE_URL,
-  JWT_SECRET: process.env.JWT_SECRET || 'your_jwt_secret_here',
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'your_jwt_refresh_secret_here',
+  JWT_SECRET: process.env.JWT_SECRET,
+  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
   PORT: process.env.PORT || 3000,
   NODE_ENV: process.env.NODE_ENV || 'development',
   FRONTEND_URLS: frontendUrls,
@@ -27,6 +27,9 @@ const env = {
 Object.entries(env).forEach(([key, value]) => {
   if (!value && key === 'DATABASE_URL') {
     console.warn(`Warning: Environment variable ${key} is not set.`);
+  }
+  if (!value && (key === 'JWT_SECRET' || key === 'JWT_REFRESH_SECRET')) {
+    throw new Error(`CRITICAL: Environment variable ${key} is missing. Startup aborted to prevent login-forgery risks.`);
   }
 });
 

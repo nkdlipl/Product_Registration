@@ -76,7 +76,12 @@ const createCustomer = async (req, res, next) => {
     gst_no,
     status,
     company_type,
-    product
+    product,
+    product_promoted,
+    product_inquired,
+    product_quoted,
+    product_sampled,
+    product_purchased
   } = req.body;
 
   const customer_name = [first_name, middle_name, last_name].filter(Boolean).join(' ');
@@ -88,8 +93,9 @@ const createCustomer = async (req, res, next) => {
         company_name, customer_site_location, technical_contacts, sales_contacts,
         owner_contacts, accounts_contacts, qa_qc_contacts, other_contacts,
         addresses, udyam_aadhar_no,
-        email, gst_no, status, company_type, product
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) 
+        email, gst_no, status, company_type, product,
+        product_promoted, product_inquired, product_quoted, product_sampled, product_purchased
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25) 
       RETURNING *`,
       [
         customer_code, customer_name, first_name, middle_name, last_name,
@@ -105,7 +111,12 @@ const createCustomer = async (req, res, next) => {
         udyam_aadhar_no,
         email, gst_no, status || 'Active',
         company_type,
-        product
+        product,
+        product_promoted || false,
+        product_inquired || false,
+        product_quoted || false,
+        product_sampled || false,
+        product_purchased || false
       ]
     );
     sendSuccess(res, result.rows[0], 201);
@@ -138,7 +149,12 @@ const updateCustomer = async (req, res, next) => {
     gst_no,
     status,
     company_type,
-    product
+    product,
+    product_promoted,
+    product_inquired,
+    product_quoted,
+    product_sampled,
+    product_purchased
   } = req.body;
   
   console.log('Update Request for ID:', id, 'Company Type:', company_type);
@@ -152,8 +168,9 @@ const updateCustomer = async (req, res, next) => {
         company_name = $6, customer_site_location = $7, 
         technical_contacts = $8, sales_contacts = $9, 
         owner_contacts = $10, accounts_contacts = $11, qa_qc_contacts = $12, other_contacts = $13,
-        addresses = $14, udyam_aadhar_no = $15, email = $16, gst_no = $17, status = $18, company_type = $19, product = $20, updated_at = CURRENT_TIMESTAMP
-      WHERE customer_id = $21 RETURNING *`,
+        addresses = $14, udyam_aadhar_no = $15, email = $16, gst_no = $17, status = $18, company_type = $19, product = $20, 
+        product_promoted = $21, product_inquired = $22, product_quoted = $23, product_sampled = $24, product_purchased = $25, updated_at = CURRENT_TIMESTAMP
+      WHERE customer_id = $26 RETURNING *`,
       [
         customer_code, customer_name, first_name, middle_name, last_name,
         company_name,
@@ -169,6 +186,11 @@ const updateCustomer = async (req, res, next) => {
         email, gst_no, status, 
         company_type || null, 
         product,
+        product_promoted || false,
+        product_inquired || false,
+        product_quoted || false,
+        product_sampled || false,
+        product_purchased || false,
         id
       ]
     );

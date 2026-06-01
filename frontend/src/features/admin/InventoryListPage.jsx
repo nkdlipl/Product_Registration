@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
+import Lightbox from '../../components/shared/Lightbox';
 import { 
   getPCBById, deletePCBImage, deletePCBFile,
   getElectronicsPartById, getElectricalPartById, getStructuralPartById,
@@ -53,38 +54,53 @@ import {
   X,
   Factory,
   Ruler,
-  Pencil
+  Pencil,
+  Maximize2
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
+import { useDispatch, useStore } from 'react-redux';
+import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
 import Swal from 'sweetalert2';
 
 const InventoryListPage = ({ type = '' }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const store = useStore();
+
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
-const buildFileUrl = (filePath) => {
-  if (!filePath || filePath === "#") return null;
+  const buildFileUrl = (filePath) => {
+    if (!filePath || filePath === "#") return null;
 
-  if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
-    return filePath;
-  }
+    if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+      return filePath;
+    }
 
-  const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
-  return `${baseUrl}/${filePath.startsWith('/') ? filePath.slice(1) : filePath}`;
-};
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
+    return `${baseUrl}/${filePath.startsWith('/') ? filePath.slice(1) : filePath}`;
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [lightboxData, setLightboxData] = useState({ isOpen: false, images: [], initialIndex: 0 });
   const [modalMode, setModalMode] = useState('create');
   const [selectedItem, setSelectedItem] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalTab, setModalTab] = useState('general');
   const [pendingImages, setPendingImages] = useState([]);
   const [previews, setPreviews] = useState([]);
+
+  // Derive formId for drafts
+  const formId = useMemo(() => {
+    if (!isModalOpen || modalMode === 'view') return null;
+    return modalMode === 'create' 
+      ? `inventory_create_${type || 'PCB'}` 
+      : `inventory_edit_${selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id || 'unknown'}`;
+  }, [isModalOpen, modalMode, type, selectedItem]);
 
   const [viewMode, setViewMode] = useState('grid');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -133,6 +149,19 @@ const buildFileUrl = (filePath) => {
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
   });
+
+  // Sync draft to Redux without triggering component re-renders
+  useEffect(() => {
+    if (!formId || !isModalOpen) return;
+    
+    const subscription = watch((value, { name, type }) => {
+      // Avoid saving empty states when modal just opens
+      if (value && Object.keys(value).length > 0) {
+        dispatch(saveDraft({ formId, data: value, tab: modalTab }));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, formId, modalTab, dispatch, isModalOpen]);
 
   const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
     <div className="space-y-2">
@@ -358,6 +387,9 @@ const buildFileUrl = (filePath) => {
 
       setIsModalOpen(false);
       reset();
+      if (formId) {
+        dispatch(clearDraft({ formId }));
+      }
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Operation failed');
     } finally {
@@ -368,13 +400,23 @@ const buildFileUrl = (filePath) => {
   const handleOpenCreate = () => {
     setModalMode('create');
     setSelectedItem(null);
-    setModalTab('general');
     setPendingImages([]);
-    reset({
-        pcb_name: '', part_number: '', pcb_description: '', pcb_type: '', pcb_type_desc: '',
-        processor_type: '', processor_part_no: '', processor_count: 0, processor_desc: '',
-        firmware_branch: '', firmware_version: '', firmware_feature: '', firmware_feature_desc: ''
-    });
+    
+    const draftId = `inventory_create_${type || 'PCB'}`;
+    const draft = store.getState().drafts[draftId];
+    
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+        reset(draft.data);
+        setModalTab(draft.tab || 'general');
+    } else {
+        setModalTab('general');
+        reset({
+            pcb_name: '', part_number: '', pcb_description: '', pcb_type: '', pcb_type_desc: '',
+            processor_type: '', processor_part_no: '', processor_count: 0, processor_desc: '',
+            firmware_branch: '', firmware_version: '', firmware_feature: '', firmware_feature_desc: ''
+        });
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -383,7 +425,20 @@ const buildFileUrl = (filePath) => {
           const res = await getPCBById(id);
           const fullData = { ...res.data.data, category: 'PCB' };
           setSelectedItem(fullData);
-          reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
+          
+          if (mode === 'edit') {
+            const draftId = `inventory_edit_${id}`;
+            const draft = store.getState().drafts[draftId];
+            if (draft && draft.data && Object.keys(draft.data).length > 0) {
+              reset(draft.data);
+              setModalTab(draft.tab || 'general');
+            } else {
+              reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
+            }
+          } else {
+            reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
+          }
+          
           if (mode) setModalMode(mode);
       } catch (error) {
           toast.error('Failed to load PCB details');
@@ -1052,6 +1107,11 @@ const buildFileUrl = (filePath) => {
                         src={getFullUrl(item.pcb_images?.[0] || item.part_images?.[0] || item.image_url)} 
                         alt={item.pcb_name || item.name} 
                         className="w-full h-full object-contain p-6 group-hover/img:scale-110 transition-transform duration-700 ease-out" 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const allImages = item.pcb_images || item.part_images || (item.image_url ? [item.image_url] : []);
+                            setLightboxData({ isOpen: true, images: allImages, initialIndex: 0 });
+                        }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] opacity-20"><Box size={64} strokeWidth={1} /></div>
@@ -1156,12 +1216,22 @@ const buildFileUrl = (filePath) => {
                         
                         return (
                             <>
-                                <div className="aspect-square bg-[var(--bg-workspace)] rounded-[40px] border-2 border-[var(--border-color)] overflow-hidden group relative flex items-center justify-center shadow-inner hover:border-[var(--accent)]/30 transition-all duration-500">
-                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 opacity-40" />
+                                <div 
+                                    className="aspect-square bg-[var(--bg-workspace)] rounded-[40px] border-2 border-[var(--border-color)] overflow-hidden group relative flex items-center justify-center shadow-inner hover:border-[var(--accent)]/30 transition-all duration-500 cursor-zoom-in"
+                                    onClick={() => {
+                                        if(currentUrl) setLightboxData({ isOpen: true, images: allImages, initialIndex: activeImageIdx });
+                                    }}
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 opacity-40 pointer-events-none" />
+                                    {currentUrl && (
+                                        <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-md text-white p-2.5 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl pointer-events-none z-10 translate-y-2 group-hover:translate-y-0">
+                                            <Maximize2 size={20} />
+                                        </div>
+                                    )}
                                     {currentUrl ? (
                                         <img 
                                             src={getFullUrl(currentUrl)} 
-                                            className="w-full h-full object-contain p-10 animate-in fade-in zoom-in-95 duration-700" 
+                                            className="w-full h-full object-contain p-10 animate-in fade-in zoom-in-95 duration-700 group-hover:scale-105" 
                                             alt="Technical Asset" 
                                         />
                                     ) : (
@@ -1345,6 +1415,13 @@ const buildFileUrl = (filePath) => {
                           <TextAreaField label="Description" name="description" />
                         </>
                       )}
+                      
+                      {/* Save & Next Button for General */}
+                      <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                          <button type="button" onClick={() => setModalTab((selectedItem?.category === 'PCB' || !selectedItem?.category) ? 'processor' : 'specifications')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                              Save & Next <ChevronRight size={16} strokeWidth={3} />
+                          </button>
+                      </div>
                       </div>
                   )}
 
@@ -1379,6 +1456,13 @@ const buildFileUrl = (filePath) => {
                                   ))
                               )}
                           </div>
+                          
+                          {/* Save & Next Button for Specifications */}
+                          <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                              <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                                  Save & Next <ChevronRight size={16} strokeWidth={3} />
+                              </button>
+                          </div>
                       </div>
                   )}
                   {/* Processor & Firmware Tabs (PCB Only) */}
@@ -1394,6 +1478,13 @@ const buildFileUrl = (filePath) => {
                               <FormField label="Processor Count" name="processor_count" type="number" placeholder="e.g. 1" />
                               <FormField label="Processor Description" name="processor_desc" placeholder="Package type, clock speed, etc..." />
                           </div>
+                          
+                          {/* Save & Next Button for Processor */}
+                          <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                              <button type="button" onClick={() => setModalTab('firmware')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                                  Save & Next <ChevronRight size={16} strokeWidth={3} />
+                              </button>
+                          </div>
                           </div>
                       )}
 
@@ -1406,6 +1497,13 @@ const buildFileUrl = (filePath) => {
                           <div className="grid grid-cols-1 gap-8">
                               <FormField label="Firmware Feature Name" name="firmware_feature" placeholder="e.g. CAN-FD Support" />
                               <TextAreaField label="Firmware Feature Description" name="firmware_feature_desc" placeholder="Describe the capabilities of this firmware build..." />
+                          </div>
+                          
+                          {/* Save & Next Button for Firmware */}
+                          <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                              <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                                  Save & Next <ChevronRight size={16} strokeWidth={3} />
+                              </button>
                           </div>
                           </div>
                       )}
@@ -1529,6 +1627,12 @@ const buildFileUrl = (filePath) => {
           )}
         </Modal>
       )}
+        <Lightbox 
+            images={lightboxData.images}
+            initialIndex={lightboxData.initialIndex}
+            isOpen={lightboxData.isOpen}
+            onClose={() => setLightboxData(prev => ({ ...prev, isOpen: false }))}
+        />
     </div>
   );
 };

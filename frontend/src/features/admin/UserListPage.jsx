@@ -7,6 +7,8 @@ import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
 import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { useDispatch, useStore } from 'react-redux';
+import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
 import Swal from 'sweetalert2';
@@ -54,6 +56,27 @@ const UserListPage = ({ initialRole = '' }) => {
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
   const selectedRole = watch('role_name');
+  
+  const dispatch = useDispatch();
+  const store = useStore();
+
+  const formId = React.useMemo(() => {
+    if (!isModalOpen || modalMode === 'view') return null;
+    return modalMode === 'create' 
+      ? `user_create` 
+      : `user_edit_${selectedUser?.user_id || 'unknown'}`;
+  }, [isModalOpen, modalMode, selectedUser]);
+
+  useEffect(() => {
+    if (!formId || !isModalOpen) return;
+    
+    const subscription = watch((value) => {
+      if (value && Object.keys(value).length > 0) {
+        dispatch(saveDraft({ formId, data: value }));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, formId, dispatch, isModalOpen]);
 
   useEffect(() => {
     setRoleFilter(initialRole);
@@ -77,6 +100,9 @@ const UserListPage = ({ initialRole = '' }) => {
       }
       setIsModalOpen(false);
       reset();
+      if (formId) {
+        dispatch(clearDraft({ formId }));
+      }
       setSelectedTeamIds([]);
       setIsDropdownOpen(false);
       setTeamSearch('');
@@ -93,7 +119,15 @@ const UserListPage = ({ initialRole = '' }) => {
     setSelectedTeamIds([]);
     setIsDropdownOpen(false);
     setTeamSearch('');
-    reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer' });
+    
+    const draftId = 'user_create';
+    const draft = store.getState().drafts[draftId];
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+    } else {
+      reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer' });
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -110,11 +144,19 @@ const UserListPage = ({ initialRole = '' }) => {
     setSelectedTeamIds(currentTeamIds);
     setIsDropdownOpen(false);
     setTeamSearch('');
-    reset({
+    const resetData = {
       full_name: user.full_name,
       email: user.email,
       role_name: user.role_name
-    });
+    };
+    const draftId = `user_edit_${user.user_id}`;
+    const draft = store.getState().drafts[draftId];
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+    } else {
+      reset(resetData);
+    }
+    
     setIsModalOpen(true);
   };
 

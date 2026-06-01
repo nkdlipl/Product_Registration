@@ -17,7 +17,7 @@ export const useCreateCustomer = () => {
   return useMutation({
     mutationFn: createCustomer,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      return queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
   });
 };
@@ -27,7 +27,7 @@ export const useUpdateCustomer = () => {
   return useMutation({
     mutationFn: ({ id, data }) => updateCustomer(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      return queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
   });
 };
@@ -37,7 +37,7 @@ export const useDeleteCustomer = () => {
   return useMutation({
     mutationFn: deleteCustomer,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      return queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
   });
 };

@@ -38,7 +38,7 @@ const getTeam = async (req, res, next) => {
       const result = await client.query(
         `SELECT t.*, tm.is_lead, tm.joined_at FROM teams t
          JOIN team_members tm ON tm.team_id = t.team_id
-         WHERE tm.designer_id = $1`,
+         WHERE tm.user_id = $1`,
         [req.user.user_id]
       );
       sendSuccess(res, result.rows[0]);

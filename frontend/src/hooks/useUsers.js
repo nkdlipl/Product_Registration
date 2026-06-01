@@ -27,8 +27,10 @@ export const useCreateUser = () => {
   return useMutation({
     mutationFn: createUser,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['adminStats'] });
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['users'] }),
+        queryClient.invalidateQueries({ queryKey: ['adminStats'] })
+      ]);
     },
   });
 };
@@ -38,7 +40,7 @@ export const useUpdateUser = () => {
   return useMutation({
     mutationFn: ({ id, data }) => updateUser(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      return queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 };
@@ -48,8 +50,10 @@ export const useDeleteUser = () => {
   return useMutation({
     mutationFn: deleteUser,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['adminStats'] });
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['users'] }),
+        queryClient.invalidateQueries({ queryKey: ['adminStats'] })
+      ]);
     },
   });
 };

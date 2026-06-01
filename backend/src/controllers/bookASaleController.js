@@ -103,57 +103,58 @@ const createSale = async (req, res, next) => {
   }
 
   try {
-    await db.query('BEGIN');
+    const sale = await db.withTransaction(async (client) => {
+        // Lock the finished good row for update
+        const fgResult = await client.query(
+          'SELECT fg.id, fg.quantity, p.product_name FROM finished_goods fg JOIN products p ON p.product_id = fg.product_id WHERE fg.id = $1 FOR UPDATE',
+          [finished_good_id]
+        );
 
-    // Lock the finished good row for update
-    const fgResult = await db.query(
-      'SELECT fg.id, fg.quantity, p.product_name FROM finished_goods fg JOIN products p ON p.product_id = fg.product_id WHERE fg.id = $1 FOR UPDATE',
-      [finished_good_id]
-    );
+        if (fgResult.rows.length === 0) {
+          throw new Error('NOT_FOUND_FG');
+        }
 
-    if (fgResult.rows.length === 0) {
-      await db.query('ROLLBACK');
+        const fg = fgResult.rows[0];
+        const availableQty = parseInt(fg.quantity, 10);
+
+        if (availableQty < requestedQty) {
+          throw new Error(`INSUFFICIENT_QUANTITY|${availableQty}|${fg.product_name}`);
+        }
+
+        // Validate customer exists
+        const custResult = await client.query('SELECT customer_id FROM customers WHERE customer_id = $1::uuid', [customer_id]);
+        if (custResult.rows.length === 0) {
+          throw new Error('NOT_FOUND_CUSTOMER');
+        }
+
+        // Deduct quantity from finished_goods
+        await client.query(
+          'UPDATE finished_goods SET quantity = quantity - $1, updated_at = NOW() WHERE id = $2',
+          [requestedQty, finished_good_id]
+        );
+
+        // Create the sale record
+        const saleResult = await client.query(
+          `INSERT INTO book_a_sale (finished_good_id, customer_id, quantity, sale_date)
+           VALUES ($1, $2::uuid, $3, NOW()) RETURNING *`,
+          [finished_good_id, customer_id, requestedQty]
+        );
+
+        return saleResult.rows[0];
+    });
+
+    sendSuccess(res, sale, 'Sale booked successfully', 201);
+  } catch (error) {
+    if (error.message === 'NOT_FOUND_FG') {
       return sendError(res, 'NOT_FOUND', 'Finished good not found.', 404);
     }
-
-    const fg = fgResult.rows[0];
-    const availableQty = parseInt(fg.quantity, 10);
-
-    if (availableQty < requestedQty) {
-      await db.query('ROLLBACK');
-      return sendError(
-        res,
-        'INSUFFICIENT_QUANTITY',
-        `Not sufficient quantity. Required ${requestedQty}, but only ${availableQty} available for "${fg.product_name}".`,
-        400
-      );
+    if (error.message.startsWith('INSUFFICIENT_QUANTITY')) {
+      const parts = error.message.split('|');
+      return sendError(res, 'INSUFFICIENT_QUANTITY', `Not sufficient quantity. Required ${requestedQty}, but only ${parts[1]} available for "${parts[2]}".`, 400);
     }
-
-    // Validate customer exists
-    const custResult = await db.query('SELECT customer_id FROM customers WHERE customer_id = $1::uuid', [customer_id]);
-    if (custResult.rows.length === 0) {
-      await db.query('ROLLBACK');
+    if (error.message === 'NOT_FOUND_CUSTOMER') {
       return sendError(res, 'NOT_FOUND', 'Customer not found.', 404);
     }
-
-    // Deduct quantity from finished_goods
-    await db.query(
-      'UPDATE finished_goods SET quantity = quantity - $1, updated_at = NOW() WHERE id = $2',
-      [requestedQty, finished_good_id]
-    );
-
-    // Create the sale record
-    const saleResult = await db.query(
-      `INSERT INTO book_a_sale (finished_good_id, customer_id, quantity, sale_date)
-       VALUES ($1, $2::uuid, $3, NOW()) RETURNING *`,
-      [finished_good_id, customer_id, requestedQty]
-    );
-
-    await db.query('COMMIT');
-
-    sendSuccess(res, saleResult.rows[0], 'Sale booked successfully', 201);
-  } catch (error) {
-    await db.query('ROLLBACK');
     next(error);
   }
 };
@@ -166,29 +167,29 @@ const deleteSale = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    await db.query('BEGIN');
+    await db.withTransaction(async (client) => {
+        const saleResult = await client.query('SELECT * FROM book_a_sale WHERE id = $1', [id]);
+        if (saleResult.rows.length === 0) {
+          throw new Error('NOT_FOUND');
+        }
 
-    const saleResult = await db.query('SELECT * FROM book_a_sale WHERE id = $1', [id]);
-    if (saleResult.rows.length === 0) {
-      await db.query('ROLLBACK');
-      return sendError(res, 'NOT_FOUND', 'Sale record not found.', 404);
-    }
+        const sale = saleResult.rows[0];
 
-    const sale = saleResult.rows[0];
+        // Restore quantity back to finished goods
+        await client.query(
+          'UPDATE finished_goods SET quantity = quantity + $1, updated_at = NOW() WHERE id = $2',
+          [sale.quantity, sale.finished_good_id]
+        );
 
-    // Restore quantity back to finished goods
-    await db.query(
-      'UPDATE finished_goods SET quantity = quantity + $1, updated_at = NOW() WHERE id = $2',
-      [sale.quantity, sale.finished_good_id]
-    );
+        // Delete the sale
+        await client.query('DELETE FROM book_a_sale WHERE id = $1', [id]);
+    });
 
-    // Delete the sale
-    await db.query('DELETE FROM book_a_sale WHERE id = $1', [id]);
-
-    await db.query('COMMIT');
     sendSuccess(res, { id }, 'Sale deleted and quantity restored successfully');
   } catch (error) {
-    await db.query('ROLLBACK');
+    if (error.message === 'NOT_FOUND') {
+        return sendError(res, 'NOT_FOUND', 'Sale record not found.', 404);
+    }
     next(error);
   }
 };
@@ -211,66 +212,69 @@ const updateSale = async (req, res, next) => {
   }
 
   try {
-    await db.query('BEGIN');
+    const updateResult = await db.withTransaction(async (client) => {
+        // Lock the sale record
+        const saleResult = await client.query('SELECT * FROM book_a_sale WHERE id = $1 FOR UPDATE', [id]);
+        if (saleResult.rows.length === 0) {
+          throw new Error('NOT_FOUND_SALE');
+        }
+        const sale = saleResult.rows[0];
 
-    // Lock the sale record
-    const saleResult = await db.query('SELECT * FROM book_a_sale WHERE id = $1 FOR UPDATE', [id]);
-    if (saleResult.rows.length === 0) {
-      await db.query('ROLLBACK');
-      return sendError(res, 'NOT_FOUND', 'Sale record not found.', 404);
+        const oldFinishedGoodId = sale.finished_good_id;
+        const oldQty = sale.quantity;
+
+        // Restore old quantity
+        await client.query('UPDATE finished_goods SET quantity = quantity + $1, updated_at = NOW() WHERE id = $2', [oldQty, oldFinishedGoodId]);
+
+        // Check new quantity requirements
+        const fgResult = await client.query(
+          'SELECT fg.id, fg.quantity, p.product_name FROM finished_goods fg JOIN products p ON p.product_id = fg.product_id WHERE fg.id = $1 FOR UPDATE',
+          [finished_good_id]
+        );
+
+        if (fgResult.rows.length === 0) {
+          throw new Error('NOT_FOUND_FG');
+        }
+
+        const fg = fgResult.rows[0];
+        const availableQty = parseInt(fg.quantity, 10);
+
+        if (availableQty < requestedQty) {
+          throw new Error(`INSUFFICIENT_QUANTITY|${availableQty}|${fg.product_name}`);
+        }
+
+        // Validate customer exists
+        const custResult = await client.query('SELECT customer_id FROM customers WHERE customer_id = $1::uuid', [customer_id]);
+        if (custResult.rows.length === 0) {
+          throw new Error('NOT_FOUND_CUSTOMER');
+        }
+
+        // Deduct new quantity
+        await client.query('UPDATE finished_goods SET quantity = quantity - $1, updated_at = NOW() WHERE id = $2', [requestedQty, finished_good_id]);
+
+        // Update sale record
+        const updated = await client.query(
+          `UPDATE book_a_sale SET finished_good_id = $1, customer_id = $2::uuid, quantity = $3, updated_at = NOW() WHERE id = $4 RETURNING *`,
+          [finished_good_id, customer_id, requestedQty, id]
+        );
+        return updated.rows[0];
+    });
+
+    sendSuccess(res, updateResult, 'Sale updated successfully');
+  } catch (error) {
+    if (error.message === 'NOT_FOUND_SALE') {
+        return sendError(res, 'NOT_FOUND', 'Sale record not found.', 404);
     }
-    const sale = saleResult.rows[0];
-
-    const oldFinishedGoodId = sale.finished_good_id;
-    const oldQty = sale.quantity;
-
-    // Restore old quantity
-    await db.query('UPDATE finished_goods SET quantity = quantity + $1, updated_at = NOW() WHERE id = $2', [oldQty, oldFinishedGoodId]);
-
-    // Check new quantity requirements
-    const fgResult = await db.query(
-      'SELECT fg.id, fg.quantity, p.product_name FROM finished_goods fg JOIN products p ON p.product_id = fg.product_id WHERE fg.id = $1 FOR UPDATE',
-      [finished_good_id]
-    );
-
-    if (fgResult.rows.length === 0) {
-      await db.query('ROLLBACK');
-      return sendError(res, 'NOT_FOUND', 'Finished good not found.', 404);
+    if (error.message === 'NOT_FOUND_FG') {
+        return sendError(res, 'NOT_FOUND', 'Finished good not found.', 404);
     }
-
-    const fg = fgResult.rows[0];
-    const availableQty = parseInt(fg.quantity, 10);
-
-    if (availableQty < requestedQty) {
-      await db.query('ROLLBACK');
-      return sendError(
-        res,
-        'INSUFFICIENT_QUANTITY',
-        `Not sufficient quantity. Required ${requestedQty}, but only ${availableQty} available for "${fg.product_name}".`,
-        400
-      );
+    if (error.message.startsWith('INSUFFICIENT_QUANTITY')) {
+      const parts = error.message.split('|');
+      return sendError(res, 'INSUFFICIENT_QUANTITY', `Not sufficient quantity. Required ${requestedQty}, but only ${parts[1]} available for "${parts[2]}".`, 400);
     }
-
-    // Validate customer exists
-    const custResult = await db.query('SELECT customer_id FROM customers WHERE customer_id = $1::uuid', [customer_id]);
-    if (custResult.rows.length === 0) {
-      await db.query('ROLLBACK');
+    if (error.message === 'NOT_FOUND_CUSTOMER') {
       return sendError(res, 'NOT_FOUND', 'Customer not found.', 404);
     }
-
-    // Deduct new quantity
-    await db.query('UPDATE finished_goods SET quantity = quantity - $1, updated_at = NOW() WHERE id = $2', [requestedQty, finished_good_id]);
-
-    // Update sale record
-    const updateResult = await db.query(
-      `UPDATE book_a_sale SET finished_good_id = $1, customer_id = $2::uuid, quantity = $3, updated_at = NOW() WHERE id = $4 RETURNING *`,
-      [finished_good_id, customer_id, requestedQty, id]
-    );
-
-    await db.query('COMMIT');
-    sendSuccess(res, updateResult.rows[0], 'Sale updated successfully');
-  } catch (error) {
-    await db.query('ROLLBACK');
     next(error);
   }
 };

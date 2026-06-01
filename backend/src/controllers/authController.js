@@ -47,9 +47,26 @@ const login = async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    await db.query('UPDATE users SET refresh_token = $1 WHERE user_id = $2', [hashedRefreshToken, user.user_id]);
+
+    const isProduction = env.NODE_ENV === 'production';
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     sendSuccess(res, {
-      accessToken,
-      refreshToken,
       user: {
         user_id: user.user_id,
         full_name: user.full_name,
@@ -63,7 +80,8 @@ const login = async (req, res, next) => {
 };
 
 const refresh = async (req, res, next) => {
-  const { refreshToken } = req.body;
+  // Use cookies to get refresh token
+  const refreshToken = req.cookies?.refreshToken;
 
   if (!refreshToken) {
     return sendError(res, 'BAD_REQUEST', 'Refresh token is required', 400);
@@ -82,8 +100,14 @@ const refresh = async (req, res, next) => {
 
     const user = result.rows[0];
 
-    if (!user) {
-      return sendError(res, 'UNAUTHORIZED', 'User not found or inactive', 401);
+    if (!user || !user.refresh_token) {
+      return sendError(res, 'UNAUTHORIZED', 'User not found, inactive, or logged out', 401);
+    }
+
+    const isMatch = await bcrypt.compare(refreshToken, user.refresh_token);
+    if (!isMatch) {
+      // Possible token reuse / stolen token
+      return sendError(res, 'UNAUTHORIZED', 'Invalid refresh token', 401);
     }
 
     const accessToken = jwt.sign(
@@ -92,7 +116,16 @@ const refresh = async (req, res, next) => {
       { expiresIn: '15m' }
     );
 
-    sendSuccess(res, { accessToken });
+    const isProduction = env.NODE_ENV === 'production';
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+
+    sendSuccess(res, { message: 'Token refreshed successfully' });
   } catch (error) {
     return sendError(res, 'UNAUTHORIZED', 'Invalid refresh token', 401);
   }
@@ -101,28 +134,64 @@ const refresh = async (req, res, next) => {
 const { redisClient } = require('../config/redis');
 
 const logout = async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    
-    if (redisClient.isOpen) {
-      try {
-        const decoded = jwt.decode(token);
-        if (decoded && decoded.exp) {
-          // Calculate remaining time in seconds
-          const currentTime = Math.floor(Date.now() / 1000);
-          const timeToExpire = decoded.exp - currentTime;
-          
-          if (timeToExpire > 0) {
-            // Add to blacklist with a TTL matching the remaining token life
-            await redisClient.setEx(`bl_${token}`, timeToExpire, 'true');
-          }
+  // Clear cookies
+  const isProduction = env.NODE_ENV === 'production';
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+  };
+
+  const refreshToken = req.cookies?.refreshToken;
+  
+  if (refreshToken) {
+    try {
+        const decoded = jwt.decode(refreshToken);
+        if (decoded && decoded.user_id) {
+            // Revoke refresh token in database
+            await db.query('UPDATE users SET refresh_token = NULL WHERE user_id = $1', [decoded.user_id]);
+            
+            // Also add to Redis blacklist if configured
+            if (redisClient.isOpen && decoded.exp) {
+              const currentTime = Math.floor(Date.now() / 1000);
+              const timeToExpire = decoded.exp - currentTime;
+              if (timeToExpire > 0) {
+                await redisClient.setEx(`bl_${refreshToken}`, timeToExpire, 'true');
+              }
+            }
         }
-      } catch (err) {
-        console.error('Error blacklisting token:', err);
-      }
+    } catch (err) {
+        console.error('Error invalidating refresh token in database:', err);
     }
   }
+
+  // Handle access token blacklisting
+  let token = req.cookies?.accessToken;
+  if (!token) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+  }
+
+  if (token && redisClient.isOpen) {
+    try {
+      const decoded = jwt.decode(token);
+      if (decoded && decoded.exp) {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const timeToExpire = decoded.exp - currentTime;
+        
+        if (timeToExpire > 0) {
+          await redisClient.setEx(`bl_${token}`, timeToExpire, 'true');
+        }
+      }
+    } catch (err) {
+      console.error('Error blacklisting access token:', err);
+    }
+  }
+
+  res.clearCookie('accessToken', cookieOptions);
+  res.clearCookie('refreshToken', cookieOptions);
 
   sendSuccess(res, { message: 'Logged out' });
 };

@@ -27,7 +27,7 @@ export const useCreateFinishedGood = () => {
   return useMutation({
     mutationFn: createFinishedGood,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['finishedGoods'] });
+      return queryClient.invalidateQueries({ queryKey: ['finishedGoods'] });
     },
   });
 };
@@ -37,7 +37,7 @@ export const useUpdateFinishedGood = () => {
   return useMutation({
     mutationFn: ({ id, data }) => updateFinishedGood(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['finishedGoods'] });
+      return queryClient.invalidateQueries({ queryKey: ['finishedGoods'] });
     },
   });
 };
@@ -47,7 +47,7 @@ export const useDeleteFinishedGood = () => {
   return useMutation({
     mutationFn: deleteFinishedGood,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['finishedGoods'] });
+      return queryClient.invalidateQueries({ queryKey: ['finishedGoods'] });
     },
   });
 };

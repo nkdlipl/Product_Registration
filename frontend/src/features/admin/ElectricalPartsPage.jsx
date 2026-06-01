@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useDispatch, useStore } from 'react-redux';
+import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import { toast } from 'react-hot-toast';
 import { 
   Search, Plus, Loader2, Plug, Zap, Info, Settings, 
@@ -73,9 +75,32 @@ const ElectricalPartsPage = () => {
   const [newCategoryFields, setNewCategoryFields] = useState([{ label: '' }]);
   const [customFieldDefs, setCustomFieldDefs] = useState({}); // { categoryName: [{ label, key }] }
 
+  const dispatch = useDispatch();
+  const store = useStore();
+
+  // Derive formId for drafts
+  const formId = useMemo(() => {
+    if (!isModalOpen || modalMode === 'view') return null;
+    return modalMode === 'create' 
+      ? `electrical_create` 
+      : `electrical_edit_${selectedItem?.part_id || selectedItem?.id || 'unknown'}`;
+  }, [isModalOpen, modalMode, selectedItem]);
+
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
       defaultValues: { status: 'Active' }
   });
+
+  // Sync draft to Redux without triggering component re-renders
+  useEffect(() => {
+    if (!formId || !isModalOpen) return;
+    
+    const subscription = watch((value, { name, type }) => {
+      if (value && Object.keys(value).length > 0) {
+        dispatch(saveDraft({ formId, data: value, tab: modalTab }));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, formId, modalTab, dispatch, isModalOpen]);
 
   const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
     <div className="space-y-2">
@@ -350,6 +375,10 @@ const ElectricalPartsPage = () => {
         toast.success('Specifications updated successfully');
       }
       setIsModalOpen(false);
+      reset({ status: 'Active' });
+      if (formId) {
+        dispatch(clearDraft({ formId }));
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Operation failed');
     } finally {
@@ -361,53 +390,67 @@ const ElectricalPartsPage = () => {
     setModalMode('create');
     setSelectedItem(null);
     setPendingImages([]);
-    setModalTab('general');
-    reset({
-        status: 'Active',
-        part_category: '', part_name: '', part_number: '', manufacturer: '', part_type: '', description: '', used_in_product: '', material: '',
-        rated_voltage: '', rated_current: '', power_rating: '', phase_type: '', frequency: '', input_type: '', output_type: '', connector_type: '', mounting_type: '', protection_rating: '', operating_temperature: '', dimensions: '', weight: '',
-        category_name: ''
-    });
+    setImagePreviews([]);
+    setEditingCategoryName(null);
+    setIsAddingCategory(false);
+
+    const draftId = 'electrical_create';
+    const draft = store.getState().drafts[draftId];
+
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+      setModalTab(draft.tab || 'general');
+    } else {
+      setModalTab('general');
+      reset({ status: 'Active' });
+    }
+
     setIsModalOpen(true);
   };
 
   const loadPartDetails = async (id, mode) => {
-      setSelectedItem(null); // Clear old state
-      setPendingImages([]);
-      setActiveImageIdx(0);
-      setModalMode(mode);
-      setModalTab('general');
-      setIsModalOpen(true);
-      try {
-          const res = await getElectricalPartById(id);
-          const fullData = res.data.data;
-          setSelectedItem(fullData);
-          if (mode === 'edit') {
-              // Convert dates for inputs
-              const formattedData = { ...fullData };
-              ['purchase_date', 'warranty_start_date', 'warranty_end_date'].forEach(dateField => {
-                  if (formattedData[dateField]) {
-                      formattedData[dateField] = new Date(formattedData[dateField]).toISOString().split('T')[0];
-                  }
-              });
-              // Flatten custom_params into the root so dynamic inputs are properly controlled
-              if (fullData.custom_params) {
-                  const customParams = typeof fullData.custom_params === 'string' 
-                      ? JSON.parse(fullData.custom_params) 
-                      : fullData.custom_params;
-                  Object.keys(customParams).forEach(k => {
-                      formattedData[k] = customParams[k];
-                  });
-              }
-              // Restore category state so the form renders correctly
-              if (fullData.category_name) {
-                  setValue('category_name', fullData.category_name);
-              }
-              reset(formattedData);
-          }
-      } catch (error) {
-          toast.error('Failed to load details');
+    if (mode) setModalMode(mode);
+    setIsModalOpen(true);
+    try {
+      const res = await getElectricalPartById(id);
+      const fullData = res.data.data;
+      setSelectedItem(fullData);
+      
+      let formData = { ...fullData, ...fullData.techSpec };
+      if (fullData.categorySpec) {
+        formData.category_name = fullData.categorySpec.category_name;
+        const specData = fullData.categoryData || {};
+        Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
       }
+      if (fullData.custom_params) {
+        const customParams = typeof fullData.custom_params === 'string'
+          ? JSON.parse(fullData.custom_params)
+          : fullData.custom_params;
+        Object.keys(customParams).forEach(k => {
+          formData[k] = customParams[k];
+        });
+      }
+
+      // Convert dates for inputs
+      ['purchase_date', 'warranty_start_date', 'warranty_end_date'].forEach(dateField => {
+          if (formData[dateField]) {
+              formData[dateField] = new Date(formData[dateField]).toISOString().split('T')[0];
+          }
+      });
+
+      if (mode === 'edit') {
+        const draftId = `electrical_edit_${id}`;
+        const draft = store.getState().drafts[draftId];
+        if (draft && draft.data && Object.keys(draft.data).length > 0) {
+          reset(draft.data);
+          setModalTab(draft.tab || 'general');
+        } else {
+          reset(formData);
+        }
+      } else {
+        reset(formData);
+      }
+    } catch (error) { toast.error('Failed to load details'); }
   };
 
   const handleDelete = async (item) => {
@@ -1157,6 +1200,13 @@ const ElectricalPartsPage = () => {
                             <FormField label="Stock Quantity" name="stock_quantity" type="number" placeholder="e.g. 25" />
                         </div>
                         <TextAreaField label="Description" name="description" placeholder="Technical overview..." />
+                        
+                        {/* Save & Next Button for General Info */}
+                        <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                            <button type="button" onClick={() => setModalTab('technical')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                                Save & Next <ChevronRight size={16} strokeWidth={3} />
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -1202,6 +1252,13 @@ const ElectricalPartsPage = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* Save & Next Button for Technical Specs */}
+                        <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                            <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                                Save & Next <ChevronRight size={16} strokeWidth={3} />
+                            </button>
+                        </div>
                     </div>
                 )}
 

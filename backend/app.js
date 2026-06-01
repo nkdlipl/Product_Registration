@@ -2,10 +2,10 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const compression = require('compression');
+const cookieParser = require('cookie-parser');
 const env = require('./src/config/env');
 const requestLogger = require('./src/middleware/requestLogger');
 const errorHandler = require('./src/middleware/errorHandler');
-const { apiLimiter } = require('./src/middleware/rateLimiter');
 
 // Route imports
 const authRoutes = require('./src/routes/auth');
@@ -35,6 +35,7 @@ if (!fs.existsSync(uploadDir)) {
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use('/uploads', express.static(uploadDir, {
   setHeaders: (res, path) => {
     res.set('Access-Control-Allow-Origin', '*');
@@ -74,9 +75,6 @@ app.use(cors({
 
 
 app.use(requestLogger);
-
-// Apply rate limiter to all /api routes
-app.use('/api/', apiLimiter);
 
 // Routes
 app.use('/api/categories', categoryRoutes);

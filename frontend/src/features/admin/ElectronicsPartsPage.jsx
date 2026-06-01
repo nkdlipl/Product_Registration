@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import InventoryCard from '../../components/shared/InventoryCard';
@@ -11,6 +11,8 @@ import {
   Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers, LayoutGrid, List, Pencil, Package
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
+import { useDispatch, useStore } from 'react-redux';
+import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import toast from 'react-hot-toast';
 import { ELECTRONICS_SPEC_FIELDS, ELECTRONICS_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
 import { getCustomCategories, saveCategoryFields, deleteCustomCategory } from '../../api/customCategories';
@@ -71,9 +73,32 @@ const buildFileUrl = (filePath) => {
   const [newCategoryFields, setNewCategoryFields] = useState([{ label: '' }]);
   const [customFieldDefs, setCustomFieldDefs] = useState({});
 
+  const dispatch = useDispatch();
+  const store = useStore();
+
+  // Derive formId for drafts
+  const formId = useMemo(() => {
+    if (!isModalOpen || modalMode === 'view') return null;
+    return modalMode === 'create' 
+      ? `electronics_create` 
+      : `electronics_edit_${selectedItem?.part_id || selectedItem?.id || 'unknown'}`;
+  }, [isModalOpen, modalMode, selectedItem]);
+
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
   });
+
+  // Sync draft to Redux without triggering component re-renders
+  useEffect(() => {
+    if (!formId || !isModalOpen) return;
+    
+    const subscription = watch((value, { name, type }) => {
+      if (value && Object.keys(value).length > 0) {
+        dispatch(saveDraft({ formId, data: value, tab: modalTab }));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, formId, modalTab, dispatch, isModalOpen]);
 
   const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
     <div className="space-y-2">
@@ -384,6 +409,9 @@ const buildFileUrl = (filePath) => {
 
       setIsModalOpen(false);
       reset();
+      if (formId) {
+        dispatch(clearDraft({ formId }));
+      }
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Operation failed');
     } finally {
@@ -394,12 +422,25 @@ const buildFileUrl = (filePath) => {
   const handleOpenCreate = () => {
     setModalMode('create');
     setSelectedItem(null);
-    setModalTab('general');
-    setSelectedCategory('');
     setPendingImages([]);
-    reset({
-        status: 'Active'
-    });
+    
+    const draftId = 'electronics_create';
+    const draft = store.getState().drafts[draftId];
+    
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+      setModalTab(draft.tab || 'general');
+      if (draft.data.category_name) {
+        setSelectedCategory(draft.data.category_name);
+      }
+    } else {
+      setModalTab('general');
+      setSelectedCategory('');
+      reset({
+          status: 'Active'
+      });
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -429,14 +470,29 @@ const buildFileUrl = (filePath) => {
   }
 
   const loadPartDetails = async (id, mode) => {
-      setSelectedItem(null); // Clear old state to prevent seeing stale data
       if (mode) setModalMode(mode);
       setIsModalOpen(true);
       try {
         const res = await getElectronicsPartById(id);
         const fullData = res.data.data;
         setSelectedItem(fullData);
-        reset(mapDataToForm(fullData));
+        
+        const formData = mapDataToForm(fullData);
+        if (mode === 'edit') {
+          const draftId = `electronics_edit_${id}`;
+          const draft = store.getState().drafts[draftId];
+          if (draft && draft.data && Object.keys(draft.data).length > 0) {
+            reset(draft.data);
+            setModalTab(draft.tab || 'general');
+            if (draft.data.category_name) {
+               setSelectedCategory(draft.data.category_name);
+            }
+          } else {
+            reset(formData);
+          }
+        } else {
+          reset(formData);
+        }
       } catch (error) {
         toast.error('Failed to load details');
       }
@@ -1196,6 +1252,13 @@ const buildFileUrl = (filePath) => {
                             <FormField label="Stock Quantity" name="stock_quantity" type="number" placeholder="e.g. 50" />
                         </div>
                         <TextAreaField label="Part Description" name="part_description" placeholder="Technical overview and purpose..." />
+                        
+                        {/* Save & Next Button for General Info */}
+                        <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                            <button type="button" onClick={() => setModalTab('technical')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                                Save & Next <ChevronRight size={16} strokeWidth={3} />
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -1240,6 +1303,13 @@ const buildFileUrl = (filePath) => {
                                 </div>
                             </div>
                         )}
+                        
+                        {/* Save & Next Button for Technical Specs */}
+                        <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                            <button type="button" onClick={() => setModalTab('categories')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                                Save & Next <ChevronRight size={16} strokeWidth={3} />
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -1265,6 +1335,13 @@ const buildFileUrl = (filePath) => {
                                 </div>
                             </div>
                         )}
+                        
+                        {/* Save & Next Button for Categories */}
+                        <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                            <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                                Save & Next <ChevronRight size={16} strokeWidth={3} />
+                            </button>
+                        </div>
                     </div>
                 )}
 

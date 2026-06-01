@@ -23,7 +23,13 @@ export const useCreatePCB = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createPCB,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pcbs'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['pcbs'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -31,7 +37,13 @@ export const useUpdatePCB = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }) => updatePCB(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pcbs'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['pcbs'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -39,7 +51,13 @@ export const useDeletePCB = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deletePCB,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pcbs'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['pcbs'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -59,7 +77,13 @@ export const useCreateElectronicsPart = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createElectronicsPart,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['electronicsParts'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['electronicsParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -67,7 +91,13 @@ export const useUpdateElectronicsPart = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }) => updateElectronicsPart(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['electronicsParts'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['electronicsParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -75,7 +105,13 @@ export const useDeleteElectronicsPart = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteElectronicsPart,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['electronicsParts'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['electronicsParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -95,7 +131,13 @@ export const useCreateElectricalPart = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createElectricalPart,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['electricalParts'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['electricalParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -103,7 +145,13 @@ export const useUpdateElectricalPart = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }) => updateElectricalPart(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['electricalParts'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['electricalParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -111,7 +159,13 @@ export const useDeleteElectricalPart = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteElectricalPart,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['electricalParts'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['electricalParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -131,7 +185,13 @@ export const useCreateStructuralPart = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createStructuralPart,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['structuralParts'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['structuralParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -139,7 +199,13 @@ export const useUpdateStructuralPart = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }) => updateStructuralPart(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['structuralParts'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['structuralParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 
@@ -147,7 +213,13 @@ export const useDeleteStructuralPart = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteStructuralPart,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['structuralParts'] }),
+    onSuccess: () => { 
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['structuralParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] })
+      ]);
+    },
   });
 };
 

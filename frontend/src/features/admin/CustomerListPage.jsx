@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '../../hooks/useCustomers';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
-import { Search, Plus, Loader2, Users, Mail, Phone, MapPin, Building, Globe, Hash, ShieldCheck, Trash2, Edit3, Edit2, Check, Eye, FileText, Briefcase, CreditCard, PenTool } from 'lucide-react';
+import { Search, Plus, Loader2, Users, Mail, Phone, MapPin, Building, Globe, Hash, ShieldCheck, Trash2, Edit3, Edit2, Check, Eye, FileText, Briefcase, CreditCard, PenTool, ChevronRight } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { useDispatch, useStore } from 'react-redux';
+import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
@@ -34,8 +36,30 @@ const CustomerListPage = () => {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddressIdx, setEditingAddressIdx] = useState(null);
   const [tempAddress, setTempAddress] = useState(null);
+  const [isProductStatusModalOpen, setIsProductStatusModalOpen] = useState(false);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
+
+  const dispatch = useDispatch();
+  const store = useStore();
+
+  const formId = React.useMemo(() => {
+    if (!isModalOpen || modalMode === 'view') return null;
+    return modalMode === 'create' 
+      ? `customer_create` 
+      : `customer_edit_${selectedCustomer?.customer_id || 'unknown'}`;
+  }, [isModalOpen, modalMode, selectedCustomer]);
+
+  useEffect(() => {
+    if (!formId || !isModalOpen) return;
+    
+    const subscription = watch((value) => {
+      if (value && Object.keys(value).length > 0) {
+        dispatch(saveDraft({ formId, data: value }));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, formId, dispatch, isModalOpen]);
 
   const filteredCustomers = customers.filter(customer =>
     customer.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,6 +132,10 @@ const CustomerListPage = () => {
         toast.success('Customer updated successfully');
       }
       setIsModalOpen(false);
+      reset();
+      if (formId) {
+        dispatch(clearDraft({ formId }));
+      }
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Action failed');
     } finally {
@@ -245,27 +273,39 @@ const CustomerListPage = () => {
     setQaQcContacts([]);
     setOtherContacts([]);
     setAddresses([]);
-    setModalMode('create');
-    setSelectedCustomer(null);
-    reset({
-      customer_code: '',
-      first_name: '',
-      middle_name: '',
-      last_name: '',
-      company_name: '',
-      udyam_aadhar_no: '',
-      email: '',
-      gst_no: '',
-      status: 'Active',
-      company_type: ''
-    });
+    
+    const draftId = 'customer_create';
+    const draft = store.getState().drafts[draftId];
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+    } else {
+      reset({
+        customer_code: '',
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        company_name: '',
+        udyam_aadhar_no: '',
+        email: '',
+        gst_no: '',
+        status: 'Active',
+        company_type: ''
+      });
+    }
+    
     setIsModalOpen(true);
   };
 
   const handleEdit = (customer) => {
     setModalMode('edit');
     setSelectedCustomer(customer);
-    reset(customer);
+    const draftId = `customer_edit_${customer.customer_id}`;
+    const draft = store.getState().drafts[draftId];
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+    } else {
+      reset(customer);
+    }
     setTechContacts(customer.technical_contacts || []);
     setSalesContacts(customer.sales_contacts || []);
     setOwnerContacts(customer.owner_contacts || []);
@@ -725,6 +765,22 @@ const CustomerListPage = () => {
                         <option value="Inactive">Inactive</option>
                       </select>
                     </div>
+
+                    <div className="space-y-1.5 relative">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Product Status</label>
+                      <button 
+                        type="button"
+                        onClick={() => setIsProductStatusModalOpen(true)}
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none hover:border-[var(--accent)] transition-all font-bold text-[14px] flex justify-between items-center group"
+                      >
+                        <span className="truncate group-hover:text-[var(--accent)] transition-colors">
+                          {[watch('product_promoted'), watch('product_inquired'), watch('product_quoted'), watch('product_sampled'), watch('product_purchased')].filter(Boolean).length > 0 
+                            ? `${[watch('product_promoted'), watch('product_inquired'), watch('product_quoted'), watch('product_sampled'), watch('product_purchased')].filter(Boolean).length} Selected` 
+                            : 'Select Statuses'}
+                        </span>
+                        <Plus size={16} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1051,6 +1107,66 @@ const CustomerListPage = () => {
               <input value={tempPersonnel?.email} onChange={e => setTempPersonnel({ ...tempPersonnel, email: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" placeholder="email@company.com" />
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* Product Status Modal */}
+      <Modal
+        isOpen={isProductStatusModalOpen}
+        onClose={() => setIsProductStatusModalOpen(false)}
+        title="Manage Product Status"
+        maxWidth="max-w-xl"
+        headerActions={
+          <button onClick={(e) => { e.preventDefault(); setIsProductStatusModalOpen(false); }} className="px-5 py-2 bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 shadow-lg flex items-center gap-2">
+            <Check size={14} /> Done
+          </button>
+        }
+      >
+        <div className="space-y-3 py-2">
+          {[
+            { name: 'product_promoted', label: 'Product Promoted', desc: 'Actively marketed & featured in campaigns' },
+            { name: 'product_inquired', label: 'Product Inquired', desc: 'Customer queries received for this product' },
+            { name: 'product_quoted', label: 'Product Quoted', desc: 'Formal price quotes generated for clients' },
+            { name: 'product_sampled', label: 'Product Sampled', desc: 'Samples sent to prospective customers' },
+            { name: 'product_purchased', label: 'Product Purchased', desc: 'Successfully ordered & sold in orders' }
+          ].map(status => {
+            const isChecked = watch(status.name);
+            return (
+              <label 
+                key={status.name}
+                className={`flex items-start gap-4 p-4 rounded-xl border transition-all duration-300 cursor-pointer select-none group relative overflow-hidden ${
+                  isChecked 
+                    ? 'bg-[var(--accent)]/5 border-[var(--accent)]' 
+                    : 'bg-[var(--bg-workspace)]/40 border-[var(--border-color)] hover:border-[var(--text-muted)]/50'
+                }`}
+              >
+                <input 
+                  type="checkbox"
+                  {...register(status.name)}
+                  disabled={modalMode === 'view'}
+                  className="sr-only"
+                />
+                <div className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${
+                  isChecked 
+                    ? 'bg-[var(--accent)] border-[var(--accent)] text-white' 
+                    : 'border-[var(--text-muted)] group-hover:border-[var(--text-main)]'
+                }`}>
+                  {isChecked && <Check size={12} strokeWidth={4} />}
+                </div>
+
+                <div className="space-y-0.5">
+                  <span className={`block text-[13px] font-black uppercase tracking-wider transition-colors ${
+                    isChecked ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'
+                  }`}>
+                    {status.label}
+                  </span>
+                  <span className="block text-[11px] text-[var(--text-muted)] leading-relaxed font-medium">
+                    {status.desc}
+                  </span>
+                </div>
+              </label>
+            );
+          })}
         </div>
       </Modal>
     </div>

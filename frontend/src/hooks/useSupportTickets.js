@@ -36,7 +36,7 @@ export const useCreateSupportTicket = () => {
   return useMutation({
     mutationFn: createSupportTicket,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['supportTickets'] });
+      return queryClient.invalidateQueries({ queryKey: ['supportTickets'] });
     },
   });
 };
@@ -46,8 +46,10 @@ export const useUpdateSupportTicket = () => {
   return useMutation({
     mutationFn: ({ id, data }) => updateSupportTicket(id, data),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['supportTickets'] });
-      queryClient.invalidateQueries({ queryKey: ['supportTicket', variables.id] });
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['supportTickets'] }),
+        queryClient.invalidateQueries({ queryKey: ['supportTicket', variables.id] })
+      ]);
     },
   });
 };
@@ -57,7 +59,7 @@ export const useDeleteSupportTicket = () => {
   return useMutation({
     mutationFn: deleteSupportTicket,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['supportTickets'] });
+      return queryClient.invalidateQueries({ queryKey: ['supportTickets'] });
     },
   });
 };

@@ -16,8 +16,10 @@ export const useCreateTeam = () => {
   return useMutation({
     mutationFn: createTeam,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
-      queryClient.invalidateQueries({ queryKey: ['adminStats'] });
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['teams'] }),
+        queryClient.invalidateQueries({ queryKey: ['adminStats'] })
+      ]);
     },
   });
 };
@@ -27,7 +29,7 @@ export const useUpdateTeam = () => {
   return useMutation({
     mutationFn: ({ id, data }) => updateTeam(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      return queryClient.invalidateQueries({ queryKey: ['teams'] });
     },
   });
 };
@@ -37,8 +39,10 @@ export const useDeleteTeam = () => {
   return useMutation({
     mutationFn: deleteTeam,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
-      queryClient.invalidateQueries({ queryKey: ['adminStats'] });
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['teams'] }),
+        queryClient.invalidateQueries({ queryKey: ['adminStats'] })
+      ]);
     },
   });
 };

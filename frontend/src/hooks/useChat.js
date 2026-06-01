@@ -37,9 +37,10 @@ export const useSendMessage = () => {
       return response.data;
     },
     onSuccess: (data, variables) => {
-      // Optimistically update or refetch
-      queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.receiver_id] });
-      queryClient.invalidateQueries({ queryKey: ['chatUsers'] });
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.receiver_id] }),
+        queryClient.invalidateQueries({ queryKey: ['chatUsers'] })
+      ]);
     },
   });
 };
@@ -54,7 +55,7 @@ export const useDeleteMessage = () => {
     },
     onSuccess: (deletedMessageId) => {
       // Could manually filter from cache, or simply invalidate
-      queryClient.invalidateQueries({ queryKey: ['chatMessages'] });
+      return queryClient.invalidateQueries({ queryKey: ['chatMessages'] });
     },
   });
 };
@@ -68,7 +69,7 @@ export const useClearChat = () => {
       return userId;
     },
     onSuccess: (userId) => {
-      queryClient.invalidateQueries({ queryKey: ['chatMessages', userId] });
+      return queryClient.invalidateQueries({ queryKey: ['chatMessages', userId] });
     },
   });
 };

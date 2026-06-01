@@ -17,7 +17,7 @@ export const useSaleOptions = () => {
     queryKey: ['saleOptions'],
     queryFn: async () => {
       const response = await getBookASaleOptions();
-      return response.data;
+      return response;
     },
   });
 };
@@ -27,7 +27,7 @@ export const useCreateSale = () => {
   return useMutation({
     mutationFn: createBookedSale,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      return queryClient.invalidateQueries({ queryKey: ['sales'] });
     },
   });
 };
@@ -37,7 +37,7 @@ export const useUpdateSale = () => {
   return useMutation({
     mutationFn: ({ id, data }) => updateBookedSale(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      return queryClient.invalidateQueries({ queryKey: ['sales'] });
     },
   });
 };
@@ -47,7 +47,7 @@ export const useDeleteSale = () => {
   return useMutation({
     mutationFn: deleteBookedSale,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      return queryClient.invalidateQueries({ queryKey: ['sales'] });
     },
   });
 };

@@ -9,8 +9,6 @@ const authReducer = (state, action) => {
       return {
         ...state,
         user: action.payload.user,
-        accessToken: action.payload.accessToken,
-        refreshToken: action.payload.refreshToken,
         isAuthenticated: true,
         isLoading: false
       };
@@ -18,8 +16,6 @@ const authReducer = (state, action) => {
       return {
         ...state,
         user: null,
-        accessToken: null,
-        refreshToken: null,
         isAuthenticated: false,
         isLoading: false
       };
@@ -33,21 +29,17 @@ const authReducer = (state, action) => {
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, {
     user: null,
-    accessToken: null,
-    refreshToken: null,
     isAuthenticated: false,
     isLoading: true
   });
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
-    const accessToken = localStorage.getItem('accessToken');
-    const refreshToken = localStorage.getItem('refreshToken');
 
-    if (user && accessToken && refreshToken) {
+    if (user) {
       dispatch({
         type: 'LOGIN',
-        payload: { user, accessToken, refreshToken }
+        payload: { user }
       });
     } else {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -58,15 +50,13 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const res = await loginApi(email, password);
-      const { user, accessToken, refreshToken } = res.data.data;
+      const { user } = res.data.data;
       
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
       
       dispatch({
         type: 'LOGIN',
-        payload: { user, accessToken, refreshToken }
+        payload: { user }
       });
       return user;
     } catch (error) {
@@ -75,9 +65,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    logoutApi(); // non-blocking
-    localStorage.clear();
+  const logout = async () => {
+    try {
+      await logoutApi();
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+    localStorage.removeItem('user');
     dispatch({ type: 'LOGOUT' });
   };
 

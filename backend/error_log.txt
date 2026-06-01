@@ -13,3 +13,68 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
     at async deleteUser (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:357:20)
 
+2026-06-01T10:42:42.894Z - error: Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getChatUsers (D:\LIPL\Product_Registration\backend\src\controllers\chatController.js:35:20)
+
+2026-06-01T10:44:17.884Z - error: Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
+
+2026-06-01T10:44:37.246Z - error: Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
+
+2026-06-01T10:44:50.011Z - error: Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
+
+2026-06-01T10:45:04.948Z - error: Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
+
+2026-06-01T10:45:06.986Z - error: Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
+
+2026-06-01T10:45:29.084Z - error: Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
+
+2026-06-01T10:45:29.461Z - error: Control plane request failed
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getFinishedGoods (D:\LIPL\Product_Registration\backend\src\controllers\finishedGoodsController.js:116:24)
+
+2026-06-01T10:46:41.839Z - error: Control plane request failed
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getTeams (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:125:20)
+
+2026-06-01T10:46:42.119Z - error: Control plane request failed
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getProducts (D:\LIPL\Product_Registration\backend\src\controllers\productController.js:60:20)
+
+2026-06-01T10:54:31.080Z - error: Control plane request failed
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getChatUsers (D:\LIPL\Product_Registration\backend\src\controllers\chatController.js:35:20)
+
+2026-06-01T11:22:52.926Z - error: Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async login (D:\LIPL\Product_Registration\backend\src\controllers\authController.js:17:20)
+
+2026-06-01T11:23:13.341Z - error: Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async login (D:\LIPL\Product_Registration\backend\src\controllers\authController.js:17:20)
+

@@ -1,10 +1,4 @@
-const { Pool } = require('pg');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const { pool } = require('./src/config/db');
 
 async function migrate() {
   try {
@@ -69,15 +63,11 @@ async function migrate() {
     console.error('MIGRATION ERROR:', err.message);
     throw err; // Re-throw to handle in server startup
   } finally {
-    const pool = require('./src/config/db').pool || poolInstance;
-    // Only close if it's not the main app pool or if it's a dedicated local pool
-    // In this script 'pool' is local, so we should close it.
-    await poolInstance.end();
+    if (require.main === module) {
+      await pool.end();
+    }
   }
 }
-
-// Ensure we use the local pool defined at the top
-const poolInstance = pool;
 
 // Only run immediately if this file is executed directly
 if (require.main === module) {

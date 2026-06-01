@@ -49,7 +49,7 @@ const getUserById = async (req, res, next) => {
       const profileResult = await db.query(
         `SELECT dp.*, t.team_name, tm.is_lead 
          FROM designer_profiles dp
-         LEFT JOIN team_members tm ON tm.designer_id = dp.designer_id
+         LEFT JOIN team_members tm ON tm.user_id = dp.designer_id
          LEFT JOIN teams t ON t.team_id = tm.team_id
          WHERE dp.designer_id = $1`,
         [userId]
@@ -238,49 +238,55 @@ const createUser = async (req, res, next) => {
   const { full_name, email, password, role_name, team_id, team_ids } = req.body;
 
   try {
-    // Get role_id
-    const roleResult = await db.query('SELECT role_id FROM roles WHERE role_name = $1', [role_name]);
-    if (roleResult.rows.length === 0) {
-      return res.status(400).json({ success: false, error: { message: 'Invalid role' } });
-    }
-    const role_id = roleResult.rows[0].role_id;
+    const result = await db.withTransaction(async (client) => {
+        // Get role_id
+        const roleResult = await client.query('SELECT role_id FROM roles WHERE role_name = $1', [role_name]);
+        if (roleResult.rows.length === 0) {
+          throw new Error('Invalid role');
+        }
+        const role_id = roleResult.rows[0].role_id;
 
-    const password_hash = await bcrypt.hash(password, 10);
-    const result = await db.query(
-      `INSERT INTO users (full_name, email, password_hash, role_id) 
-       VALUES ($1, $2, $3, $4) RETURNING user_id, full_name, email`,
-      [full_name, email, password_hash, role_id]
-    );
+        const password_hash = await bcrypt.hash(password, 10);
+        const insertResult = await client.query(
+          `INSERT INTO users (full_name, email, password_hash, role_id) 
+           VALUES ($1, $2, $3, $4) RETURNING user_id, full_name, email`,
+          [full_name, email, password_hash, role_id]
+        );
 
-    // Create profile based on role
-    const userId = result.rows[0].user_id;
-    if (role_name === 'Designer') {
-      await db.query('INSERT INTO designer_profiles (designer_id) VALUES ($1)', [userId]);
-    } else if (role_name === 'Sales') {
-      await db.query('INSERT INTO sales_profiles (sales_id) VALUES ($1)', [userId]);
-    } else if (role_name === 'Maintenance') {
-      await db.query('INSERT INTO maintenance_profiles (maintenance_id) VALUES ($1)', [userId]);
-    }
+        // Create profile based on role
+        const userId = insertResult.rows[0].user_id;
+        if (role_name === 'Designer') {
+          await client.query('INSERT INTO designer_profiles (designer_id) VALUES ($1)', [userId]);
+        } else if (role_name === 'Sales') {
+          await client.query('INSERT INTO sales_profiles (sales_id) VALUES ($1)', [userId]);
+        } else if (role_name === 'Maintenance') {
+          await client.query('INSERT INTO maintenance_profiles (maintenance_id) VALUES ($1)', [userId]);
+        }
 
-    // Assign to teams if provided
-    if (Array.isArray(team_ids) && team_ids.length > 0) {
-      for (const tId of team_ids) {
-        if (tId) {
-          await db.query(
+        // Assign to teams if provided
+        if (Array.isArray(team_ids) && team_ids.length > 0) {
+          for (const tId of team_ids) {
+            if (tId) {
+              await client.query(
+                'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
+                [tId, userId]
+              );
+            }
+          }
+        } else if (team_id) {
+          await client.query(
             'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
-            [tId, userId]
+            [team_id, userId]
           );
         }
-      }
-    } else if (team_id) {
-      await db.query(
-        'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
-        [team_id, userId]
-      );
-    }
+        return insertResult.rows[0];
+    });
 
-    sendSuccess(res, result.rows[0], null, 201);
+    sendSuccess(res, result, null, 201);
   } catch (error) {
+    if (error.message === 'Invalid role') {
+        return res.status(400).json({ success: false, error: { message: 'Invalid role' } });
+    }
     if (error.code === '23505') {
       return res.status(400).json({ success: false, error: { message: 'Email already exists' } });
     }
@@ -293,44 +299,53 @@ const updateUser = async (req, res, next) => {
   const { full_name, email, role_name, team_id, team_ids } = req.body;
 
   try {
-    // Get role_id
-    const roleResult = await db.query('SELECT role_id FROM roles WHERE role_name = $1', [role_name]);
-    if (roleResult.rows.length === 0) {
-      return res.status(400).json({ success: false, error: { message: 'Invalid role' } });
-    }
-    const role_id = roleResult.rows[0].role_id;
+    const result = await db.withTransaction(async (client) => {
+        // Get role_id
+        const roleResult = await client.query('SELECT role_id FROM roles WHERE role_name = $1', [role_name]);
+        if (roleResult.rows.length === 0) {
+          throw new Error('Invalid role');
+        }
+        const role_id = roleResult.rows[0].role_id;
 
-    const result = await db.query(
-      `UPDATE users 
-       SET full_name = $1, email = $2, role_id = $3 
-       WHERE user_id = $4 RETURNING user_id, full_name, email`,
-      [full_name, email, role_id, userId]
-    );
+        const updateResult = await client.query(
+          `UPDATE users 
+           SET full_name = $1, email = $2, role_id = $3 
+           WHERE user_id = $4 RETURNING user_id, full_name, email`,
+          [full_name, email, role_id, userId]
+        );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: { message: 'User not found' } });
-    }
+        if (updateResult.rows.length === 0) {
+          throw new Error('User not found');
+        }
 
-    // Sync team assignment
-    await db.query('DELETE FROM team_members WHERE user_id = $1', [userId]);
-    if (Array.isArray(team_ids) && team_ids.length > 0) {
-      for (const tId of team_ids) {
-        if (tId) {
-          await db.query(
+        // Sync team assignment
+        await client.query('DELETE FROM team_members WHERE user_id = $1', [userId]);
+        if (Array.isArray(team_ids) && team_ids.length > 0) {
+          for (const tId of team_ids) {
+            if (tId) {
+              await client.query(
+                'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
+                [tId, userId]
+              );
+            }
+          }
+        } else if (team_id) {
+          await client.query(
             'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
-            [tId, userId]
+            [team_id, userId]
           );
         }
-      }
-    } else if (team_id) {
-      await db.query(
-        'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
-        [team_id, userId]
-      );
-    }
+        return updateResult.rows[0];
+    });
 
-    sendSuccess(res, result.rows[0], 'User updated successfully');
+    sendSuccess(res, result, 'User updated successfully');
   } catch (error) {
+    if (error.message === 'Invalid role') {
+      return res.status(400).json({ success: false, error: { message: 'Invalid role' } });
+    }
+    if (error.message === 'User not found') {
+      return res.status(404).json({ success: false, error: { message: 'User not found' } });
+    }
     if (error.code === '23505') {
       return res.status(400).json({ success: false, error: { message: 'Email already exists' } });
     }
@@ -342,29 +357,28 @@ const deleteUser = async (req, res, next) => {
   const { userId } = req.params;
 
   try {
-    // Start transaction
-    await db.query('BEGIN');
+    await db.withTransaction(async (client) => {
+        // 1. Delete profiles
+        await client.query('DELETE FROM designer_profiles WHERE designer_id = $1', [userId]);
+        await client.query('DELETE FROM sales_profiles WHERE sales_id = $1', [userId]);
+        await client.query('DELETE FROM maintenance_profiles WHERE maintenance_id = $1', [userId]);
+        
+        // 2. Delete team memberships
+        await client.query('DELETE FROM team_members WHERE user_id = $1', [userId]);
 
-    // 1. Delete profiles
-    await db.query('DELETE FROM designer_profiles WHERE designer_id = $1', [userId]);
-    await db.query('DELETE FROM sales_profiles WHERE sales_id = $1', [userId]);
-    await db.query('DELETE FROM maintenance_profiles WHERE maintenance_id = $1', [userId]);
-    
-    // 2. Delete team memberships
-    await db.query('DELETE FROM team_members WHERE user_id = $1', [userId]);
+        // 3. Delete from users table
+        const result = await client.query('DELETE FROM users WHERE user_id = $1 RETURNING user_id', [userId]);
 
-    // 3. Delete from users table
-    const result = await db.query('DELETE FROM users WHERE user_id = $1 RETURNING user_id', [userId]);
+        if (result.rows.length === 0) {
+          throw new Error('User not found');
+        }
+    });
 
-    if (result.rows.length === 0) {
-      await db.query('ROLLBACK');
-      return res.status(404).json({ success: false, error: { message: 'User not found' } });
-    }
-
-    await db.query('COMMIT');
     sendSuccess(res, null, 'User deleted successfully');
   } catch (error) {
-    await db.query('ROLLBACK');
+    if (error.message === 'User not found') {
+      return res.status(404).json({ success: false, error: { message: 'User not found' } });
+    }
     next(error);
   }
 };

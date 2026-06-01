@@ -738,6 +738,12 @@
     --tw-ring-color: var(--accent);
     transition: box-shadow 0.2s ease;
   }
+
+  /* Native Select Options visibility fix */
+  select option {
+    background-color: var(--bg-card);
+    color: var(--text-main);
+  }
 }
 
 /* ═══════════════════════════════════════

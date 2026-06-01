@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import InventoryCard from '../../components/shared/InventoryCard';
@@ -15,6 +15,8 @@ import {
   Maximize2, Move, BoxSelect, Frame, DoorOpen, Layout, Container, Pencil
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
+import { useDispatch, useStore } from 'react-redux';
+import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { STRUCTURAL_SPEC_FIELDS, STRUCTURAL_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
@@ -66,6 +68,17 @@ const StructuralPartsPage = () => {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [viewMode, setViewMode] = useState('grid');
   const [customCategories, setCustomCategories] = useState([]);
+
+  const dispatch = useDispatch();
+  const store = useStore();
+
+  // Derive formId for drafts
+  const formId = useMemo(() => {
+    if (!isModalOpen || modalMode === 'view') return null;
+    return modalMode === 'create' 
+      ? `structural_create` 
+      : `structural_edit_${selectedItem?.part_id || selectedItem?.id || 'unknown'}`;
+  }, [isModalOpen, modalMode, selectedItem]);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [editingCategoryName, setEditingCategoryName] = useState(null);
   const [newCategoryInput, setNewCategoryInput] = useState('');
@@ -75,6 +88,18 @@ const StructuralPartsPage = () => {
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
   });
+
+  // Sync draft to Redux without triggering component re-renders
+  useEffect(() => {
+    if (!formId || !isModalOpen) return;
+    
+    const subscription = watch((value, { name, type }) => {
+      if (value && Object.keys(value).length > 0) {
+        dispatch(saveDraft({ formId, data: value, tab: modalTab }));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, formId, modalTab, dispatch, isModalOpen]);
 
   const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
     <div className="space-y-2">
@@ -335,6 +360,9 @@ const StructuralPartsPage = () => {
 
       setIsModalOpen(false);
       reset();
+      if (formId) {
+        dispatch(clearDraft({ formId }));
+      }
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Operation failed');
     } finally {
@@ -345,10 +373,32 @@ const StructuralPartsPage = () => {
   const handleOpenCreate = () => {
     setModalMode('create');
     setSelectedItem(null);
-    setModalTab('general');
-    setSelectedCategory('');
     setPendingImages([]);
-    reset({ status: 'Active' });
+    setEditingCategoryName(null);
+    setIsAddingCategory(false);
+
+    const draftId = 'structural_create';
+    const draft = store.getState().drafts[draftId];
+
+    if (draft && draft.data && Object.keys(draft.data).length > 0) {
+      reset(draft.data);
+      setModalTab(draft.tab || 'general');
+      if (draft.data.category_name) {
+        setSelectedCategory(draft.data.category_name);
+      }
+    } else {
+      setModalTab('general');
+      setSelectedCategory('');
+      reset({
+        part_name: '',
+        part_number: '',
+        manufacturer: '',
+        status: '',
+        description: '',
+        category_name: '',
+      });
+    }
+
     setIsModalOpen(true);
   };
 
@@ -363,7 +413,6 @@ const StructuralPartsPage = () => {
       let formData = { ...fullData, ...fullData.techSpec };
       if (fullData.categorySpec) {
         formData.category_name = fullData.categorySpec.category_name;
-        setSelectedCategory(fullData.categorySpec.category_name);
         const specData = fullData.categoryData || {};
         Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
       }
@@ -375,7 +424,28 @@ const StructuralPartsPage = () => {
           formData[k] = customParams[k];
         });
       }
-      reset(formData);
+
+      if (mode === 'edit') {
+        const draftId = `structural_edit_${id}`;
+        const draft = store.getState().drafts[draftId];
+        if (draft && draft.data && Object.keys(draft.data).length > 0) {
+          reset(draft.data);
+          setModalTab(draft.tab || 'general');
+          if (draft.data.category_name) {
+             setSelectedCategory(draft.data.category_name);
+          }
+        } else {
+          reset(formData);
+          if (formData.category_name) {
+            setSelectedCategory(formData.category_name);
+          }
+        }
+      } else {
+        reset(formData);
+        if (formData.category_name) {
+          setSelectedCategory(formData.category_name);
+        }
+      }
     } catch (error) { toast.error('Failed to load details'); }
   }
 
@@ -991,6 +1061,13 @@ const StructuralPartsPage = () => {
                   <div className="md:col-span-2">
                     <TextAreaField label="Part Description" name="part_description" />
                   </div>
+                  
+                  {/* Save & Next Button for General Info */}
+                  <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6 md:col-span-2">
+                    <button type="button" onClick={() => setModalTab('tech')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                      Save & Next <ChevronRight size={16} strokeWidth={3} />
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1058,6 +1135,13 @@ const StructuralPartsPage = () => {
                       }
                     </div>
                   )}
+
+                  {/* Save & Next Button for Technical Specs */}
+                  <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                    <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                      Save & Next <ChevronRight size={16} strokeWidth={3} />
+                    </button>
+                  </div>
                 </div>
               )}
 
